@@ -9,7 +9,7 @@ const map = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/t968rs/clzn9s7ej006e01r31wsob7kj',
     projection: 'albers', // Display the map as a globe, since satellite-v9 defaults to Mercator
-    zoom: 3,
+    zoom: 6,
     minZoom: 0,
     center: [-93, 41]
 });
