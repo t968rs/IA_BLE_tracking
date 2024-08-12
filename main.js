@@ -63,6 +63,8 @@ map.on('load', () => {
                 'rgba(59, 163, 208, 0.5)', // 50% transparency
                 'MB',
                 'rgba(149, 55, 237, 0.5)', // 50% transparency
+                'AE',
+                'rgb(55,188,237, 0.3)', // Match fill color
                 '* other *',
                 'rgba(204, 204, 204, 0)', // 0% transparency
                 'rgba(0, 0, 0, 0)' // Default color for unmatched cases
