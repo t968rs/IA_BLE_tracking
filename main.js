@@ -2,7 +2,6 @@ import {
     areaPopupContent,
     fitMapToFeatureBounds,
     closePopup,
-    convertCoordinates
 } from './src/mapInteractions.js';
 
 mapboxgl.accessToken = 'pk.eyJ1IjoidDk2OHJzIiwiYSI6ImNpamF5cTcxZDAwY2R1bWx4cWJvd3JtYXoifQ.XqJkBCgSJeCCeF_yugpG5A';
@@ -162,9 +161,8 @@ map.on('load', () => {
             // Calculate the centroid of the polygon
             const centroid = turf.centroid(clickedfeature);
             const coordinates = centroid.geometry.coordinates;
-            const featureBounds = turf.bbox(clickedfeature);
             let locid = features[0].properties["loc_id"];
-            console.log(" FeatureBounds: ", featureBounds);
+            console.log("Feature ID: ", locid);
 
             // Ensure coordinates are in the correct format
             if (!Array.isArray(coordinates) || coordinates.length !== 2) {
@@ -185,31 +183,8 @@ map.on('load', () => {
             .addTo(map);
 
 
-            // Convert feature bounds
-            const convertedFeatureBounds = [
-                convertCoordinates([featureBounds[0], featureBounds[1]]),
-                convertCoordinates([featureBounds[2], featureBounds[3]])
-            ];
-
-            // Create a new LngLatBounds object from the converted feature bounds
-            const popupBounds = new mapboxgl.LngLatBounds(convertedFeatureBounds[0],
-                convertedFeatureBounds[1]);
-
-
-/*            /!*!// Extend the bounding box to include the popup dimensions
-            const popupWidth = 2; // Adjust based on your popup width
-            const popupHeight = 1; // Adjust based on your popup height
-*!/
-            popupBounds.extend(popupWidth);
-            popupBounds.extend(popupHeight);*/
-            console.log("Popup Bounds: ", popupBounds);
-
-            map.fitBounds(popupBounds, {
-                padding: 30,
-                maxZoom: 15,
-                minZoom: 5,
-                duration: 1000
-                });
+            // Fit the map to the bounds of the feature
+            // fitMapToFeatureBounds(map, clickedfeature);
         }
     });
 
@@ -237,5 +212,14 @@ map.on('load', () => {
 
     map.on('mouseleave', 'pbl-areas', () => {
         map.getCanvas().style.cursor = '';
+    });
+
+    // Add event listener for the moveend event
+    map.on('moveend', () => {
+        // Get the current map bounds
+        const bounds = map.getBounds();
+
+        // Log the bounds to the console
+        console.log('Current Map Bounds:', bounds);
     });
 });

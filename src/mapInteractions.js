@@ -61,20 +61,36 @@ export function fitMapToFeatureBounds(map, feature) {
     const bounds = new mapboxgl.LngLatBounds();
 
     // Get the coordinates of the feature
-    const coordinates = feature.geometry.coordinates;
     const geo = feature.geometry;
 
     const turfBbox = turf.bbox(geo);
     console.log("Turf BBOX: ", turfBbox);
+    const swCorner = [turfBbox[0], turfBbox[1]];
+    const neCorner = [turfBbox[2], turfBbox[3]];
 
     // Fit the map to the bounds with a larger padding to zoom out more, a max zoom of 15, and a duration of 1000
-    map.fitBounds(turfBbox, {
+    map.fitBounds([swCorner, neCorner], {
         padding: 30,  // Increase the padding to zoom out more
         maxZoom: 15,
         minZoom: 3,
         duration: 1000
     });
+    console.log("SW: ", swCorner, "NE: ", neCorner);
     const currentZoom = map.getZoom();
+    // Log the new map bounds and zoom level after fitting
+    map.once('moveend', () => {
+        const newBounds = map.getBounds();
+        const newZoom = map.getZoom();
+        console.log("New Map Bounds after fitting:", newBounds);
+        console.log("New Zoom after fitting:", newZoom);
+
+        // Workaround: Manually set the map bounds if the automatic fitBounds method fails
+        if (newBounds._sw.lat < -90 || newBounds._ne.lat > - 75 || newBounds._sw.lng < 30 || newBounds._ne.lng > 50) {
+            console.warn("Automatic fitBounds failed, manually setting bounds.");
+            map.fitBounds(new mapboxgl.LngLatBounds(swCorner, neCorner));
+        }
+    });
+    console.log("SW: ", swCorner, "NE: ", neCorner);
     console.log("Current Zoom: ", currentZoom);
 }
 
@@ -87,17 +103,6 @@ export function closePopup() {
         console.error('Popup element not found');
     }
 }
-
-// Import proj4 library
-export function convertCoordinates(coords) {
-    // Define the EPSG:3417 and EPSG:4326 projections
-    const epsg3417 = '+proj=lcc +lat_1=42.066667 +lat_2=43.266667 +lat_0=41.5 +lon_0=-93.5 +x_0=152400.3048 +y_0=30480.06096 +datum=NAD83 +units=m +no_defs';
-    const epsg4326 = proj4.WGS84;
-
-    // Convert coordinates from EPSG:3417 to EPSG:4326
-    return proj4(epsg3417, epsg4326, coords);
-}
-import proj4 from 'proj4';
 
 
 /*// Example of updating the popup content and displaying the popup
