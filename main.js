@@ -1,7 +1,8 @@
 import {
     areaPopupContent,
     fitMapToFeatureBounds,
-    closePopup
+    closePopup,
+    convertCoordinates
 } from './src/mapInteractions.js';
 
 mapboxgl.accessToken = 'pk.eyJ1IjoidDk2OHJzIiwiYSI6ImNpamF5cTcxZDAwY2R1bWx4cWJvd3JtYXoifQ.XqJkBCgSJeCCeF_yugpG5A';
@@ -79,51 +80,50 @@ map.on('load', () => {
         }
     });
 
-    // Add labels
+    // Add labels for features with PBL_Assign values
     map.addLayer({
-        id: 'pbl-areas-labels',
+        id: 'pbl-areas-labels-with-pbl',
         type: 'symbol',
         source: 'ProjectAreas',
         layout: {
-            'text-field': [
-                'case',
-                ['has', 'PBL_Assign'],
-                ['concat', ['get', 'PBL_Assign'], ', ', ['get', 'Name__HUC8']],
-                ['get', 'Name__HUC8']
-            ],
+            'text-field': ['concat', ['get', 'PBL_Assign'], ', ', ['get', 'Name__HUC8']],
             'text-size': 12,
-            'text-font': [
-                'case',
-                ['has', 'PBL_Assign'],
-                ['Open Sans Bold', 'Arial Unicode MS Bold'],
-                ['Open Sans Regular', 'Arial Unicode MS Regular']
-            ]
+            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'] // Bold font
         },
         paint: {
-            'text-color': 'rgb(247, 247, 247)', // Change text color
+            'text-color': 'rgb(247, 247, 247)', // Text color
             'text-halo-color': [
-                'case',
-                ['has', 'PBL_Assign'],
-                [
-                    'match',
-                    ['get', 'PBL_Assign'],
-                    'RK', 'rgba(214, 95, 0, 0.5)', // Match fill color
-                    'EC', 'rgba(0, 92, 175, 0.5)', // Match fill color
-                    'QB', 'rgba(94, 229, 204, 0.5)', // Match fill color
-                    'MT', 'rgba(59, 163, 208, 0.5)', // Match fill color
-                    'MB', 'rgba(149, 55, 237, 0.5)', // Match fill color
-                    '* other *', 'rgba(204, 204, 204, 0)', // Default halo color
-                    'rgba(0, 0, 0, 0)' // Default halo color for unmatched cases
-                ],
-                'rgba(0, 0, 0, 0)' // No halo if PBL_Assign is not defined
+                'match',
+                ['get', 'PBL_Assign'],
+                'RK', 'rgba(214, 95, 0, 0.5)', // Match fill color
+                'EC', 'rgba(0, 92, 175, 0.5)', // Match fill color
+                'QB', 'rgba(94, 229, 204, 0.5)', // Match fill color
+                'MT', 'rgba(59, 163, 208, 0.5)', // Match fill color
+                'MB', 'rgba(149, 55, 237, 0.5)', // Match fill color
+                '* other *', 'rgba(204, 204, 204, 0)', // Default halo color
+                'rgba(0, 0, 0, 0)' // Default halo color for unmatched cases
             ],
-            'text-halo-width': [
-                'case',
-                ['has', 'PBL_Assign'],
-                1,
-                0
-            ] // Define halo width
-        }
+            'text-halo-width': 1 // Halo width
+        },
+        filter: ['any', ['has', 'PBL_Assign'], ['!=', ['get', 'PBL_Assign'], '']] // Filter to only include features with PBL_Assign
+    });
+
+    // Add labels for features without PBL_Assign values
+    map.addLayer({
+        id: 'pbl-areas-labels-without-pbl',
+        type: 'symbol',
+        source: 'ProjectAreas',
+        layout: {
+            'text-field': ['get', 'Name__HUC8'],
+            'text-size': 12,
+            'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'] // Regular font
+        },
+        paint: {
+            'text-color': 'rgb(247, 247, 247)', // Text color
+            'text-halo-color': 'rgba(0, 0, 0, 0)', // No halo
+            'text-halo-width': 0 // No halo width
+        },
+        filter: ['any', ['!', ['has', 'PBL_Assign']], ['==', ['get', 'PBL_Assign'], '']] // Filter to include features without PBL_Assign or PBL_Assign is an empty string
     });
 
     // Add highlight hover
@@ -162,8 +162,9 @@ map.on('load', () => {
             // Calculate the centroid of the polygon
             const centroid = turf.centroid(clickedfeature);
             const coordinates = centroid.geometry.coordinates;
+            const featureBounds = turf.bbox(clickedfeature);
             let locid = features[0].properties["loc_id"];
-            console.log("Coordinates: ", coordinates);
+            console.log(" FeatureBounds: ", featureBounds);
 
             // Ensure coordinates are in the correct format
             if (!Array.isArray(coordinates) || coordinates.length !== 2) {
@@ -182,8 +183,36 @@ map.on('load', () => {
             .setLngLat(coordinates)
             .setHTML(mapPopupContent)
             .addTo(map);
+
+
+            // Convert feature bounds
+            const convertedFeatureBounds = [
+                convertCoordinates([featureBounds[0], featureBounds[1]]),
+                convertCoordinates([featureBounds[2], featureBounds[3]])
+            ];
+
+            // Create a new LngLatBounds object from the converted feature bounds
+            const popupBounds = new mapboxgl.LngLatBounds(convertedFeatureBounds[0],
+                convertedFeatureBounds[1]);
+
+
+/*            /!*!// Extend the bounding box to include the popup dimensions
+            const popupWidth = 2; // Adjust based on your popup width
+            const popupHeight = 1; // Adjust based on your popup height
+*!/
+            popupBounds.extend(popupWidth);
+            popupBounds.extend(popupHeight);*/
+            console.log("Popup Bounds: ", popupBounds);
+
+            map.fitBounds(popupBounds, {
+                padding: 30,
+                maxZoom: 15,
+                minZoom: 5,
+                duration: 1000
+                });
         }
     });
+
 
 
     // Add event listeners for mouse enter and leave

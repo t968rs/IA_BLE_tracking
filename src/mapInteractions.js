@@ -4,7 +4,7 @@
 let unwanted = ["OID_", "OID", "OBJECTID", "info_src", "cur_miss", "route_id"];
 export async function areaPopupContent(clickedfeature) {
     // Fetch the alias mapping JSON file
-    let popupContent = '<strong><p style="font-size: 16px;">Command Group Location Information </strong><p>';
+    let popupContent = '<strong><p style="font-size: 16px;">Iowa BLE Area Info</strong><p>';
     for (let property in clickedfeature.properties) {
 
         if (!unwanted.includes(property)) {
@@ -87,6 +87,19 @@ export function closePopup() {
         console.error('Popup element not found');
     }
 }
+
+// Import proj4 library
+export function convertCoordinates(coords) {
+    // Define the EPSG:3417 and EPSG:4326 projections
+    const epsg3417 = '+proj=lcc +lat_1=42.066667 +lat_2=43.266667 +lat_0=41.5 +lon_0=-93.5 +x_0=152400.3048 +y_0=30480.06096 +datum=NAD83 +units=m +no_defs';
+    const epsg4326 = proj4.WGS84;
+
+    // Convert coordinates from EPSG:3417 to EPSG:4326
+    return proj4(epsg3417, epsg4326, coords);
+}
+import proj4 from 'proj4';
+
+
 /*// Example of updating the popup content and displaying the popup
 function updatePopupContent(content) {
     const popup = document.getElementById('top-left-popup');
