@@ -49,7 +49,7 @@ class WriteNewGeoJSON:
             for entry in entries:
                 if entry.is_file():
                     if ".shp" in entry.name:
-                        if "xml" not in entry.name:
+                        if "xml" not in entry.name and ".lock" not in entry.name:
                             base, filename = os.path.split(entry.path)
                             if "." in filename:
                                 name = filename.split(".")[0]
