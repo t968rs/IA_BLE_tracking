@@ -108,7 +108,7 @@ map.on('load', () => {
             ],
             'text-halo-width': 1 // Halo width
         },
-        filter: ['!=', ['get', 'PBL_Assign'], ''] // Filter to only include features with PBL_Assign
+        filter: ['!=', ['get', 'PBL_Assign'], null] // Filter to only include features with PBL_Assign
     });
 
     // Add labels for features without PBL_Assign values
