@@ -13,7 +13,7 @@ function containsUnwantedSubstring(property) {
 
 export async function areaPopupContent(clickedfeature) {
     // Fetch the alias mapping JSON file
-    let popupContent = '<strong><p style="font-size: 16px;">Iowa BLE Area Info</strong><p>';
+    let popupContent = '<strong><p style="font-size: 14px;">Iowa BLE Area Info</strong><p>';
     for (let property in clickedfeature.properties) {
 
         if (!unwanted.includes(property) && !containsUnwantedSubstring(property)) {
