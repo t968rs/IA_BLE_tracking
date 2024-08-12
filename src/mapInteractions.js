@@ -12,9 +12,6 @@ export async function areaPopupContent(clickedfeature) {
             if (property.toLowerCase().includes('date') && typeof value === 'string'
             && value.toLowerCase().match("t"))
             console.log("T Value: ", value);
-                {
-                value = value.split("T")[0]; // Extract the date part
-            }
             popupContent += `<p><strong>${property}</strong>: ${value}</p>`
 
         }

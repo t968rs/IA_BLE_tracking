@@ -38,7 +38,7 @@ class WriteNewGeoJSON:
             var_value = getattr(self, v)
             if var_value is not None:
                 if isinstance(var_value, dict):
-                    print(f' {v}: dictionary, length: {len(var_value)}')
+                    pass
                 else:
                     print(f' {v}: {getattr(self, v)}')
         self._init_gdf_from_fc()
@@ -68,16 +68,20 @@ class WriteNewGeoJSON:
             self.crs_dict[name] = gdf.crs
             gdf = gdf.explode(ignore_index=True)
             gdf = add_numbered_primary_key(gdf, 'loc_id')
+            gdf = gdf.to_crs(epsg=4326)
             self.c_lists[name] = [c for c in gdf.columns.to_list()]
             print(f'   Input Columns: {self.c_lists[name]}, \n   CRS: {self.crs_dict[name]}')
             self.gdf_dict[name] = gdf
 
-    def export_geojsons(self):
+    def export_geojsons(self, cname_to_summarize=None):
         for name, gdf in self.gdf_dict.items():
+            unique_names = gdf[cname_to_summarize].unique()
+            print(f"Unique {cname_to_summarize} values: {unique_names}")
             gdf_to_geojson(gdf, self.output_folder, name)
 
 
-WriteNewGeoJSON().export_geojsons()
+cname = "PBL_Assign"
+WriteNewGeoJSON().export_geojsons(cname_to_summarize=cname)
 
 
 

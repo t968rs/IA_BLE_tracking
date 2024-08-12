@@ -14,7 +14,6 @@ const map = new mapboxgl.Map({
     center: [-93, 41]
 });
 
-
 // Add user control
 map.addControl(new mapboxgl.NavigationControl());
 
@@ -23,7 +22,6 @@ window.closePopup = closePopup;
 
 let loc_popup;
 
-
 // On Load event
 map.on('load', () => {
     console.log('Map loaded');
@@ -31,40 +29,121 @@ map.on('load', () => {
         type: 'geojson',
         data: './data/spatial/Iowa_BLE_Tracking.geojson'
     });
+
+    // Fit bounds
     console.log("Map Added/Loaded");
+    map.getSource('ProjectAreas').on('data', (e) => {
+        if (e.isSourceLoaded) {
+            map.fitBounds(turf.bbox(e.source.data), {
+                padding: 30,  // Increase the padding to zoom out more
+                maxZoom: 15,
+                minZoom: 3,
+                duration: 1000
+            });
+        }
+    });
 
-    console.log('Locations loaded')
-
+    // Add layers and symbology
     map.addLayer({
         id: 'pbl-areas',
         type: 'fill',
         source: 'ProjectAreas',
         paint: {
-            // After
             'fill-color': [
                 'match',
                 ['get', 'PBL_Assign'],
                 'RK',
-                '#d65f00',
+                'rgba(214, 95, 0, 0.5)', // 50% transparency
                 'EC',
-                '#005caf',
+                'rgba(0, 92, 175, 0.5)', // 50% transparency
                 'QB',
-                '#5ee5cc',
+                'rgba(94, 229, 204, 0.5)', // 50% transparency
                 'MT',
-                '#3ba3d0',
+                'rgba(59, 163, 208, 0.5)', // 50% transparency
+                'MB',
+                'rgba(149, 55, 237, 0.5)', // 50% transparency
                 '* other *',
-                'rgba(204,204,204,0)',
-                '#000000' // Default color for unmatched cases
+                'rgba(204, 204, 204, 0)', // 0% transparency
+                'rgba(0, 0, 0, 0)' // Default color for unmatched cases
             ]
         }
     });
-    console.log('Layers added')
 
-// Popups for each layer
+    map.addLayer({
+        id: 'pbl-areas-outline',
+        type: 'line',
+        source: 'ProjectAreas',
+        paint: {
+            'line-color': 'rgb(247, 247, 247)',
+            'line-width': 1
+        }
+    });
+
+    // Add labels
+    map.addLayer({
+        id: 'pbl-areas-labels',
+        type: 'symbol',
+        source: 'ProjectAreas',
+        layout: {
+            'text-field': [
+                'case',
+                ['has', 'PBL_Assign'],
+                ['concat', ['get', 'PBL_Assign'], ', ', ['get', 'Name__HUC8']],
+                ['get', 'Name__HUC8']
+            ],
+            'text-size': 12,
+            'text-font': [
+                'case',
+                ['has', 'PBL_Assign'],
+                ['Open Sans Bold', 'Arial Unicode MS Bold'],
+                ['Open Sans Regular', 'Arial Unicode MS Regular']
+            ]
+        },
+        paint: {
+            'text-color': 'rgb(247, 247, 247)', // Change text color
+            'text-halo-color': [
+                'case',
+                ['has', 'PBL_Assign'],
+                [
+                    'match',
+                    ['get', 'PBL_Assign'],
+                    'RK', 'rgba(214, 95, 0, 0.5)', // Match fill color
+                    'EC', 'rgba(0, 92, 175, 0.5)', // Match fill color
+                    'QB', 'rgba(94, 229, 204, 0.5)', // Match fill color
+                    'MT', 'rgba(59, 163, 208, 0.5)', // Match fill color
+                    'MB', 'rgba(149, 55, 237, 0.5)', // Match fill color
+                    '* other *', 'rgba(204, 204, 204, 0)', // Default halo color
+                    'rgba(0, 0, 0, 0)' // Default halo color for unmatched cases
+                ],
+                'rgba(0, 0, 0, 0)' // No halo if PBL_Assign is not defined
+            ],
+            'text-halo-width': [
+                'case',
+                ['has', 'PBL_Assign'],
+                1,
+                0
+            ] // Define halo width
+        }
+    });
+
+    // Add highlight hover
+    map.addLayer({
+        id: 'pbl-areas-highlight',
+        type: 'fill',
+        source: 'ProjectAreas',
+        paint: {
+            'fill-color': 'rgba(255, 255, 255, 0.5)' // Transparent white for highlight
+        },
+        filter: ['==', 'HUC8', ''] // Initially no feature is highlighted
+    });
+
+    console.log('Layers added')
+    console.log('ProjectAreas', map.getSource('ProjectAreas'));
+
     map.on('click', async (e) => {
         const features = map.queryRenderedFeatures(e.point);
         if (!features.length) {
-            console.log('No features found')
+            console.log('No features found');
             if (loc_popup) {
                 loc_popup.remove(); // Close the popup if no feature is clicked
                 loc_popup = null;
@@ -72,7 +151,7 @@ map.on('load', () => {
             return;
         }
 
-        console.log('Features found')
+        console.log('Features found');
         // Remove any existing popup to prevent content from appending
         if (loc_popup) {
             loc_popup.remove();
@@ -80,30 +159,54 @@ map.on('load', () => {
 
         // Handle the features found
         for (const clickedfeature of features) {
-            const coordinates = clickedfeature.geometry.coordinates.slice();
+            // Calculate the centroid of the polygon
+            const centroid = turf.centroid(clickedfeature);
+            const coordinates = centroid.geometry.coordinates;
             let locid = features[0].properties["loc_id"];
+            console.log("Coordinates: ", coordinates);
 
-            // Ensure that if the map is zoomed out such that multiple
-            // copies of the feature are visible, the popup appears
-            // over the copy being pointed to.
-            if (['mercator', 'equirectangular'].includes(map.getProjection().name)) {
-                while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-                    coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-                }
+            // Ensure coordinates are in the correct format
+            if (!Array.isArray(coordinates) || coordinates.length !== 2) {
+                console.error('Invalid coordinates format');
+                continue;
             }
+
             const mapPopupContent = await areaPopupContent(clickedfeature);
             // Create the popup
-            new mapboxgl.Popup({
+            loc_popup = new mapboxgl.Popup({
                 closeButton: true,
                 closeOnClick: true,
                 anchor: 'bottom', // Adjust anchor as needed (bottom, top, left, right)
                 offset: [0, -15] // Adjust offset as needed to make sure popup is visible
             })
-            // Display a popup with attributes/columns from the clicked feature
-            loc_popup = new mapboxgl.Popup()
-                .setLngLat(coordinates)
-                .setHTML(mapPopupContent)
-                .addTo(map);
+            .setLngLat(coordinates)
+            .setHTML(mapPopupContent)
+            .addTo(map);
         }
+    });
+
+
+    // Add event listeners for mouse enter and leave
+    map.on('mousemove', 'pbl-areas', (e) => {
+        if (e.features.length > 0) {
+            const feature = e.features[0];
+            const pblAssign = feature.properties.PBL_Assign;
+            if (pblAssign !== undefined) {
+                map.setFilter('pbl-areas-highlight', ['==', 'PBL_Assign', pblAssign]);
+            }
+        }
+    });
+
+    map.on('mouseleave', 'pbl-areas', () => {
+        map.setFilter('pbl-areas-highlight', ['==', 'PBL_Assign', '']);
+    });
+
+    // Add event listeners for mouse enter and leave
+    map.on('mouseenter', 'pbl-areas', () => {
+        map.getCanvas().style.cursor = 'pointer';
+    });
+
+    map.on('mouseleave', 'pbl-areas', () => {
+        map.getCanvas().style.cursor = '';
     });
 });
