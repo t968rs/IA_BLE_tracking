@@ -108,7 +108,7 @@ map.on('load', () => {
             ],
             'text-halo-width': 1 // Halo width
         },
-        filter: ['any', ['has', 'PBL_Assign'], ['!=', ['get', 'PBL_Assign'], '']] // Filter to only include features with PBL_Assign
+        filter: ['!=', ['get', 'PBL_Assign'], ''] // Filter to only include features with PBL_Assign
     });
 
     // Add labels for features without PBL_Assign values
@@ -131,7 +131,7 @@ map.on('load', () => {
 
     // Add highlight hover
     map.addLayer({
-        id: 'pbl-areas-highlight',
+        id: 'areas-highlight',
         type: 'fill',
         source: 'ProjectAreas',
         paint: {
@@ -198,15 +198,15 @@ map.on('load', () => {
     map.on('mousemove', 'pbl-areas', (e) => {
         if (e.features.length > 0) {
             const feature = e.features[0];
-            const pblAssign = feature.properties.PBL_Assign;
-            if (pblAssign !== undefined) {
-                map.setFilter('pbl-areas-highlight', ['==', 'PBL_Assign', pblAssign]);
+            const fid = feature.properties.loc_id;
+            if (fid !== undefined) {
+                map.setFilter('areas-highlight', ['==', 'loc_id', fid]);
             }
         }
     });
 
     map.on('mouseleave', 'pbl-areas', () => {
-        map.setFilter('pbl-areas-highlight', ['==', 'PBL_Assign', '']);
+        map.setFilter('areas-highlight', ['==', 'loc_id', '']);
     });
 
     // Add event listeners for mouse enter and leave
