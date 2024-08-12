@@ -64,7 +64,7 @@ map.on('load', () => {
                 'MB',
                 'rgba(149, 55, 237, 0.5)', // 50% transparency
                 'AE',
-                'rgb(55,188,237, 0.3)', // Match fill color
+                'rgba(55,188,237, 0.3)', // Match fill color
                 '* other *',
                 'rgba(204, 204, 204, 0)', // 0% transparency
                 'rgba(0, 0, 0, 0)' // Default color for unmatched cases
@@ -102,7 +102,7 @@ map.on('load', () => {
                 'QB', 'rgba(94, 229, 204, 0.5)', // Match fill color
                 'MT', 'rgba(59, 163, 208, 0.5)', // Match fill color
                 'MB', 'rgba(149, 55, 237, 0.5)', // Match fill color
-                'AE', 'rgb(55,188,237, 0.3)', // Match fill color
+                'AE', 'rgba(55,188,237, 0.3)', // Match fill color
                 '* other *', 'rgba(204, 204, 204, 0)', // Default halo color
                 'rgba(0, 0, 0, 0)' // Default halo color for unmatched cases
             ],
