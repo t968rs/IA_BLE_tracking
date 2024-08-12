@@ -30,6 +30,10 @@ map.on('load', () => {
         type: 'geojson',
         data: './data/spatial/Iowa_BLE_Tracking.geojson'
     });
+    map.addSource('StateBoundary', {
+        type: 'geojson',
+        data: './data/spatial/US_states.geojson'
+    })
 
     // Fit bounds
     console.log("Map Added/Loaded");
@@ -43,6 +47,7 @@ map.on('load', () => {
             });
         }
     });
+
 
     // Add layers and symbology
     map.addLayer({
@@ -69,11 +74,45 @@ map.on('load', () => {
                 'rgba(204, 204, 204, 0)', // 0% transparency
                 'rgba(0, 0, 0, 0)' // Default color for unmatched cases
             ]
-        }
+        },
+        filter: ['!=', ['get', 'PBL_Assign'], null]
     });
 
+
+/*    // Fit bounds
+    console.log("Layer added");
+    map.on('data', (e) => {
+    if (e.dataType === 'source' && e.sourceId === 'ProjectAreas' && map.getLayer('pbl-areas')) {
+        const features = map.querySourceFeatures('ProjectAreas', { sourceLayer: 'pbl-areas' });
+        if (features.length > 0) {
+            const bbox = turf.bbox({
+                type: 'FeatureCollection',
+                features: features
+                });
+            map.fitBounds(bbox, {
+                padding: 30,  // Increase the padding to zoom out more
+                maxZoom: 15,
+                minZoom: 3,
+                duration: 1000
+                });
+            }
+        }
+    });*/
+
+    // Add highlight hover layer
     map.addLayer({
-        id: 'pbl-areas-outline',
+        id: 'areas-highlight',
+        type: 'fill',
+        source: 'ProjectAreas',
+        paint: {
+            'fill-color': 'rgba(255, 255, 255, 0.5)' // Transparent white for highlight
+        },
+        filter: ['==', 'HUC8', ''] // Initially no feature is highlighted
+    });
+
+    // Add outline layer
+    map.addLayer({
+        id: 'areas-outline',
         type: 'line',
         source: 'ProjectAreas',
         paint: {
@@ -129,19 +168,40 @@ map.on('load', () => {
         filter: ['==', ['get', 'PBL_Assign'], null] // Filter to include features without PBL_Assign or PBL_Assign is an empty string
     });
 
-    // Add highlight hover
+    // Add state boundary layer
+
+
     map.addLayer({
-        id: 'areas-highlight',
+        id: 'state-boundary-fill',
         type: 'fill',
-        source: 'ProjectAreas',
+        source: 'StateBoundary',
+        paint: {'fill-color': 'rgba(255,255,255,0.85)'},
+        filter: ['!=', ['get', 'STATEFP'], '19']
+    });
+
+    map.addLayer({
+        id: "state-boundary-white_bg"
+        , type: "line"
+        , source: "StateBoundary"
+        , paint: {
+            "line-color":  'rgb(210,255,163)',
+            "line-width": 1.5
+        }
+    });
+
+    map.addLayer({
+        id: 'state-boundary-dashed',
+        type: 'line',
+        source: 'StateBoundary',
         paint: {
-            'fill-color': 'rgba(255, 255, 255, 0.5)' // Transparent white for highlight
-        },
-        filter: ['==', 'HUC8', ''] // Initially no feature is highlighted
+            'line-color': 'rgb(64,108,32)',
+            'line-width': 1.2,
+            'line-dasharray': [2, 3] // Dashed line
+        }
     });
 
     console.log('Layers added')
-    console.log('ProjectAreas', map.getSource('ProjectAreas'));
+    console.log('ProjectAreas', map.getSource('ProjectAreas'), { layers: ['areas-outline'] });
 
     map.on('click', async (e) => {
         const features = map.queryRenderedFeatures(e.point);

@@ -84,14 +84,15 @@ class WriteNewGeoJSON:
 
     def export_geojsons(self, cname_to_summarize=None):
         for name, gdf in self.gdf_dict.items():
-            unique_names = gdf[cname_to_summarize].unique()
-            print(f"Unique {cname_to_summarize} values: {[u for u in unique_names if u]}")
-            print(f'   Plus, {None if None in unique_names else "No None"}  values')
-            gdf_to_geojson(gdf, self.output_folder, name)
+            if cname_to_summarize is not None and cname_to_summarize in gdf.columns:
+                unique_names = gdf[cname_to_summarize].unique()
+                print(f"Unique {cname_to_summarize} values: {[u for u in unique_names if u]}")
+                print(f'   Plus, {None if None in unique_names else "No None"}  values')
+                gdf_to_geojson(gdf, self.output_folder, name)
 
 
-cname = "PBL_Assign"
-WriteNewGeoJSON().export_geojsons(cname_to_summarize=cname)
+cname = "NAME"
+WriteNewGeoJSON().export_geojsons(cname)
 
 
 
