@@ -74,17 +74,18 @@ export function fitMapToFeatureBounds(map, feature) {
 
     const turfBbox = turf.bbox(geo);
     console.log("Turf BBOX: ", turfBbox);
-    const swCorner = [turfBbox[0], turfBbox[1]];
-    const neCorner = [turfBbox[2], turfBbox[3]];
+    const bboxBounds = new mapboxgl.LngLatBounds(
+        [turfBbox[0], turfBbox[1]], // Southwest corner
+        [turfBbox[2], turfBbox[3]]  // Northeast corner
+    );
 
     // Fit the map to the bounds with a larger padding to zoom out more, a max zoom of 15, and a duration of 1000
-    map.fitBounds([swCorner, neCorner], {
+    map.fitBounds(bboxBounds, {
         padding: 30,  // Increase the padding to zoom out more
         maxZoom: 15,
         minZoom: 3,
         duration: 1000
     });
-    console.log("SW: ", swCorner, "NE: ", neCorner);
     const currentZoom = map.getZoom();
     // Log the new map bounds and zoom level after fitting
     map.once('moveend', () => {

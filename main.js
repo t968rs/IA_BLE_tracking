@@ -188,7 +188,7 @@ map.on('load', () => {
 
 
             // Ensure the popup fits within the current map bounds
-            // ensurePopupFits(map, loc_popup, coordinates);
+            // fitMapToFeatureBounds(map, clickedfeature);
         }
     });
 
