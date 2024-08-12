@@ -31,6 +31,7 @@ map.on('load', () => {
         type: 'geojson',
         data: './data/spatial/Iowa_BLE_Tracking.geojson'
     });
+    console.log("Map Added/Loaded");
 
     console.log('Locations loaded')
 
