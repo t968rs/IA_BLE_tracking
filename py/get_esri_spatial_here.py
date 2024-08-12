@@ -85,7 +85,8 @@ class WriteNewGeoJSON:
     def export_geojsons(self, cname_to_summarize=None):
         for name, gdf in self.gdf_dict.items():
             unique_names = gdf[cname_to_summarize].unique()
-            print(f"Unique {cname_to_summarize} values: {unique_names}")
+            print(f"Unique {cname_to_summarize} values: {[u for u in unique_names if u]}")
+            print(f'   Plus, {None if None in unique_names else "No None"}  values')
             gdf_to_geojson(gdf, self.output_folder, name)
 
 
