@@ -2,6 +2,7 @@ import {
     areaPopupContent,
     fitMapToFeatureBounds,
     closePopup,
+    ensurePopupFits
 } from './src/mapInteractions.js';
 
 mapboxgl.accessToken = 'pk.eyJ1IjoidDk2OHJzIiwiYSI6ImNpamF5cTcxZDAwY2R1bWx4cWJvd3JtYXoifQ.XqJkBCgSJeCCeF_yugpG5A';
@@ -99,6 +100,7 @@ map.on('load', () => {
                 'QB', 'rgba(94, 229, 204, 0.5)', // Match fill color
                 'MT', 'rgba(59, 163, 208, 0.5)', // Match fill color
                 'MB', 'rgba(149, 55, 237, 0.5)', // Match fill color
+                'AE', 'rgb(55,188,237, 0.3)', // Match fill color
                 '* other *', 'rgba(204, 204, 204, 0)', // Default halo color
                 'rgba(0, 0, 0, 0)' // Default halo color for unmatched cases
             ],
@@ -183,8 +185,8 @@ map.on('load', () => {
             .addTo(map);
 
 
-            // Fit the map to the bounds of the feature
-            // fitMapToFeatureBounds(map, clickedfeature);
+            // Ensure the popup fits within the current map bounds
+            // ensurePopupFits(map, loc_popup, coordinates);
         }
     });
 

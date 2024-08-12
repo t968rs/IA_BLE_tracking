@@ -1,18 +1,27 @@
 // Function to create popup content
 
 
-let unwanted = ["OID_", "OID", "OBJECTID", "info_src", "cur_miss", "route_id"];
+let unwanted = ["OID_", "OID", "OBJECTID", "info_src", "cur_miss", "route_id", "GlobalID", "Shape__Area",
+    "Shape__Length", "Shape__Are", "Shape__Len", "Shape__Area_", "States"];
+// List of unwanted substrings
+let unwantedSubstrings = ["area", "acre", "sq_k", "final", "tie", "nee", "_ac", "mo"];
+
+// Function to check if a property name contains any unwanted substrings
+function containsUnwantedSubstring(property) {
+    return unwantedSubstrings.some(substring => property.toLowerCase().includes(substring));
+}
+
 export async function areaPopupContent(clickedfeature) {
     // Fetch the alias mapping JSON file
     let popupContent = '<strong><p style="font-size: 16px;">Iowa BLE Area Info</strong><p>';
     for (let property in clickedfeature.properties) {
 
-        if (!unwanted.includes(property)) {
+        if (!unwanted.includes(property) && !containsUnwantedSubstring(property)) {
             let value = clickedfeature.properties[property];
-            if (property.toLowerCase().includes('date') && typeof value === 'string'
-            && value.toLowerCase().match("t"))
-            console.log("T Value: ", value);
-            popupContent += `<p><strong>${property}</strong>: ${value}</p>`
+            let displayProperty = property.replace(/_/g, ' ')
+                .replace('  ', ' ').replace("Su", "Submit")
+                .replace("Mapping In", "Ph1 Mapped By");
+            popupContent += `<p><strong>${displayProperty}</strong>: ${value}</p>`
 
         }
     }
@@ -92,6 +101,37 @@ export function fitMapToFeatureBounds(map, feature) {
     });
     console.log("SW: ", swCorner, "NE: ", neCorner);
     console.log("Current Zoom: ", currentZoom);
+}
+
+// Function to ensure the popup fits within the current map bounds
+export function ensurePopupFits(map, popup, coordinates) {
+    // Get the current map bounds
+    const mapBounds = map.getBounds();
+
+    // Create a new LngLatBounds object for the popup
+    const popupBounds = new mapboxgl.LngLatBounds();
+
+    // Calculate the popup's bounding box
+    const popupWidth = 200; // Approximate width of the popup in pixels
+    const popupHeight = 100; // Approximate height of the popup in pixels
+    const popupOffset = popup.options.offset || [0, 0];
+
+    // Convert pixel dimensions to map coordinates
+    const sw = map.unproject([coordinates[0] - popupWidth / 2 + popupOffset[0], coordinates[1] + popupHeight / 2 + popupOffset[1]]);
+    const ne = map.unproject([coordinates[0] + popupWidth / 2 + popupOffset[0], coordinates[1] - popupHeight / 2 + popupOffset[1]]);
+
+    popupBounds.extend(sw);
+    popupBounds.extend(ne);
+
+    // Check if the popup's bounding box fits within the current map bounds
+    if (!mapBounds.contains(popupBounds.getSouthWest()) || !mapBounds.contains(popupBounds.getNorthEast())) {
+        // Adjust the map center to ensure the popup is fully visible
+        const newCenter = [
+            (popupBounds.getWest() + popupBounds.getEast()) / 2,
+            (popupBounds.getSouth() + popupBounds.getNorth()) / 2
+        ];
+        map.setCenter(newCenter);
+    }
 }
 
 // Function to close the popup
