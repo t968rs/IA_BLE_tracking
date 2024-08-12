@@ -1,7 +1,7 @@
 // Function to create popup content
 
 
-let unwanted = ["OID_", "OID", "OBJECTID", "info_src", "cur_miss", "loc_id", "route_id"];
+let unwanted = ["OID_", "OID", "OBJECTID", "info_src", "cur_miss", "route_id"];
 export async function areaPopupContent(clickedfeature) {
     // Fetch the alias mapping JSON file
     let popupContent = '<strong><p style="font-size: 16px;">Command Group Location Information </strong><p>';
@@ -90,7 +90,6 @@ export function closePopup() {
         console.error('Popup element not found');
     }
 }
-
 /*// Example of updating the popup content and displaying the popup
 function updatePopupContent(content) {
     const popup = document.getElementById('top-left-popup');

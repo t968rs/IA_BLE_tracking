@@ -40,6 +40,7 @@ map.on('load', () => {
         type: 'fill',
         source: 'ProjectAreas',
         paint: {
+            // After
             'fill-color': [
                 'match',
                 ['get', 'PBL_Assign'],
@@ -80,10 +81,7 @@ map.on('load', () => {
         // Handle the features found
         for (const clickedfeature of features) {
             const coordinates = clickedfeature.geometry.coordinates.slice();
-            let hullid = features[0].properties["hull_no"];
-            let hull_filter = ["==", ["get", "hull_no"], hullid];
             let locid = features[0].properties["loc_id"];
-            let loc_filter = ["==", ["get", "loc_id"], locid];
 
             // Ensure that if the map is zoomed out such that multiple
             // copies of the feature are visible, the popup appears
