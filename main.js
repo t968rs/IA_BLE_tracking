@@ -123,10 +123,10 @@ map.on('load', () => {
         },
         paint: {
             'text-color': 'rgb(247, 247, 247)', // Text color
-            'text-halo-color': 'rgba(0, 0, 0, 0)', // No halo
-            'text-halo-width': 0 // No halo width
+            'text-halo-color': 'rgb(69,89,51)', // No halo
+            'text-halo-width': 1 // No halo width
         },
-        filter: ['any', ['!', ['has', 'PBL_Assign']], ['==', ['get', 'PBL_Assign'], '']] // Filter to include features without PBL_Assign or PBL_Assign is an empty string
+        filter: ['==', ['get', 'PBL_Assign'], null] // Filter to include features without PBL_Assign or PBL_Assign is an empty string
     });
 
     // Add highlight hover
