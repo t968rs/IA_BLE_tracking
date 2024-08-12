@@ -1,6 +1,7 @@
 import os
 import geopandas as gpd
 import json
+import pandas as pd
 
 
 def read_json_to_dict(file: str) -> dict:
@@ -9,7 +10,15 @@ def read_json_to_dict(file: str) -> dict:
 
 
 def add_numbered_primary_key(gdf, col_name):
-    gdf[col_name] = range(1, len(gdf) + 1)
+    if col_name not in gdf.columns:
+        gdf[col_name] = range(1, len(gdf) + 1)
+    else:
+        current_max_id = gdf[col_name].max(skipna=True)
+        new_id = current_max_id + 1 if not pd.isna(current_max_id) else 1
+        for idx, row in gdf.iterrows():
+            if pd.isna(row[col_name]):
+                gdf.at[idx, col_name] = new_id
+                new_id += 1
     return gdf
 
 
