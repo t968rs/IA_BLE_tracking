@@ -56,6 +56,7 @@ map.on('load', () => {
             ]
         }
     });
+    console.log('Layers added')
 
 // Popups for each layer
     map.on('click', async (e) => {
