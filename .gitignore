@@ -1,1 +1,6 @@
 /data/esri_exports/
+
+# Ignore PyCharm project files
+.idea/
+*.iml
+*.idea/
