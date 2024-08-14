@@ -168,7 +168,7 @@ export async function populateLegend(map, layersToInclude) {
         return;
     }
     const mapLayers = mapStyle.layers;
-    console.log("Map Layers: ", mapLayers);
+    // console.log("Map Layers: ", mapLayers);
 
     // Iterate through the specified layers
     const groupLayers = {};
@@ -184,13 +184,13 @@ export async function populateLegend(map, layersToInclude) {
     // console.log("Group Layers: ", groupLayers);
     for (const [group, layer] of Object.entries(groupLayers)) {
             const layerId = layer.id;
-            console.log("Layer ID: ", layerId, " Layer: ", layer);
+            // console.log("Layer ID: ", layerId, " Layer: ", layer);
             if (layer && layer.paint) {
                 const paint = layer.paint;
-                console.log(" Paint TYPE: ", typeof paint);
+                // console.log(" Paint TYPE: ", typeof paint);
 
                 const colorProperty = paint['fill-color'];
-                console.log("  Color Property: ", colorProperty);
+                // console.log("  Color Property: ", colorProperty);
                 if (colorProperty && Array.isArray(colorProperty) && colorProperty[0] === 'match') {
                     const colorMapping = colorProperty.slice(2, -1);
 
@@ -267,7 +267,7 @@ function toggleLayerGroup(map, layers, visibility) {
 }
 
 function allVisibleinGroup(map, layers) {
-    console.log("Layers: ", typeof layers);
+    // console.log("Layers: ", typeof layers);
     layers = convertToArray(layers);
     const allVisible = layers.every(layerId => {
         const visibility = map.getLayoutProperty(layerId, 'visibility');
