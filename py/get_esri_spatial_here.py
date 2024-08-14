@@ -13,6 +13,7 @@ def process_date(x):
     except ValueError:
         return x
 
+
 def read_json_to_dict(file: str) -> dict:
     with open(file, 'r') as f:
         return json.load(f)
@@ -32,14 +33,22 @@ def add_numbered_primary_key(gdf, col_name):
 
 
 column_mapping = {"Iowa_BLE_Tracking": {"huc8": "HUC8", "which_grid": "which_grid", "name": "Name", "Name HUC8": None,
-                                        "has_AECOM": "Has AECOM Tie"}}
+                                        "has_AECOM": "Has AECOM Tie",
+                                        'PBL_Assign': "PBL_Assign", 'Phase_1_Su': "P01_MM", 'RAW_Grid': "RAW_Grd_MM",
+                                        'DFIRM_Grid': "DFIRM_Grd_MM", 'Addl_Grids': "Addl_Grd_MM",
+                                        'Production': "Prod Stage", 'Mapping_In': "P01 Analyst",
+                                        'Has_Tie_In': "AECOM Tie-in",
+                                        'Name__HUC8': None,
+                                        'TO_Area': "TO_Area", 'Final_Mode': "Model Complete",
+                                        'Contractor': "Contractor", 'loc_id': "loc_id",
+                                        'Grids_Note': "Grid Notes",
+                                        'has_AECOM_': None}}
 
 column_orders = {"Iowa_BLE_Tracking": {"first": ['huc8', 'which_grid', "name", "PBL_Assign", "Phase_1_Su"],
                                        "last": ['geometry']}, }
 
 
 def remove_time_from_date_columns(gdf):
-
     """
     Remove the time part from date columns in a GeoDataFrame.
 
@@ -139,6 +148,11 @@ class WriteNewGeoJSON:
             gdf = add_numbered_primary_key(gdf, 'loc_id')
             if fname in column_orders:
                 gdf = reorder_gdf_columns(gdf, column_orders[fname]["first"], column_orders[fname]["last"])
+            if fname in column_mapping:
+                cmapping = {k: v for k, v in column_mapping[fname].items() if v is not None and k in gdf.columns}
+                removals = [k for k in cmapping.keys() if cmapping[k] is None]
+                gdf.drop(columns=removals, inplace=True)
+                gdf.rename(columns=cmapping, inplace=True)
 
             # Fix* times
             time_cs = [c for c in gdf.columns if gdf[c].astype(str).str.contains('T').any()]
