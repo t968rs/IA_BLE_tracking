@@ -41,9 +41,7 @@ export async function areaPopupContent(clickedfeature) {
 
 // Function to check if a layer is visible
 function isLayerVisible(map, layerId) {
-    console.log("Layer ID: ", layerId);
     const visibility = map.getLayoutProperty(layerId, 'visibility');
-    console.log("Visibility: ", visibility);
     return visibility !== 'none';
 }
 
@@ -67,50 +65,7 @@ export async function createLegendItem(color, label, isAlias = false) {
     return item;
 }
 
-// Function to populate the legend
-export async function populateLegend(map, layersToInclude) {
-    const legend = document.getElementById('legend');
-    if (!legend) {
-        console.error('Legend element not found');
-        return;
-    }
-    legend.innerHTML = ''; // Clear existing legend items
 
-    const layers = map.getStyle().layers;
-
-    // Iterate through the specified layers
-    for (const { id, alias } of layersToInclude) {
-        if (!isLayerVisible(map, id)) {
-            continue; // Skip layers that are not visible
-        }
-
-        const layer = layers.find(layer => layer.id === id);
-        if (layer) {
-            const paint = layer.paint;
-            const colorProperty = paint['fill-color'] || paint['line-color'];
-
-            if (colorProperty && Array.isArray(colorProperty) && colorProperty[0] === 'match') {
-                const colorMapping = colorProperty.slice(2, -1);
-
-                // Add alias name once
-                const aliasItem = await createLegendItem('', alias, true);
-                legend.appendChild(aliasItem);
-
-                for (let i = 0; i < colorMapping.length; i += 2) {
-                    const propertyValue = colorMapping[i];
-                    const color = colorMapping[i + 1];
-
-                    // Skip "other" or "*" values
-                    if (propertyValue !== '* other *') {
-                        const displayValue = whichGrid[propertyValue] || propertyValue;
-                        const item = await createLegendItem(color, displayValue);
-                        legend.appendChild(item);
-                    }
-                }
-            }
-        }
-    }
-}
 
 // Function to fit map to the bounds of the specified layer
 export function fitMapToFeatureBounds(map, feature) {
@@ -193,6 +148,52 @@ export function closePopup() {
     }
 }
 
+// Function to populate the legend
+export async function populateLegend(map, layersToInclude) {
+    const legend = document.getElementById('legend');
+    if (!legend) {
+        console.error('Legend element not found');
+        return;
+    }
+    legend.innerHTML = ''; // Clear existing legend items
+
+    const layers = map.getStyle().layers;
+
+    // Iterate through the specified layers
+    for (const { id, alias } of layersToInclude) {
+        const groupLayers = layersToInclude.filter(layer => layer.alias === alias).map(layer => layer.id);
+        if (!allVisibleinGroup(map, groupLayers)) {
+            continue; // Skip groups that do not have all layers visible
+        }
+
+        const layer = layers.find(layer => layer.id === id);
+        if (layer) {
+            const paint = layer.paint;
+            const colorProperty = paint['fill-color'] || paint['line-color'];
+
+            if (colorProperty && Array.isArray(colorProperty) && colorProperty[0] === 'match') {
+                const colorMapping = colorProperty.slice(2, -1);
+
+                // Add alias name once
+                const aliasItem = await createLegendItem('', alias, true);
+                legend.appendChild(aliasItem);
+
+                for (let i = 0; i < colorMapping.length; i += 2) {
+                    const propertyValue = colorMapping[i];
+                    const color = colorMapping[i + 1];
+
+                    // Skip "other" or "*" values
+                    if (propertyValue !== '* other *') {
+                        const displayValue = whichGrid[propertyValue] || propertyValue;
+                        const item = await createLegendItem(color, displayValue);
+                        legend.appendChild(item);
+                    }
+                }
+            }
+        }
+    }
+}
+
 // Function to update the legend based on layer visibility
 export function updateLegendOnVisibilityChange(map, layersToInclude) {
     map.on('data', async (e) => {
@@ -220,7 +221,9 @@ export function createLayerControls(map, layerGroups) {
         const checkboxCell = document.createElement('td');
         const groupCheckbox = document.createElement('input');
         groupCheckbox.type = 'checkbox';
-        groupCheckbox.checked = true;
+
+        groupCheckbox.checked = allVisibleinGroup(map, layers) === 'visible';
+
         groupCheckbox.addEventListener('change', () => toggleLayerGroup(map, layers, groupCheckbox.checked));
         checkboxCell.appendChild(groupCheckbox);
 
@@ -243,6 +246,13 @@ function toggleLayerGroup(map, layers, visibility) {
     });
 }
 
+function allVisibleinGroup(map, layers) {
+    const allVisible = layers.every(layerId => {
+        const visibility = map.getLayoutProperty(layerId, 'visibility');
+        return visibility !== 'none';
+    });
+    return allVisible ? 'visible' : 'none';
+}
 
 /*// Example of updating the popup content and displaying the popup
 function updatePopupContent(content) {

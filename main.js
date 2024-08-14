@@ -237,7 +237,7 @@ map.on('load', () => {
         type: 'symbol',
         source: 'ProjectAreas',
         layout: {
-            'text-field': ['get', 'name'],
+            'text-field': ['get', 'Name'],
             'text-size': 12,
             'text-anchor': 'bottom',
             'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'] // Regular font
