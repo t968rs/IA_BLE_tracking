@@ -113,11 +113,11 @@ map.on('load', () => {
                 '0, 1, 2',
                 'rgba(255,90,88,0.35)', // 50% transparency
                 '1, 2',
-                'rgba(0,255,196,0.6)', // 50% transparency
+                'rgba(192,197,28,0.74)', // 50% transparency
                 '2',
-                'rgba(230,152,0,0.5)', // 50% transparency
+                'rgba(0,230,127,0.5)', // 50% transparency
                 'All on MM',
-                'rgba(5,205,52,0.75)', // 50% transparency
+                'rgba(5,205,52,0.8)', // 50% transparency
                 '* other *',
                 'rgba(204, 204, 204, 0)', // 0% transparency
                 'rgba(0, 0, 0, 0)' // Default color for unmatched cases
@@ -262,7 +262,7 @@ map.on('load', () => {
     console.log('Layers added');
     // create legend
     const legendLayers  = {
-    'Grid Statuses': ['grid-status'],
+    'Grid ToDo': ['grid-status'],
     'Assignments': ['pbl-areas',],};
 
     // Add more groups and layers as needed
