@@ -1,4 +1,15 @@
-// Function to create popup content
+// Add event listeners to the close buttons
+document.addEventListener('DOMContentLoaded', () => {
+    const closeLegendButton = document.querySelector('#legend .close-btn');
+    if (closeLegendButton) {
+        closeLegendButton.addEventListener('click', closeLegend);
+    }
+
+    const closePopupButton = document.querySelector('.popup-container .close-btn');
+    if (closePopupButton) {
+        closePopupButton.addEventListener('click', closePopup);
+    }
+});
 
 let whichGrid = {'0, 1, 2': "No Grids",
     '1, 2': "DRAFT, Add'l", '2': "Add'l", "All on MM": "All on MM"};
@@ -39,12 +50,6 @@ export async function areaPopupContent(clickedfeature) {
     return popupContent;
 }
 
-// Function to check if a layer is visible
-function isLayerVisible(map, layerId) {
-    const visibility = map.getLayoutProperty(layerId, 'visibility');
-    return visibility !== 'none';
-}
-
 // Function to create legend items
 export async function createLegendItem(color, label, isAlias = false) {
     const item = document.createElement('div');
@@ -64,8 +69,6 @@ export async function createLegendItem(color, label, isAlias = false) {
     item.appendChild(value);
     return item;
 }
-
-
 
 // Function to fit map to the bounds of the specified layer
 export function fitMapToFeatureBounds(map, feature) {
@@ -139,14 +142,16 @@ export function ensurePopupFits(map, popup, coordinates) {
 }
 
 // Function to close the popup
+// Function to close the popup
 export function closePopup() {
-    const popup = document.getElementById('top-left-popup');
+    const popup = document.querySelector('.popup-container');
     if (popup) {
         popup.style.display = 'none';
     } else {
         console.error('Popup element not found');
     }
 }
+
 
 // Function to populate the legend
 export async function populateLegend(map, layersToInclude) {
@@ -157,41 +162,56 @@ export async function populateLegend(map, layersToInclude) {
     }
     legend.innerHTML = ''; // Clear existing legend items
 
-    const layers = map.getStyle().layers;
+    const mapStyle = map.getStyle();
+    if (!mapStyle || !mapStyle.layers) {
+        console.error('Map style or layers not found');
+        return;
+    }
+    const mapLayers = mapStyle.layers;
+    console.log("Map Layers: ", mapLayers);
 
     // Iterate through the specified layers
-    for (const { id, alias } of layersToInclude) {
-        const groupLayers = layersToInclude.filter(layer => layer.alias === alias).map(layer => layer.id);
-        if (!allVisibleinGroup(map, groupLayers)) {
-            continue; // Skip groups that do not have all layers visible
-        }
-
-        const layer = layers.find(layer => layer.id === id);
-        if (layer) {
-            const paint = layer.paint;
-            const colorProperty = paint['fill-color'] || paint['line-color'];
-
-            if (colorProperty && Array.isArray(colorProperty) && colorProperty[0] === 'match') {
-                const colorMapping = colorProperty.slice(2, -1);
-
-                // Add alias name once
-                const aliasItem = await createLegendItem('', alias, true);
-                legend.appendChild(aliasItem);
-
-                for (let i = 0; i < colorMapping.length; i += 2) {
-                    const propertyValue = colorMapping[i];
-                    const color = colorMapping[i + 1];
-
-                    // Skip "other" or "*" values
-                    if (propertyValue !== '* other *') {
-                        const displayValue = whichGrid[propertyValue] || propertyValue;
-                        const item = await createLegendItem(color, displayValue);
-                        legend.appendChild(item);
-                    }
-                }
+    const groupLayers = {};
+    for (const layer of mapLayers) {
+        for (const [group, groupLayersList] of Object.entries(layersToInclude)) {
+            if (allVisibleinGroup(map, groupLayersList) === 'visible' && groupLayersList.includes(layer.id)) {
+                groupLayers[group] = layer; // Skip groups that do not have all layers visible
+                break;
             }
         }
     }
+
+    // console.log("Group Layers: ", groupLayers);
+    for (const [group, layer] of Object.entries(groupLayers)) {
+            const layerId = layer.id;
+            console.log("Layer ID: ", layerId, " Layer: ", layer);
+            if (layer && layer.paint) {
+                const paint = layer.paint;
+                console.log(" Paint TYPE: ", typeof paint);
+
+                const colorProperty = paint['fill-color'];
+                console.log("  Color Property: ", colorProperty);
+                if (colorProperty && Array.isArray(colorProperty) && colorProperty[0] === 'match') {
+                    const colorMapping = colorProperty.slice(2, -1);
+
+                    // Add alias name once
+                    const aliasItem = await createLegendItem('', group, true);
+                    legend.appendChild(aliasItem);
+
+                    for (let i = 0; i < colorMapping.length; i += 2) {
+                        const propertyValue = colorMapping[i];
+                        const color = colorMapping[i + 1];
+
+                        // Skip "other" or "*" values
+                        if (propertyValue !== '* other *') {
+                            const displayValue = whichGrid[propertyValue] || propertyValue;
+                            const item = await createLegendItem(color, displayValue);
+                            legend.appendChild(item);
+                        }
+                    }
+                }
+        }
+        }
 }
 
 // Function to update the legend based on layer visibility
@@ -247,6 +267,8 @@ function toggleLayerGroup(map, layers, visibility) {
 }
 
 function allVisibleinGroup(map, layers) {
+    console.log("Layers: ", typeof layers);
+    layers = convertToArray(layers);
     const allVisible = layers.every(layerId => {
         const visibility = map.getLayoutProperty(layerId, 'visibility');
         return visibility !== 'none';
@@ -254,6 +276,13 @@ function allVisibleinGroup(map, layers) {
     return allVisible ? 'visible' : 'none';
 }
 
+function convertToArray(obj) {
+    if (Array.isArray(obj)) {
+        return obj; // Already an array
+    } else {
+        return Object.values(obj); // Convert object to array
+    }
+}
 /*// Example of updating the popup content and displaying the popup
 function updatePopupContent(content) {
     const popup = document.getElementById('top-left-popup');

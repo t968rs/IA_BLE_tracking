@@ -261,21 +261,21 @@ map.on('load', () => {
 
     console.log('Layers added');
     // create legend
-    const layersToInclude = [
-        { id: 'pbl-areas', alias: 'Assignments' },
-        { id: 'grid-status', alias: 'Grid Status' },
-        // Add more layers as needed
-    ];
-    const mapLegend = populateLegend(map, layersToInclude);
-    // Assuming `map` and `layersToInclude` are already defined
-    updateLegendOnVisibilityChange(map, layersToInclude);
+    const legendLayers  = {
+    'Grid Statuses': ['grid-status'],
+    'Assignments': ['pbl-areas',],};
 
-    const layerGroups = {
+    // Add more groups and layers as needed
+    const mapLegend = populateLegend(map, legendLayers);
+    updateLegendOnVisibilityChange(map, legendLayers);
+
+    // Add layer-group control
+    const controlLayers = {
     'Grid Statuses': ['grid-status'],
     'Assignments': ['pbl-areas', 'pbl-areas-labels-with-pbl',],
     // Add more groups and layers as needed
     };
-    createLayerControls(map, layerGroups);
+    createLayerControls(map, controlLayers);
 
 
     map.on('click', async (e) => {
