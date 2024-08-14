@@ -4,6 +4,23 @@ body {
     padding: 1px;
 }
 
+#outer-div {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+#title-box {
+    background: #4c91af; /* Green background */
+    color: white; /* White text */
+    text-align: center; /* Centered text */
+    padding: 10px; /* Some padding */
+    font-family: 'Arial', sans-serif; /* Font family */
+    font-size: 20px; /* Font size */
+    font-weight: bold; /* Bold text */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3); /* Shadow for a nice effect */
+}
+
 #map {
     position: absolute;
     top: 4%;

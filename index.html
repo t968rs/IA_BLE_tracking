@@ -12,20 +12,21 @@
     <script src="./src/mapInteractions.js" type="module"></script>
 </head>
 <body>
-    <nav id="menu"></nav>
-    <div id="map"></div>
-    <div id="controls-container">
-        <div id="legend" class="map-legend"></div>
-        <div id="layer-controls">
-            <table id="layer-controls-table"></table>
+<!--    <nav id="menu"></nav>-->
+
+    <div id="title-box">Iowa BLE Project Tracking Map</div>
+        <div id="map"></div>
+        <div id="controls-container">
+            <div id="legend" class="map-legend"></div>
+            <div id="layer-controls">
+                <table id="layer-controls-table"></table>
+            </div>
+            <!-- Example of using inert attribute on a parent element -->
+            <div class="popup-container" inert>
+                <button class="close-btn" onclick="closePopup()" type="button" aria-label="Close popup">×</button>
+            </div>
+            <ul id="popup-content"></ul>
         </div>
-        <div id="top-left-popup" class="top-left-popup" style="display: none;"></div>
-        <!-- Example of using inert attribute on a parent element -->
-        <div class="popup-container" inert>
-            <button class="close-btn" onclick="closePopup()" type="button" aria-label="Close popup">×</button>
-        </div>
-        <ul id="popup-content"></ul>
-    </div>
     <script src="main.js" type="module"></script> <!-- Moved to the end of the body -->
 
 
