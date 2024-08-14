@@ -14,7 +14,12 @@
 <body>
     <nav id="menu"></nav>
     <div id="map"></div>
-    <div id="top-left-popup" class="top-left-popup" style="display: none;">
+    <div id="controls-container">
+        <div id="legend" class="map-legend"></div>
+        <div id="layer-controls">
+            <table id="layer-controls-table"></table>
+        </div>
+        <div id="top-left-popup" class="top-left-popup" style="display: none;"></div>
         <button class="close-btn" onclick="closePopup()">X</button>
         <ul id="popup-content"></ul>
     </div>
