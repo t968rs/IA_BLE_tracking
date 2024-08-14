@@ -2,9 +2,10 @@
 
 
 let unwanted = ["OID_", "OID", "OBJECTID", "info_src", "cur_miss", "route_id", "GlobalID", "Shape__Area",
-    "Shape__Length", "Shape__Are", "Shape__Len", "Shape__Area_", "States"];
+    "Shape__Length", "Shape__Are", "Shape__Len", "Shape__Area_", "States", "GlobalID"];
 // List of unwanted substrings
-let unwantedSubstrings = ["area", "acre", "sq_k", "final", "tie", "nee", "_ac", "mo"];
+let unwantedSubstrings = ["area", "acre", "sq_k", "final", "tie", "nee", "_ac", "mo", "shape", "nee",
+" ac", "global"];
 
 // Function to check if a property name contains any unwanted substrings
 function containsUnwantedSubstring(property) {
@@ -16,7 +17,7 @@ export async function areaPopupContent(clickedfeature) {
     let popupContent = '<strong><p style="font-size: 14px;">Iowa BLE Area Info</strong><p>';
     for (let property in clickedfeature.properties) {
 
-        if (!unwanted.includes(property) && !containsUnwantedSubstring(property)) {
+        if (!unwanted.includes(property) || !containsUnwantedSubstring(property)) {
             let value = clickedfeature.properties[property];
             let displayProperty = property.replace(/_/g, ' ')
                 .replace('  ', ' ').replace("Su", "Submit")

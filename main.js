@@ -78,6 +78,31 @@ map.on('load', () => {
         filter: ['!=', ['get', 'PBL_Assign'], null]
     });
 
+    // Add layers and symbology
+    map.addLayer({
+        id: 'grid-status-areas',
+        type: 'fill',
+        source: 'ProjectAreas',
+        paint: {
+            'fill-color': [
+                'match',
+                ['get', 'which_grid'],
+                '0, 1, 2',
+                'rgba(255,90,88,0.35)', // 50% transparency
+                '1, 2',
+                'rgba(255,200,0,0.6)', // 50% transparency
+                '2',
+                'rgba(230,152,0,0.5)', // 50% transparency
+                'All on MM',
+                'rgba(20,232,157,0.75)', // 50% transparency
+                '* other *',
+                'rgba(204, 204, 204, 0)', // 0% transparency
+                'rgba(0, 0, 0, 0)' // Default color for unmatched cases
+            ]
+        },
+        filter: ['!=', ['get', 'which-grid'], null]
+    });
+
 
 /*    // Fit bounds
     console.log("Layer added");
@@ -107,7 +132,7 @@ map.on('load', () => {
         paint: {
             'fill-color': 'rgba(255, 255, 255, 0.5)' // Transparent white for highlight
         },
-        filter: ['==', 'HUC8', ''] // Initially no feature is highlighted
+        filter: ['==', 'loc_id', ''] // Initially no feature is highlighted
     });
 
     // Add outline layer
@@ -169,8 +194,6 @@ map.on('load', () => {
     });
 
     // Add state boundary layer
-
-
     map.addLayer({
         id: 'state-boundary-fill',
         type: 'fill',
@@ -252,6 +275,54 @@ map.on('load', () => {
         }
     });
 
+    // After the last frame rendered before the map enters an "idle" state.
+    map.on('idle', () => {
+        // If these two layers were not added to the map, abort
+        if (!map.getLayer('state-boundary-dashed') || !map.getLayer('areas-outline')) {
+            return;
+        }
+
+        // Define groups of layers
+        const layerGroups = {
+            'Grid Status': ['grid-status-areas'],
+            'P02 Assignments': ['pbl-areas', "pbl-areas-labels-with-pbl"],
+            'State Boundary': ['state-boundary-dashed', 'state-boundary-white_bg', 'state-boundary-fill']
+        };
+        // Set up the corresponding toggle button for each group
+        for (const group in layerGroups) {
+            // Skip groups that already have a button set up
+            if (document.getElementById(group)) {
+                continue;
+            }
+            // Create a link
+            const link = document.createElement('a');
+            link.id = group;
+            link.href = '#';
+            link.textContent = group;
+            link.className = 'active';
+
+            // Show or hide layers when the toggle is clicked
+            link.onclick = function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const layers = layerGroups[group];
+                const visibility = map.getLayoutProperty(layers[0], 'visibility');
+
+                // Toggle layer visibility by changing the layout object's visibility property
+                if (visibility === 'visible') {
+                    layers.forEach(layer => map.setLayoutProperty(layer, 'visibility', 'none'));
+                    this.className = '';
+                } else {
+                    layers.forEach(layer => map.setLayoutProperty(layer, 'visibility', 'visible'));
+                    this.className = 'active';
+                }
+            };
+
+            const layersMenu = document.getElementById('menu');
+            layersMenu.appendChild(link);
+        }
+    });
 
 
     // Add event listeners for mouse enter and leave
@@ -286,4 +357,17 @@ map.on('load', () => {
         // Log the bounds to the console
         console.log('Current Map Bounds:', bounds);
     });
+
+
+
+
+    // Add event listener for the moveend event
+    map.on('moveend', () => {
+        // Get the current map bounds
+        const bounds = map.getBounds();
+
+        // Log the bounds to the console
+        console.log('Current Map Bounds:', bounds);
+    });
+
 });

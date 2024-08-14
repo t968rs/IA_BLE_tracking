@@ -91,7 +91,7 @@ class WriteNewGeoJSON:
                 gdf_to_geojson(gdf, self.output_folder, name)
 
 
-cname = "NAME"
+cname = "which_grid"
 WriteNewGeoJSON().export_geojsons(cname)
 
 
