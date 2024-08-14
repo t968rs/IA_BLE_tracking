@@ -63,6 +63,11 @@ body {
     border-radius: 5px;
 }
 
+.legend-title {
+    font-weight: bold;
+    font-size: 12px;
+}
+
 .top-left-popup {
             position: absolute;
             top: 10px; /* Adjust to position it in the top-left corner */

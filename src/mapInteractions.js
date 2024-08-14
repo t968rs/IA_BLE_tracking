@@ -51,7 +51,8 @@ function isLayerVisible(map, layerId) {
 export async function createLegendItem(color, label, isAlias = false) {
     const item = document.createElement('div');
     const key = document.createElement('span');
-    key.className = 'legend-key';
+    if (!isAlias) {key.className = 'legend-key';}
+    else {key.className = 'legend-title';}
     key.style.backgroundColor = color;
 
     const value = document.createElement('span');

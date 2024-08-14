@@ -29,6 +29,17 @@ let loc_popup;
 // On Load event
 map.on('load', () => {
     console.log('Map loaded');
+    // Function to remove aria-hidden from the close button
+    function fixAriaHiddenOnCloseButton() {
+        const closeButton = document.querySelector('.mapboxgl-popup-close-button');
+        if (closeButton) {
+            closeButton.removeAttribute('aria-hidden');
+        }
+    }
+
+    // Call this function after the popup is created
+    map.on('popupopen', fixAriaHiddenOnCloseButton);
+
     map.addSource('ProjectAreas', {
         type: 'geojson',
         data: './data/spatial/Iowa_BLE_Tracking.geojson'
@@ -157,52 +168,6 @@ map.on('load', () => {
         }
     });
 
-    // Add labels for features with PBL_Assign values
-    map.addLayer({
-        id: 'pbl-areas-labels-with-pbl',
-        type: 'symbol',
-        source: 'ProjectAreas',
-        layout: {
-            'text-field': ['concat', ['get', 'PBL_Assign'], ', ', ['get', 'Name__HUC8']],
-            'text-size': 12,
-            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'] // Bold font
-        },
-        paint: {
-            'text-color': 'rgb(247, 247, 247)', // Text color
-            'text-halo-color': [
-                'match',
-                ['get', 'PBL_Assign'],
-                'RK', 'rgba(214, 95, 0, 0.5)', // Match fill color
-                'EC', 'rgba(0, 92, 175, 0.5)', // Match fill color
-                'QB', 'rgba(94, 229, 204, 0.5)', // Match fill color
-                'MT', 'rgba(59, 163, 208, 0.5)', // Match fill color
-                'MB', 'rgba(149, 55, 237, 0.5)', // Match fill color
-                'AE', 'rgba(55,188,237, 0.3)', // Match fill color
-                '* other *', 'rgba(204, 204, 204, 0)', // Default halo color
-                'rgba(0, 0, 0, 0)' // Default halo color for unmatched cases
-            ],
-            'text-halo-width': 1 // Halo width
-        },
-        filter: ['!=', ['get', 'PBL_Assign'], null] // Filter to only include features with PBL_Assign
-    });
-
-    // Add labels for features without PBL_Assign values
-    map.addLayer({
-        id: 'pbl-areas-labels-without-pbl',
-        type: 'symbol',
-        source: 'ProjectAreas',
-        layout: {
-            'text-field': ['get', 'Name__HUC8'],
-            'text-size': 12,
-            'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'] // Regular font
-        },
-        paint: {
-            'text-color': 'rgb(247, 247, 247)', // Text color
-            'text-halo-color': 'rgb(69,89,51)', // No halo
-            'text-halo-width': 1 // No halo width
-        },
-        filter: ['==', ['get', 'PBL_Assign'], null] // Filter to include features without PBL_Assign or PBL_Assign is an empty string
-    });
 
     // Add state boundary layer
     map.addLayer({
@@ -233,6 +198,56 @@ map.on('load', () => {
             'line-dasharray': [2, 3] // Dashed line
         }
     });
+
+    // Add labels for features with PBL_Assign values
+    map.addLayer({
+        id: 'pbl-areas-labels-with-pbl',
+        type: 'symbol',
+        source: 'ProjectAreas',
+        anchor: 'center',
+        layout: {
+            'text-field': ['get', 'PBL_Assign'],
+            'text-size': 12,
+            'text-anchor': 'top',
+            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'], // Bold font
+            'text-allow-overlap': true // Allow overlapping labels
+        },
+        paint: {
+            'text-color': 'rgb(247, 247, 247)', // Text color
+            'text-halo-color': [
+                'match',
+                ['get', 'PBL_Assign'],
+                'RK', 'rgba(214, 95, 0, 0.5)', // Match fill color
+                'EC', 'rgba(0, 92, 175, 0.5)', // Match fill color
+                'QB', 'rgba(94, 229, 204, 0.5)', // Match fill color
+                'MT', 'rgba(59, 163, 208, 0.5)', // Match fill color
+                'MB', 'rgba(149, 55, 237, 0.5)', // Match fill color
+                'AE', 'rgba(55,188,237, 0.3)', // Match fill color
+                '* other *', 'rgba(204, 204, 204, 0)', // Default halo color
+                'rgba(0, 0, 0, 0)' // Default halo color for unmatched cases
+            ],
+            'text-halo-width': 1 // Halo width
+        },
+        filter: ['!=', ['get', 'PBL_Assign'], null] // Filter to only include features with PBL_Assign
+    });
+
+    // Add labels for areas
+    map.addLayer({
+        id: 'areas-labels',
+        type: 'symbol',
+        source: 'ProjectAreas',
+        layout: {
+            'text-field': ['get', 'name'],
+            'text-size': 12,
+            'text-anchor': 'bottom',
+            'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'] // Regular font
+        },
+        paint: {
+            'text-color': 'rgb(0,28,58)', // Text color
+            'text-halo-color': 'rgba(218,255,184,0)', // No halo
+            'text-halo-width': 0.5
+        } // Filter to include features without PBL_Assign or PBL_Assign is an empty string
+});
 
     // Add a transparent fill layer for interaction
     map.addLayer({
