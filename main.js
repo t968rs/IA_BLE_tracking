@@ -15,14 +15,11 @@ const map = new mapboxgl.Map({
     projection: 'albers', // Display the map as a globe, since satellite-v9 defaults to Mercator
     zoom: 7,
     minZoom: 0,
-    center: [-93, 41]
+    center: [-93, 42]
 });
 
 // Add user control
 map.addControl(new mapboxgl.NavigationControl());
-
-// Attach the closePopup function to the global window object
-window.closePopup = closePopup;
 
 let loc_popup;
 
