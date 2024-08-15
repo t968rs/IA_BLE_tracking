@@ -51,11 +51,12 @@ export async function areaPopupContent(clickedfeature) {
 }
 
 // Function to create legend items
-export async function createLegendItem(color, label, isAlias = false) {
+export async function createLegendItem(color, label, isAlias = false, isCircle = false) {
     const item = document.createElement('div');
     const key = document.createElement('span');
-    if (!isAlias) {key.className = 'legend-key';}
-    else {key.className = 'legend-title';}
+    if (isAlias) {key.className = 'legend-title';}
+    if (isCircle) {key.className = 'legend-key-circle';}
+    else {key.className = 'legend-key';}
     key.style.backgroundColor = color;
 
     const value = document.createElement('span');
@@ -173,45 +174,72 @@ export async function populateLegend(map, layersToInclude) {
     // Iterate through the specified layers
     const groupLayers = {};
     for (const layer of mapLayers) {
-        for (const [group, groupLayersList] of Object.entries(layersToInclude)) {
-            if (allVisibleinGroup(map, groupLayersList) === 'visible' && groupLayersList.includes(layer.id)) {
-                groupLayers[group] = layer; // Skip groups that do not have all layers visible
-                break;
+        for (const [group, layer_id] of Object.entries(layersToInclude)) {
+            console.log("Group: ", group, " Group Layers: ", layer_id);
+            if (layer_id.includes(layer.id)) {
+                const visibility = map.getLayoutProperty(layer_id, 'visibility');
+                if (visibility === 'visible') {
+                    groupLayers[group] = layer;
+                }
+
             }
         }
     }
 
     // console.log("Group Layers: ", groupLayers);
-    for (const [group, layer] of Object.entries(groupLayers)) {
-            const layerId = layer.id;
-            // console.log("Layer ID: ", layerId, " Layer: ", layer);
-            if (layer && layer.paint) {
-                const paint = layer.paint;
-                // console.log(" Paint TYPE: ", typeof paint);
+    for (const [group, map_lyr] of Object.entries(groupLayers)) {
 
-                const colorProperty = paint['fill-color'];
-                // console.log("  Color Property: ", colorProperty);
-                if (colorProperty && Array.isArray(colorProperty) && colorProperty[0] === 'match') {
-                    const colorMapping = colorProperty.slice(2, -1);
+        // console.log("Layer ID: ", layerId, " Layer: ", layer);
+        if (map_lyr && map_lyr.paint) {
+            const paint = map_lyr.paint;
+            // console.log(" Paint TYPE: ", typeof paint);
 
-                    // Add alias name once
-                    const aliasItem = await createLegendItem('', group, true);
-                    legend.appendChild(aliasItem);
+            let colorProperty = "";
+            const colorProps = Object.keys(paint).filter(c => c.includes('color'));
+            console.log(group, "Color Props: ", colorProps);
+            if ("fill-color" in colorProps) {
+                colorProperty = paint['fill-color'];
+            }
+            else {
+                colorProperty = paint[colorProps[0]];
+            }
 
-                    for (let i = 0; i < colorMapping.length; i += 2) {
-                        const propertyValue = colorMapping[i];
-                        const color = colorMapping[i + 1];
+            console.log(group, "  Color Property: ", colorProperty);
+            if (colorProperty && typeof colorProperty === 'string') {
+                const aliasItem = await createLegendItem('', "", true);
+                legend.appendChild(aliasItem);
 
-                        // Skip "other" or "*" values
-                        if (propertyValue !== '* other *') {
-                            const displayValue = whichGrid[propertyValue] || propertyValue;
-                            const item = await createLegendItem(color, displayValue);
-                            legend.appendChild(item);
-                        }
+                // Skip "other" or "*" values
+                if (colorProperty !== '* other *') {
+                    const c = await createLegendItem(colorProperty, group, false, true);
+                    legend.appendChild(c);
+                }
+                }
+
+            if (colorProperty && Array.isArray(colorProperty)) {
+                const colorMapping = colorProperty.slice(2, -1);
+
+                // Add alias name once
+                const aliasItem = await createLegendItem('', group, true);
+                console.log("Alias Item: ", aliasItem);
+                legend.appendChild(aliasItem);
+
+                for (let i = 0; i < colorMapping.length; i += 2) {
+                    const propertyValue = colorMapping[i];
+                    console.log("Property Value: ", propertyValue);
+                    const color = colorMapping[i + 1];
+
+                    // Skip "other" or "*" values
+                    if (propertyValue !== '* other *') {
+                        const displayValue = whichGrid[propertyValue] || propertyValue;
+                        const item = await createLegendItem(color, displayValue);
+                        legend.appendChild(item);
                     }
                 }
+            }
+            }
         }
-        }
+
 }
 
 // Function to update the legend based on layer visibility

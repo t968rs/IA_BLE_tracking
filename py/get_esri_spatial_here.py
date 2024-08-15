@@ -19,6 +19,18 @@ def read_json_to_dict(file: str) -> dict:
         return json.load(f)
 
 
+def get_centroids(gdf):
+    points = gdf.geometry.representative_point()
+    new_gdf = gdf.drop(columns='geometry')
+    new_gdf['geometry'] = points
+    new_gdf = gpd.GeoDataFrame(new_gdf, geometry='geometry', crs=gdf.crs)
+    return new_gdf
+
+
+def filter_gdf_by_column(gdf, column, value):
+    return gdf[gdf[column].fillna("").str.contains(value, case=False)]
+
+
 def add_numbered_primary_key(gdf, col_name):
     if col_name not in gdf.columns:
         gdf[col_name] = range(1, len(gdf) + 1)
@@ -85,17 +97,26 @@ def reorder_gdf_columns(gdf, first_columns, last_columns=None):
     return gdf
 
 
-def gdf_to_geojson(gdf, out_loc, filename=None):
-    driver = "GeoJSON"
-    outpath = out_loc + f"{filename}.geojson"
-    os.makedirs(out_loc, exist_ok=True)
-    gdf.to_file(filename=outpath, driver=driver)
-    df = pd.DataFrame(gdf.drop(columns='geometry'))
+def df_to_json(data, out_loc, filename=None):
+    if isinstance(data, gpd.GeoDataFrame):
+        df = pd.DataFrame(data.drop(columns='geometry'))
+    elif isinstance(data, pd.DataFrame):
+        df = data
+    else:
+        raise ValueError("Data must be a GeoDataFrame or DataFrame")
 
     outpath_table = out_loc + filename + ".json"
     dicted = df.to_dict(orient='index')
     with open(outpath_table, 'w') as f:
         json.dump(dicted, f)
+
+
+def gdf_to_geojson(gdf, out_loc, filename=None):
+    driver = "GeoJSON"
+    outpath = out_loc + f"{filename}.geojson"
+    os.makedirs(out_loc, exist_ok=True)
+    gdf.to_file(filename=outpath, driver=driver)
+
     print(f"Saved {filename} to {outpath}")
     print(f"Columns: {gdf.columns.to_list()}")
 
@@ -163,19 +184,57 @@ class WriteNewGeoJSON:
             print(f'   {fname} Input Columns: {self.c_lists[fname]}, \n   CRS: {self.crs_dict[fname]}')
             self.gdf_dict[fname] = gdf
 
-    def export_geojsons(self, cname_to_summarize=None):
+    def export_geojsons(self, cname_to_summarize=None, *args):
         print(f'{self.gdf_dict.keys()}')
+
+        new_gdf = {}
         for name, gdf in self.gdf_dict.items():
             print(f"Found {name}")
+
+            # Create points
+            points_gdf = get_centroids(gdf)
+            new_gdf[f"{name}_points"] = points_gdf
+
+            # Export main Geojsons
             if cname_to_summarize is not None and cname_to_summarize in gdf.columns:
                 unique_names = gdf[cname_to_summarize].unique()
                 print(f"Unique {cname_to_summarize} values: {[u for u in unique_names if u]}")
                 print(f'   Plus, {None if None in unique_names else "No None"}  values')
                 gdf_to_geojson(gdf, self.output_folder, name)
+
             else:
                 print(f"{cname_to_summarize} not in {name} columns")
 
+        self.gdf_dict.update(new_gdf)
+
+        print(f'Args: {args}')
+        for i, point_gdf in enumerate(self.export_specific_geojson(layer_names=None, args=args)):
+            if isinstance(point_gdf, gpd.GeoDataFrame):
+                try:
+                    print(f' Exporting {args[i]}, {len(point_gdf)} points')
+                    gdf_to_geojson(point_gdf, self.output_folder, f"{args[i]}_points")
+                except IndexError as ie:
+                    print(f'NUmber {i} does not have a gdf to export')
+                    print(f"Point GDF: {point_gdf}")
+
+    def export_specific_geojson(self, layer_names=None, args=None):
+
+        print(f"Exporting specific GeoJSONs, {layer_names}, {args}")
+        if layer_names is None:
+            layer_names = ["Iowa_BLE_Tracking"]
+
+        points_gdf_dict = {k: v for k, v in self.gdf_dict.items() if "_points" in k}
+        for lyr in layer_names:
+            points_gdf = [v for k, v in points_gdf_dict.items() if lyr in k]
+            if points_gdf:
+                points_gdf = points_gdf[0]
+                for keyword in list(args):
+                    if points_gdf is not None:
+                        filtered_gdf = filter_gdf_by_column(points_gdf, "Grid Notes", keyword)
+                        yield filtered_gdf
+
 
 cname = "which_grid"
+keywords = ["TODO", "UPDATE"]
 to_gdf = WriteNewGeoJSON()
-to_gdf.export_geojsons(cname)
+to_gdf.export_geojsons(cname, *keywords)

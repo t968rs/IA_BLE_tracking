@@ -44,6 +44,14 @@ map.on('load', () => {
         type: 'geojson',
         data: './data/spatial/Iowa_BLE_Tracking.geojson'
     });
+    map.addSource('TODOPoints', {
+        type: 'geojson',
+        data: './data/spatial/TODO_points.geojson'
+    })
+    map.addSource('UPDATEPoints', {
+        type: 'geojson',
+        data: './data/spatial/UPDATE_points.geojson'
+    })
     map.addSource('StateBoundary', {
         type: 'geojson',
         data: './data/spatial/US_states.geojson'
@@ -168,6 +176,44 @@ map.on('load', () => {
         }
     });
 
+    // Add grids notes layer 1
+    map.addLayer({
+        id: 'grid-notes-update',
+        type: "circle",
+        source: 'UPDATEPoints',
+        filter: ['!=', ['get', 'Grid Notes'], null],
+        paint: {
+            'circle-color': "rgba(170,14,163,0.93)",
+            "circle-stroke-color": "rgba(255,101,248,0.93)",
+            "circle-stroke-width": 1,
+            'circle-radius': 15,
+    },
+        layout: {
+            // Make the layer visible by default.
+            'visibility': 'visible'
+        },
+    });
+
+    // Add grids notes layer 1
+    map.addLayer({
+        id: 'grid-notes-todo',
+        type: "circle",
+        source: 'TODOPoints',
+        filter: ['!=', ['get', 'Grid Notes'], null],
+        paint: {
+            'circle-color': "rgba(0,43,128,0.93)",
+            "circle-stroke-color": "rgba(108,164,255,0.93)",
+            "circle-stroke-width": 1,
+            "circle-emissive-strength": 0.5,
+            'circle-radius': 15,
+    },
+        layout: {
+            // Make the layer visible by default.
+            'visibility': 'visible'
+        },
+    });
+    console.log("Circles added", map.getLayer('grid-notes-update'), map.getLayer('grid-notes-todo'));
+
 
     // Add state boundary layer
     map.addLayer({
@@ -210,7 +256,8 @@ map.on('load', () => {
             'text-size': 12,
             'text-anchor': 'top',
             'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'], // Bold font
-            'text-allow-overlap': true // Allow overlapping labels
+            'text-allow-overlap': true, // Allow overlapping labels
+            'visibility': 'none',
         },
         paint: {
             'text-color': 'rgb(247, 247, 247)', // Text color
@@ -244,8 +291,8 @@ map.on('load', () => {
         },
         paint: {
             'text-color': 'rgb(0,28,58)', // Text color
-            'text-halo-color': 'rgba(218,255,184,0)', // No halo
-            'text-halo-width': 0.5
+            'text-halo-color': 'rgba(90,185,255,0.68)', // No halo
+            'text-halo-width': 2
         } // Filter to include features without PBL_Assign or PBL_Assign is an empty string
 });
 
@@ -262,8 +309,10 @@ map.on('load', () => {
     console.log('Layers added');
     // create legend
     const legendLayers  = {
-    'Grid ToDo': ['grid-status'],
-    'Assignments': ['pbl-areas',],};
+        'Grid Updates': 'grid-notes-update',
+        'Grid TODOs': 'grid-notes-todo',
+        'Grid Status': 'grid-status',
+        'Assignment': 'pbl-areas',};
 
     // Add more groups and layers as needed
     const mapLegend = populateLegend(map, legendLayers);
@@ -271,15 +320,19 @@ map.on('load', () => {
 
     // Add layer-group control
     const controlLayers = {
-    'Grid Statuses': ['grid-status'],
-    'Assignments': ['pbl-areas', 'pbl-areas-labels-with-pbl',],
+        'Grid Status': ['grid-status'],
+        'Grid Updates': ['grid-notes-update'],
+        'Grid ToDo': ['grid-notes-todo'],
+        'Assignment': ['pbl-areas', 'pbl-areas-labels-with-pbl',],
     // Add more groups and layers as needed
     };
     createLayerControls(map, controlLayers);
 
 
     map.on('click', async (e) => {
-    const features = map.queryRenderedFeatures(e.point);
+    const features = map.queryRenderedFeatures(e.point, {
+        layers: ['areas-interaction'],  // replace 'your-interaction-layer' with the id of your layer
+    });
     if (!features.length) {
         console.log('No features found');
         if (loc_popup) {

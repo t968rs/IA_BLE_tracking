@@ -80,6 +80,16 @@ body {
     border-radius: 5px;
 }
 
+.legend-key-circle {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 20px;
+    margin-left: 10px;
+    vertical-align: middle;
+    border-radius: 50%;
+}
+
 .legend-title {
     font-weight: bold;
     font-size: 12px;
