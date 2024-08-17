@@ -8,6 +8,8 @@ import {
     createLayerControls,
 } from './src/mapInteractions.js';
 
+import { getEditor } from "./src/editor_functionality.js";
+
 mapboxgl.accessToken = 'pk.eyJ1IjoidDk2OHJzIiwiYSI6ImNpamF5cTcxZDAwY2R1bWx4cWJvd3JtYXoifQ.XqJkBCgSJeCCeF_yugpG5A';
 const map = new mapboxgl.Map({
     container: 'map',
@@ -325,6 +327,8 @@ map.on('load', () => {
     };
     createLayerControls(map, controlLayers);
 
+    // Add editor functionality
+    getEditor(map, ['areas-interaction']);
 
     map.on('click', async (e) => {
     const features = map.queryRenderedFeatures(e.point, {

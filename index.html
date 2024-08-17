@@ -10,25 +10,30 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
     <script src="./src/turf.min.js" charset="utf-8"></script>
     <script src="./src/mapInteractions.js" type="module"></script>
+    <script src="./src/editor_functionality.js" type="module"></script>
 </head>
 <body>
-<!--    <nav id="menu"></nav>-->
-
     <div id="title-box">Iowa BLE Project Tracking Map</div>
-        <div id="map"></div>
-        <div id="controls-container">
-            <div id="legend" class="map-legend"></div>
-            <div id="layer-controls">
-                <table id="layer-controls-table"></table>
-            </div>
-            <!-- Example of using inert attribute on a parent element -->
-            <div class="popup-container">
-                <button class="close-btn" onclick="closePopup()" type="button" aria-label="Close popup">×</button>
-                <ul id="popup-content"></ul>
-            </div>
+    <div id="map"></div>
+    <button id="edit-mode-btn">Edit Mode</button>
+    <div id="edit-form" style="display: none;">
+        <h3>Edit Feature</h3>
+        <form id="feature-edit-form">
+            <!-- Dynamic form fields will be added here -->
+            <button type="submit" id="save-btn">Save</button>
+            <button type="button" id="exit-edit-mode-btn">Exit Edit Mode</button>
+        </form>
+    </div>
+    <div id="controls-container">
+        <div id="legend" class="map-legend"></div>
+        <div id="layer-controls">
+            <table id="layer-controls-table"></table>
         </div>
-    <script src="main.js" type="module"></script> <!-- Moved to the end of the body -->
-
-
+        <div class="popup-container">
+            <button class="close-btn" onclick="closePopup()" type="button" aria-label="Close popup">×</button>
+            <ul id="popup-content"></ul>
+        </div>
+    </div>
+    <script src="main.js" type="module"></script>
 </body>
 </html>
