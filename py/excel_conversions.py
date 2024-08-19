@@ -37,7 +37,7 @@ def update_geojson_with_dataframe(geojson_path, excel_path, common_column):
     df[common_column] = df[common_column].astype("int8")
 
     # Merge the GeoDataFrame and DataFrame on the common column
-    merged_gdf = gdf.join(df, on=common_column, how='inner', rsuffix='_updated')
+    merged_gdf = gdf.join(df, on=common_column, how='left', rsuffix='_updated')
     print(f'Merged GDF: {merged_gdf.columns}')
 
     # Update the GeoDataFrame with the new values from the DataFrame

@@ -111,7 +111,7 @@ map.on('load', () => {
         source: 'ProjectAreas',
         layout: {
             // Make the layer visible by default.
-            'visibility': 'visible'
+            'visibility': 'none'
         },
         paint: {
             'fill-color': [
@@ -132,6 +132,33 @@ map.on('load', () => {
         },
         filter: ['!=', ['get', 'which_grid'], null]
     });
+
+    // Add overall production layer
+    map.addLayer({
+        id: 'prod-status',
+        type: 'fill',
+        source: 'ProjectAreas',
+        layout: {
+            // Make the layer visible by default.
+            'visibility': 'visible'
+        },
+        paint: {
+            'fill-color': [
+                'match',
+                ['get', 'Prod Stage'],
+                "DD Validation",
+                'rgba(5,244,189,0.75)', // 50% transparency
+                'DD Mapping',
+                'rgba(255,252,88,0.68)', // 50% transparency
+                'Phase 1 Delivered',
+                'rgba(182,6,2,0.56)', // 50% transparency
+                '* other *',
+                'rgba(204, 204, 204, 0)', // 0% transparency
+                'rgba(0, 0, 0, 0)' // Default color for unmatched cases
+            ]
+        }
+    });
+    console.log("Layers added", map.getLayer('pbl-areas'), map.getLayer('grid-status'), map.getLayer('prod-status'));
 
     /*    // Fit bounds
     console.log("Layer added");
@@ -308,8 +335,9 @@ map.on('load', () => {
     console.log('Layers added');
     // create legend
     const legendLayers  = {
-        'Grid Updates': 'grid-notes-update',
-        'Grid TODOs': 'grid-notes-todo',
+        'Production Status': 'prod-status',
+        'Updates': 'grid-notes-update',
+        'TODOs': 'grid-notes-todo',
         'Grid Status': 'grid-status',
         'Assignment': 'pbl-areas',};
 
@@ -319,9 +347,10 @@ map.on('load', () => {
 
     // Add layer-group control
     const controlLayers = {
+        'Production Status': ['prod-status'],
         'Grid Status': ['grid-status'],
-        'Grid Updates': ['grid-notes-update'],
-        'Grid ToDo': ['grid-notes-todo'],
+        'Updates': ['grid-notes-update'],
+        'ToDo': ['grid-notes-todo'],
         'Assignment': ['pbl-areas', 'pbl-areas-labels-with-pbl',],
     // Add more groups and layers as needed
     };
