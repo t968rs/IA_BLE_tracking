@@ -133,6 +133,32 @@ map.on('load', () => {
         filter: ['!=', ['get', 'which_grid'], null]
     });
 
+    // Add specific to-do layer
+    map.addLayer({
+        id: 'bfe-todo',
+        type: 'fill',
+        source: 'ProjectAreas',
+        layout: {
+            // Make the layer visible by default.
+            'visibility': 'none'
+        },
+        paint: {
+            'fill-color': [
+                'match',
+                ['get', 'BFE_TODO'],
+                'T',
+                'rgba(214,50,0,0.5)', // 50% transparency
+                'F',
+                'rgba(22,220,0,0.75)', // 50% transparency
+                '* other *',
+                'rgba(204, 204, 204, 0)', // 0% transparency
+                'rgba(0, 0, 0, 0)' // Default color for unmatched cases
+            ]
+        },
+
+        filter: ['!=', ['get', 'BFE_TODO'], null]
+    });
+
     // Add overall production layer
     map.addLayer({
         id: 'prod-status',
@@ -335,6 +361,7 @@ map.on('load', () => {
     console.log('Layers added');
     // create legend
     const legendLayers  = {
+        'BFE TODO': 'bfe-todo',
         'Production Status': 'prod-status',
         'Updates': 'grid-notes-update',
         'TODOs': 'grid-notes-todo',
@@ -347,6 +374,7 @@ map.on('load', () => {
 
     // Add layer-group control
     const controlLayers = {
+        'BFE TODO': ['bfe-todo'],
         'Production Status': ['prod-status'],
         'Grid Status': ['grid-status'],
         'Updates': ['grid-notes-update'],

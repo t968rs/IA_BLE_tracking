@@ -45,6 +45,7 @@ def add_numbered_primary_key(gdf, col_name):
 
 
 column_mapping = {"Iowa_BLE_Tracking": {"huc8": "HUC8", "which_grid": "which_grid", "name": "Name", "Name HUC8": None,
+                                        "BFE_TODO": "BFE_TODO",
                                         "has_AECOM": "Has AECOM Tie",
                                         'PBL_Assign': "PBL_Assign", 'Phase_1_Su': "P01_MM", 'RAW_Grid': "RAW_Grd_MM",
                                         'DFIRM_Grid': "DFIRM_Grd_MM", 'Addl_Grids': "Addl_Grd_MM",
