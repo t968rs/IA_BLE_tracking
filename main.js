@@ -176,7 +176,7 @@ map.on('load', () => {
                 'rgb(42,255,135)', // 50% transparency
                 "Pass 1/2 Validation",
                 'rgba(5,244,152,0.75)', // 50% transparency
-                "DRAFT DFRIM Submitted",
+                "Draft DFRIM Submitted",
                 'rgba(29,208,202,0.7)', // 50% transparency
                 "DD Validation",
                 'rgba(189,189,0,0.70)', // 50% transparency
