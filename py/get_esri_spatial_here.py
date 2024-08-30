@@ -60,6 +60,13 @@ column_mapping = {"Iowa_BLE_Tracking": {"huc8": "HUC8", "which_grid": "which_gri
 column_orders = {"Iowa_BLE_Tracking": {"first": ['huc8', 'which_grid', "name", "PBL_Assign", "Phase_1_Su"],
                                        "last": ['geometry']}, }
 
+PROD_STATUS_MAPPING = {"Draft DFIRM Submitted": "DD Submit",
+                       "DD Validation": "DD Internal",
+                       "Phase 1 Delivered": "Phase 1",
+                       "DD Mapping": "DD Mapping",
+                       "Pass 1/2 Validation": "Pass 1/2",
+                       "Pass 2/2 Validation": "Pass 2/2",}
+
 
 def remove_time_from_date_columns(gdf):
     """
@@ -198,6 +205,8 @@ class WriteNewGeoJSON:
 
             # Export main Geojsons
             if cname_to_summarize is not None and cname_to_summarize in gdf.columns:
+                if "Prod Stage" in gdf.columns:
+                    gdf["Prod Stage"] = gdf["Prod Stage"].replace(PROD_STATUS_MAPPING)
                 unique_names = gdf[cname_to_summarize].unique()
                 print(f"Unique {cname_to_summarize} values: {[u for u in unique_names if u]}")
                 print(f'   Plus, {None if None in unique_names else "No None"}  values')

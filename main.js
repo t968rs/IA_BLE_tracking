@@ -172,20 +172,21 @@ map.on('load', () => {
             'fill-color': [
                 'match',
                 ['get', 'Prod Stage'],
-                "Pass 2/2 Validation",
+
+                "Pass 2/2",
                 'rgb(42,255,135)', // 50% transparency
-                "Pass 1/2 Validation",
+                "Pass 1/2",
                 'rgba(5,244,152,0.75)', // 50% transparency
-                "Draft DFIRM Submitted",
+                "DD Submit",
                 'rgba(29,208,202,0.7)', // 50% transparency
-                "DD Validation",
+                "DD Internal",
                 'rgba(189,189,0,0.70)', // 50% transparency
                 'DD Mapping',
                 'rgba(255,252,88,0.68)', // 50% transparency
-                'Phase 1 Delivered',
+                'Phase 1',
                 'rgba(182,6,2,0.56)', // 50% transparency
                 '* other *',
-                'rgba(204, 204, 204, 0)', // 0% transparency
+                'rgba(126,126,126,0.5)', // 0% transparency
                 'rgba(0, 0, 0, 0)' // Default color for unmatched cases
             ]
         }
