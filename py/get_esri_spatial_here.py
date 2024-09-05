@@ -2,6 +2,7 @@ import os
 import geopandas as gpd
 import json
 import pandas as pd
+import warnings
 
 
 def process_date(x):
@@ -19,12 +20,26 @@ def read_json_to_dict(file: str) -> dict:
         return json.load(f)
 
 
+def excel_warn_checker(path: str) -> bool:
+    """Load data from an Excel file and checks for warnings"""
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter('always', UserWarning)
+        pd.ExcelFile(path)
+        return len(w) > 0
+
+
 def get_centroids(gdf):
     points = gdf.geometry.representative_point()
     new_gdf = gdf.drop(columns='geometry')
     new_gdf['geometry'] = points
     new_gdf = gpd.GeoDataFrame(new_gdf, geometry='geometry', crs=gdf.crs)
     return new_gdf
+
+
+def look_for_duplicates(gdf, column):
+    duplicates = gdf[gdf.duplicated(subset=column, keep=False)]
+    # print(f" \nDuplicates in {column}: \n  {duplicates}\n")
+    return duplicates
 
 
 def filter_gdf_by_column(gdf, column, value):
@@ -53,11 +68,12 @@ column_mapping = {"Iowa_BLE_Tracking": {"huc8": "HUC8", "which_grid": "which_gri
                                         'Has_Tie_In': "AECOM Tie-in",
                                         'Name__HUC8': None,
                                         'TO_Area': "TO_Area", 'Final_Mode': "Model Complete",
-                                        'Contractor': "Contractor", 'loc_id': "loc_id",
+                                        'Contractor': None, 'loc_id': None,
                                         'Grids_Note': "Notes",
-                                        'has_AECOM_': None}}
+                                        'has_AECOM_': None,
+                                        'Extent': None}}
 
-column_orders = {"Iowa_BLE_Tracking": {"first": ['huc8', 'which_grid', "name", "PBL_Assign", "Phase_1_Su"],
+column_orders = {"Iowa_BLE_Tracking": {"first": ['huc8', 'which_grid', "name", "BFE_TODO", "PBL_Assign", "Phase_1_Su"],
                                        "last": ['geometry']}, }
 
 PROD_STATUS_MAPPING = {"Draft DFIRM Submitted": "DD Submit",
@@ -89,14 +105,79 @@ def remove_time_from_date_columns(gdf):
     return gdf
 
 
-def gdf_to_excel(gdf, out_loc, filename=None):
+def gdf_to_excel(gdf, out_loc, filename=None, sheetname="Sheet1"):
+    print(f"\nExcel Stuff for {filename}")
     if filename is None:
         filename = "output"
-    outpath = out_loc + f"{filename}.xlsx"
+    outpath = os.path.join(out_loc, f"{filename}.xlsx")
     os.makedirs(out_loc, exist_ok=True)
 
     df = pd.DataFrame(gdf.drop(columns='geometry'))
-    df.to_excel(outpath, index=False)
+
+    # Check existing sheets for target and value sheets
+    if os.path.exists(outpath):
+        situations = {"Target Sheet Exists": False, "Value Sheet Exists": False}
+        with pd.ExcelFile(outpath) as reader:
+            pd.read_excel(reader, sheet_name=None)
+            sheets = reader.sheet_names
+            print(f" Sheet Names: {sheets}")
+            if sheetname in sheets:
+                situations["Target Sheet Exists"] = True
+            if sheetname + "_values" in sheets:
+                situations["Value Sheet Exists"] = True
+
+        # Get existing header
+        try:
+            existing_df = pd.read_excel(outpath, sheet_name=sheetname, header=0)
+            print(f" Existing: {existing_df.head()}")
+            existing_columns = existing_df.columns.to_list()
+            # df.drop(columns=[c for c in df.columns if c not in existing_columns], inplace=True)
+            print(f"Unique Names: {df['Name'].unique()}")
+        except Exception as e:
+            print(f"Error reading existing file: {e}")
+            os.remove(outpath)
+            df.to_excel(outpath, index=False, sheet_name=sheetname)
+            return
+
+        # Append to the existing Excel file
+        # Mod write kwargs based on situations
+        write_kwargs = {"sheet_name": sheetname, "header": False, "startrow": 1}
+        if situations["Target Sheet Exists"]:
+            write_kwargs["sheet_name"] = sheetname + "_values"
+        else:
+            write_kwargs["sheet_name"] = sheetname
+
+        # Do the write operation
+        with pd.ExcelWriter(outpath, engine='openpyxl', mode="a", if_sheet_exists="overlay") as writer:
+            # Clear the existing data in the sheet
+            print(f" Sheets: {writer.sheets}")
+            sheet = writer.sheets[sheetname]
+
+            first_df_col = df.columns[0]
+            if first_df_col in existing_columns:
+                min_out_column = first_df_col
+            else:
+                min_out_column = sheet.min_column
+            sheet_column_index = existing_df.columns.get_loc(min_out_column)
+            write_kwargs["startcol"] = sheet_column_index
+            print(f"  Min Row: {sheet.min_row}")
+            print(f"  Min Row Value: {sheet.cell(row=sheet.min_row, column=1).value}")
+            print(f"  Max Row Value: {sheet.cell(row=sheet.max_row, column=1).value}")
+
+            # Clear values sheet if exists
+            if situations["Value Sheet Exists"]:
+                print(f"  Clearing {sheetname}_values")
+                values_sheet = writer.sheets[sheetname + "_values"]
+                for row in values_sheet.iter_rows():
+                    for cell in row:
+                        cell.value = None
+
+            # Write the new data to the sheet
+            df.to_excel(writer, index=False, **write_kwargs)
+
+    else:
+        # Create a new Excel file
+        df.to_excel(outpath, index=False, sheet_name=sheetname)
 
 
 def reorder_gdf_columns(gdf, first_columns, last_columns=None):
@@ -172,7 +253,7 @@ class WriteNewGeoJSON:
                                 name = filename.split(".")[0]
                             else:
                                 name = filename
-                            print(f'   Name: {name} \n   Filename: {filename}\n')
+                            print(f'\n   Name: {name} \n   Filename: {filename}')
                             self.esri_files[name] = entry.path
 
         for fname, path, in self.esri_files.items():
@@ -181,21 +262,34 @@ class WriteNewGeoJSON:
                 gdf = gpd.read_file(base, driver='FileGDB', layer=fname)
             else:
                 gdf = gpd.read_file(path)
+                if "." in fname:
+                    fname = fname.split(".")[0]
 
+            # Column Mapping
+            print(f'    {fname} Formatting...')
             self.crs_dict[fname] = gdf.crs
             gdf = gdf.explode(ignore_index=True)
+            name_col = [c for c in gdf.columns if "name" in c.lower()][0]
+            duplicates = look_for_duplicates(gdf, name_col)
+            duplicate_names = duplicates[name_col].unique()
+            print(f"     Duplicate Names: {duplicate_names}")
+            # print(f"     Duplicates: {duplicates.drop(columns='geometry')}")
             gdf = add_numbered_primary_key(gdf, 'loc_id')
             if fname in column_orders:
                 gdf = reorder_gdf_columns(gdf, column_orders[fname]["first"], column_orders[fname]["last"])
             if fname in column_mapping:
                 cmapping = {k: v for k, v in column_mapping[fname].items() if v is not None and k in gdf.columns}
-                removals = [k for k in cmapping.keys() if cmapping[k] is None]
+                removals = [c for c in column_mapping[fname].keys() if
+                            column_mapping[fname][c] is None and c in gdf.columns]
+                print(f'     Column Removals: {removals}')
                 gdf.drop(columns=removals, inplace=True)
                 gdf.rename(columns=cmapping, inplace=True)
+            else:
+                print(f"     No column mapping for {fname}")
 
             # Fix* times
             time_cs = [c for c in gdf.columns if gdf[c].astype(str).str.contains('T').any()]
-            print(f"Time columns: {time_cs}")
+            print(f" Time columns: {time_cs}")
             gdf = remove_time_from_date_columns(gdf)
             gdf = gdf.to_crs(epsg=4326)
             self.c_lists[fname] = [c for c in gdf.columns.to_list()]
@@ -221,7 +315,11 @@ class WriteNewGeoJSON:
                 print(f"Unique {cname_to_summarize} values: {[u for u in unique_names if u]}")
                 print(f'   Plus, {None if None in unique_names else "No-NULL"}  values')
                 gdf_to_geojson(gdf, self.output_folder, name)
-                gdf_to_excel(gdf, self.output_folder, name)
+
+                # Excel Export
+                excel_folder = os.path.dirname(os.path.dirname(self.output_folder)) + "/tables/"
+                os.makedirs(excel_folder, exist_ok=True)
+                gdf_to_excel(gdf, excel_folder, name, sheetname="Tracking_Main")
 
             else:
                 print(f"{cname_to_summarize} not in {name} columns")
