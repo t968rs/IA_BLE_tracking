@@ -54,7 +54,7 @@ column_mapping = {"Iowa_BLE_Tracking": {"huc8": "HUC8", "which_grid": "which_gri
                                         'Name__HUC8': None,
                                         'TO_Area': "TO_Area", 'Final_Mode': "Model Complete",
                                         'Contractor': "Contractor", 'loc_id': "loc_id",
-                                        'Grids_Note': "Grid Notes",
+                                        'Grids_Note': "Notes",
                                         'has_AECOM_': None}}
 
 column_orders = {"Iowa_BLE_Tracking": {"first": ['huc8', 'which_grid', "name", "PBL_Assign", "Phase_1_Su"],
@@ -240,7 +240,7 @@ class WriteNewGeoJSON:
                 points_gdf = points_gdf[0]
                 for keyword in list(args):
                     if points_gdf is not None:
-                        filtered_gdf = filter_gdf_by_column(points_gdf, "Grid Notes", keyword)
+                        filtered_gdf = filter_gdf_by_column(points_gdf, "Notes", keyword)
                         yield filtered_gdf
 
 

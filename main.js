@@ -237,10 +237,10 @@ map.on('load', () => {
 
     // Add grids notes layer 1
     map.addLayer({
-        id: 'grid-notes-update',
+        id: 'notes-update',
         type: "circle",
         source: 'UPDATEPoints',
-        filter: ['!=', ['get', 'Grid Notes'], null],
+        filter: ['!=', ['get', 'Notes'], null],
         paint: {
             'circle-color': "rgba(170,14,163,0.93)",
             "circle-stroke-color": "rgba(255,101,248,0.93)",
@@ -255,10 +255,10 @@ map.on('load', () => {
 
     // Add grids notes layer 1
     map.addLayer({
-        id: 'grid-notes-todo',
+        id: 'notes-todo',
         type: "circle",
         source: 'TODOPoints',
-        filter: ['!=', ['get', 'Grid Notes'], null],
+        filter: ['!=', ['get', 'Notes'], null],
         paint: {
             'circle-color': "rgba(0,43,128,0.93)",
             "circle-stroke-color": "rgba(108,164,255,0.93)",
@@ -370,8 +370,8 @@ map.on('load', () => {
     const legendLayers  = {
         'BFE TODO': 'bfe-todo',
         'Production Status': 'prod-status',
-        'Updates': 'grid-notes-update',
-        'TODOs': 'grid-notes-todo',
+        'Updates': 'notes-update',
+        'TODOs': 'notes-todo',
         'Grid Status': 'grid-status',
         'Assignment': 'pbl-areas',};
 
@@ -384,8 +384,8 @@ map.on('load', () => {
         'BFE TODO': ['bfe-todo'],
         'Production Status': ['prod-status'],
         'Grid Status': ['grid-status'],
-        'Updates': ['grid-notes-update'],
-        'ToDo': ['grid-notes-todo'],
+        'Updates': ['notes-update'],
+        'ToDo': ['notes-todo'],
         'Assignment': ['pbl-areas', 'pbl-areas-labels-with-pbl',],
     // Add more groups and layers as needed
     };
