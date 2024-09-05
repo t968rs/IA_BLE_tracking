@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
 let whichGrid = {'0, 1, 2': "No Grids",
     '1, 2': "DRAFT, Add'l Ret", '2': "Add'l Ret", "All on MM": "All on MM"};
 
-let unwanted = ["OID_", "OID", "OBJECTID", "info_src", "cur_miss", "route_id", "GlobalID", "Shape__Area",
+let unwanted = ["OID_", "OID", "OBJECTID", "GlobalID", "Shape__Area",
     "Shape__Length", "Shape__Are", "Shape__Len", "Shape__Area_", "States", "GlobalID"];
 // List of unwanted substrings
 let unwantedSubstrings = ["area", "acre", "sq_k", "final", "tie", "nee", "_ac", "mo", "shape", "nee",
