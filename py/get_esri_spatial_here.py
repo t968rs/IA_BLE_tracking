@@ -65,7 +65,7 @@ PROD_STATUS_MAPPING = {"Draft DFIRM Submitted": "DD Submit",
                        "Phase 1 Delivered": "Phase 1",
                        "DD Mapping": "DD Mapping",
                        "Pass 1/2 Validation": "Pass 1/2",
-                       "Pass 2/2 Validation": "Pass 2/2",}
+                       "Pass 2/2 Validation": "Pass 2/2", }
 
 
 def remove_time_from_date_columns(gdf):
@@ -87,6 +87,16 @@ def remove_time_from_date_columns(gdf):
             gdf[col] = gdf[col].apply(process_date)
 
     return gdf
+
+
+def gdf_to_excel(gdf, out_loc, filename=None):
+    if filename is None:
+        filename = "output"
+    outpath = out_loc + f"{filename}.xlsx"
+    os.makedirs(out_loc, exist_ok=True)
+
+    df = pd.DataFrame(gdf.drop(columns='geometry'))
+    df.to_excel(outpath, index=False)
 
 
 def reorder_gdf_columns(gdf, first_columns, last_columns=None):
@@ -209,8 +219,9 @@ class WriteNewGeoJSON:
                     gdf["Prod Stage"] = gdf["Prod Stage"].replace(PROD_STATUS_MAPPING)
                 unique_names = gdf[cname_to_summarize].unique()
                 print(f"Unique {cname_to_summarize} values: {[u for u in unique_names if u]}")
-                print(f'   Plus, {None if None in unique_names else "No None"}  values')
+                print(f'   Plus, {None if None in unique_names else "No-NULL"}  values')
                 gdf_to_geojson(gdf, self.output_folder, name)
+                gdf_to_excel(gdf, self.output_folder, name)
 
             else:
                 print(f"{cname_to_summarize} not in {name} columns")
