@@ -221,7 +221,7 @@ map.on('load', () => {
         paint: {
             'fill-color': 'rgba(255, 255, 255, 0.5)' // Transparent white for highlight
         },
-        filter: ['==', 'loc_id', ''] // Initially no feature is highlighted
+        filter: ['==', 'HUC8', ''] // Initially no feature is highlighted
     });
 
     // Add outline layer
@@ -460,9 +460,9 @@ map.on('load', () => {
     map.on('mousemove', 'areas-interaction', (e) => {
         if (e.features.length > 0) {
             const feature = e.features[0];
-            const fid = feature.properties.loc_id;
+            const fid = feature.properties.HUC8;
             if (fid !== undefined) {
-                map.setFilter('areas-highlight', ['==', 'loc_id', fid]);
+                map.setFilter('areas-highlight', ['==', 'HUC8', fid]);
             }
         }
     });
