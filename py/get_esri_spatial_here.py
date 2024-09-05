@@ -101,6 +101,7 @@ def remove_time_from_date_columns(gdf):
             print(f"Converting {col} to string")
             gdf[col] = gdf[col].astype(str)
             gdf[col] = gdf[col].apply(process_date)
+            gdf[col] = gdf[col].str.replace("0000/00/00", "")
 
     return gdf
 
