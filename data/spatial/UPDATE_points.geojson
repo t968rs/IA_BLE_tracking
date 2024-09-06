@@ -3,6 +3,6 @@
 "name": "UPDATE_points",
 "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
 "features": [
-{ "type": "Feature", "properties": { "HUC8": "07080103", "Name": "Lower Wapsipinicon", "BFE_TODO": "F", "P02a_Assign": "MT", "P01_MM": "2024/05/22", "RAW_Grd_MM": "2024/05/09", "DFIRM_Grd_MM": "2024/08/14", "Addl_Grd_MM": "2024/05/22", "Prod Stage": "Draft DFIRM Submitted", "P01 Analyst": "Matt", "AECOM Tie-in": "NO", "TO_Area": "FY20_1A", "Model Complete": "2024/01/10", "Notes": "TODO: Validation; UPDATE: DFIRM grid extents", "which_grid": "All on MM" }, "geometry": { "type": "Point", "coordinates": [ -90.684432897373881, 41.865482998500056 ] } }
+
 ]
 }
