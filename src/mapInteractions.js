@@ -1,9 +1,20 @@
-// Function to create popup content
+// Add event listeners to the close buttons
+document.addEventListener('DOMContentLoaded', () => {
+    const closeLegendButton = document.querySelector('#legend .close-btn');
+    if (closeLegendButton) {
+        closeLegendButton.addEventListener('click', closeLegend);
+    }
+
+    const closePopupButton = document.querySelector('.popup-container .close-btn');
+    if (closePopupButton) {
+        closePopupButton.addEventListener('click', closePopup);
+    }
+});
 
 let whichGrid = {'0, 1, 2': "No Grids",
-    '1, 2': "DRAFT, Add'l", '2': "Add'l", "All on MM": "All on MM"};
+    '1, 2': "DRAFT, Add'l Ret", '2': "Add'l Ret", "All on MM": "All on MM"};
 
-let unwanted = ["OID_", "OID", "OBJECTID", "info_src", "cur_miss", "route_id", "GlobalID", "Shape__Area",
+let unwanted = ["OID_", "OID", "OBJECTID", "GlobalID", "Shape__Area",
     "Shape__Length", "Shape__Are", "Shape__Len", "Shape__Area_", "States", "GlobalID"];
 // List of unwanted substrings
 let unwantedSubstrings = ["area", "acre", "sq_k", "final", "tie", "nee", "_ac", "mo", "shape", "nee",
@@ -16,7 +27,7 @@ function containsUnwantedSubstring(property) {
 
 // Function to create popup content with table formatting
 export async function areaPopupContent(clickedfeature) {
-    let popupContent = '<strong><p style="font-size: 14px;">Iowa BLE Area Info</strong><p>';
+    let popupContent = '<strong><p style="font-size: 12px;">Iowa BLE Area Info</strong><p>';
     popupContent += '<table class="popup-table"><thead><tr><th></th><th></th></tr></thead><tbody>';
 
     for (let property in clickedfeature.properties) {
@@ -39,19 +50,13 @@ export async function areaPopupContent(clickedfeature) {
     return popupContent;
 }
 
-// Function to check if a layer is visible
-function isLayerVisible(map, layerId) {
-    console.log("Layer ID: ", layerId);
-    const visibility = map.getLayoutProperty(layerId, 'visibility');
-    console.log("Visibility: ", visibility);
-    return visibility !== 'none';
-}
-
 // Function to create legend items
-export async function createLegendItem(color, label, isAlias = false) {
+export async function createLegendItem(color, label, isAlias = false, isCircle = false) {
     const item = document.createElement('div');
     const key = document.createElement('span');
-    key.className = 'legend-key';
+    if (isAlias) {key.className = 'legend-title';}
+    if (isCircle) {key.className = 'legend-key-circle';}
+    else {key.className = 'legend-key';}
     key.style.backgroundColor = color;
 
     const value = document.createElement('span');
@@ -66,51 +71,6 @@ export async function createLegendItem(color, label, isAlias = false) {
     return item;
 }
 
-// Function to populate the legend
-export async function populateLegend(map, layersToInclude) {
-    const legend = document.getElementById('legend');
-    if (!legend) {
-        console.error('Legend element not found');
-        return;
-    }
-    legend.innerHTML = ''; // Clear existing legend items
-
-    const layers = map.getStyle().layers;
-
-    // Iterate through the specified layers
-    for (const { id, alias } of layersToInclude) {
-        if (!isLayerVisible(map, id)) {
-            continue; // Skip layers that are not visible
-        }
-
-        const layer = layers.find(layer => layer.id === id);
-        if (layer) {
-            const paint = layer.paint;
-            const colorProperty = paint['fill-color'] || paint['line-color'];
-
-            if (colorProperty && Array.isArray(colorProperty) && colorProperty[0] === 'match') {
-                const colorMapping = colorProperty.slice(2, -1);
-
-                // Add alias name once
-                const aliasItem = await createLegendItem('', alias, true);
-                legend.appendChild(aliasItem);
-
-                for (let i = 0; i < colorMapping.length; i += 2) {
-                    const propertyValue = colorMapping[i];
-                    const color = colorMapping[i + 1];
-
-                    // Skip "other" or "*" values
-                    if (propertyValue !== '* other *') {
-                        const displayValue = whichGrid[propertyValue] || propertyValue;
-                        const item = await createLegendItem(color, displayValue);
-                        legend.appendChild(item);
-                    }
-                }
-            }
-        }
-    }
-}
-
 // Function to fit map to the bounds of the specified layer
 export function fitMapToFeatureBounds(map, feature) {
     // Create a new LngLatBounds object
@@ -120,7 +80,7 @@ export function fitMapToFeatureBounds(map, feature) {
     const geo = feature.geometry;
 
     const turfBbox = turf.bbox(geo);
-    console.log("Turf BBOX: ", turfBbox);
+    // console.log("Turf BBOX: ", turfBbox);
     const bboxBounds = new mapboxgl.LngLatBounds(
         [turfBbox[0], turfBbox[1]], // Southwest corner
         [turfBbox[2], turfBbox[3]]  // Northeast corner
@@ -138,8 +98,8 @@ export function fitMapToFeatureBounds(map, feature) {
     map.once('moveend', () => {
         const newBounds = map.getBounds();
         const newZoom = map.getZoom();
-        console.log("New Map Bounds after fitting:", newBounds);
-        console.log("New Zoom after fitting:", newZoom);
+        // console.log("New Map Bounds after fitting:", newBounds);
+        // console.log("New Zoom after fitting:", newZoom);
 
         // Workaround: Manually set the map bounds if the automatic fitBounds method fails
         if (newBounds._sw.lat < -90 || newBounds._ne.lat > - 75 || newBounds._sw.lng < 30 || newBounds._ne.lng > 50) {
@@ -147,8 +107,8 @@ export function fitMapToFeatureBounds(map, feature) {
             map.fitBounds(new mapboxgl.LngLatBounds(swCorner, neCorner));
         }
     });
-    console.log("SW: ", swCorner, "NE: ", neCorner);
-    console.log("Current Zoom: ", currentZoom);
+    // console.log("SW: ", swCorner, "NE: ", neCorner);
+    // console.log("Current Zoom: ", currentZoom);
 }
 
 // Function to ensure the popup fits within the current map bounds
@@ -184,12 +144,101 @@ export function ensurePopupFits(map, popup, coordinates) {
 
 // Function to close the popup
 export function closePopup() {
-    const popup = document.getElementById('top-left-popup');
+    const popup = document.querySelector('.popup-container');
     if (popup) {
         popup.style.display = 'none';
     } else {
         console.error('Popup element not found');
     }
+}
+
+
+// Function to populate the legend
+export async function populateLegend(map, layersToInclude) {
+    const legend = document.getElementById('legend');
+    if (!legend) {
+        console.error('Legend element not found');
+        return;
+    }
+    legend.innerHTML = ''; // Clear existing legend items
+
+    const mapStyle = map.getStyle();
+    if (!mapStyle || !mapStyle.layers) {
+        console.error('Map style or layers not found');
+        return;
+    }
+    const mapLayers = mapStyle.layers;
+    // console.log("Map Layers: ", mapLayers);
+
+    // Iterate through the specified layers
+    const groupLayers = {};
+    for (const layer of mapLayers) {
+        for (const [group, layer_id] of Object.entries(layersToInclude)) {
+            // console.log("Group: ", group, " Group Layers: ", layer_id);
+            if (layer_id.includes(layer.id)) {
+                const visibility = map.getLayoutProperty(layer_id, 'visibility');
+                if (visibility === 'visible') {
+                    groupLayers[group] = layer;
+                }
+
+            }
+        }
+    }
+
+    // console.log("Group Layers: ", groupLayers);
+    for (const [group, map_lyr] of Object.entries(groupLayers)) {
+
+        // console.log("Layer ID: ", layerId, " Layer: ", layer);
+        if (map_lyr && map_lyr.paint) {
+            const paint = map_lyr.paint;
+            // console.log(" Paint TYPE: ", typeof paint);
+
+            let colorProperty = "";
+            const colorProps = Object.keys(paint).filter(c => c.includes('color'));
+            // log(group, "Color Props: ", colorProps);
+            if ("fill-color" in colorProps) {
+                colorProperty = paint['fill-color'];
+            }
+            else {
+                colorProperty = paint[colorProps[0]];
+            }
+
+            // console.log(group, "  Color Property: ", colorProperty);
+            if (colorProperty && typeof colorProperty === 'string') {
+                const aliasItem = await createLegendItem('', "", true);
+                legend.appendChild(aliasItem);
+
+                // Skip "other" or "*" values
+                if (colorProperty !== '* other *') {
+                    const c = await createLegendItem(colorProperty, group, false, true);
+                    legend.appendChild(c);
+                }
+                }
+
+            if (colorProperty && Array.isArray(colorProperty)) {
+                const colorMapping = colorProperty.slice(2, -1);
+
+                // Add alias name once
+                const aliasItem = await createLegendItem('', group, true);
+                // console.log("Alias Item: ", aliasItem);
+                legend.appendChild(aliasItem);
+
+                for (let i = 0; i < colorMapping.length; i += 2) {
+                    const propertyValue = colorMapping[i];
+                    // console.log("Property Value: ", propertyValue);
+                    const color = colorMapping[i + 1];
+
+                    // Skip "other" or "*" values
+                    if (propertyValue !== '* other *') {
+                        const displayValue = whichGrid[propertyValue] || propertyValue;
+                        const item = await createLegendItem(color, displayValue);
+                        legend.appendChild(item);
+                    }
+                }
+            }
+            }
+        }
+
 }
 
 // Function to update the legend based on layer visibility
@@ -219,7 +268,9 @@ export function createLayerControls(map, layerGroups) {
         const checkboxCell = document.createElement('td');
         const groupCheckbox = document.createElement('input');
         groupCheckbox.type = 'checkbox';
-        groupCheckbox.checked = true;
+
+        groupCheckbox.checked = allVisibleinGroup(map, layers) === 'visible';
+
         groupCheckbox.addEventListener('change', () => toggleLayerGroup(map, layers, groupCheckbox.checked));
         checkboxCell.appendChild(groupCheckbox);
 
@@ -242,7 +293,23 @@ function toggleLayerGroup(map, layers, visibility) {
     });
 }
 
+function allVisibleinGroup(map, layers) {
+    // console.log("Layers: ", typeof layers);
+    layers = convertToArray(layers);
+    const allVisible = layers.every(layerId => {
+        const visibility = map.getLayoutProperty(layerId, 'visibility');
+        return visibility !== 'none';
+    });
+    return allVisible ? 'visible' : 'none';
+}
 
+function convertToArray(obj) {
+    if (Array.isArray(obj)) {
+        return obj; // Already an array
+    } else {
+        return Object.values(obj); // Convert object to array
+    }
+}
 /*// Example of updating the popup content and displaying the popup
 function updatePopupContent(content) {
     const popup = document.getElementById('top-left-popup');

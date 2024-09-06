@@ -8,6 +8,8 @@ import {
     createLayerControls,
 } from './src/mapInteractions.js';
 
+// import { getEditor } from "./src/editor_functionality.js";
+
 mapboxgl.accessToken = 'pk.eyJ1IjoidDk2OHJzIiwiYSI6ImNpamF5cTcxZDAwY2R1bWx4cWJvd3JtYXoifQ.XqJkBCgSJeCCeF_yugpG5A';
 const map = new mapboxgl.Map({
     container: 'map',
@@ -15,24 +17,40 @@ const map = new mapboxgl.Map({
     projection: 'albers', // Display the map as a globe, since satellite-v9 defaults to Mercator
     zoom: 7,
     minZoom: 0,
-    center: [-93, 41]
+    center: [-93, 42]
 });
 
 // Add user control
 map.addControl(new mapboxgl.NavigationControl());
-
-// Attach the closePopup function to the global window object
-window.closePopup = closePopup;
 
 let loc_popup;
 
 // On Load event
 map.on('load', () => {
     console.log('Map loaded');
+    // Function to remove aria-hidden from the close button
+    function fixAriaHiddenOnCloseButton() {
+        const closeButton = document.querySelector('.mapboxgl-popup-close-button');
+        if (closeButton) {
+            closeButton.removeAttribute('aria-hidden');
+        }
+    }
+
+    // Call this function after the popup is created
+    map.on('popupopen', fixAriaHiddenOnCloseButton);
+
     map.addSource('ProjectAreas', {
         type: 'geojson',
         data: './data/spatial/Iowa_BLE_Tracking.geojson'
     });
+    map.addSource('TODOPoints', {
+        type: 'geojson',
+        data: './data/spatial/TODO_points.geojson'
+    })
+    map.addSource('UPDATEPoints', {
+        type: 'geojson',
+        data: './data/spatial/UPDATE_points.geojson'
+    })
     map.addSource('StateBoundary', {
         type: 'geojson',
         data: './data/spatial/US_states.geojson'
@@ -93,7 +111,7 @@ map.on('load', () => {
         source: 'ProjectAreas',
         layout: {
             // Make the layer visible by default.
-            'visibility': 'visible'
+            'visibility': 'none'
         },
         paint: {
             'fill-color': [
@@ -102,11 +120,11 @@ map.on('load', () => {
                 '0, 1, 2',
                 'rgba(255,90,88,0.35)', // 50% transparency
                 '1, 2',
-                'rgba(0,255,196,0.6)', // 50% transparency
+                'rgba(192,197,28,0.74)', // 50% transparency
                 '2',
-                'rgba(230,152,0,0.5)', // 50% transparency
+                'rgba(0,230,127,0.5)', // 50% transparency
                 'All on MM',
-                'rgba(5,205,52,0.75)', // 50% transparency
+                'rgba(5,205,52,0.8)', // 50% transparency
                 '* other *',
                 'rgba(204, 204, 204, 0)', // 0% transparency
                 'rgba(0, 0, 0, 0)' // Default color for unmatched cases
@@ -114,6 +132,66 @@ map.on('load', () => {
         },
         filter: ['!=', ['get', 'which_grid'], null]
     });
+
+    // Add specific to-do layer
+    map.addLayer({
+        id: 'bfe-todo',
+        type: 'fill',
+        source: 'ProjectAreas',
+        layout: {
+            // Make the layer visible by default.
+            'visibility': 'none'
+        },
+        paint: {
+            'fill-color': [
+                'match',
+                ['get', 'BFE_TODO'],
+                'T',
+                'rgba(214,50,0,0.5)', // 50% transparency
+                'F',
+                'rgba(22,220,0,0.75)', // 50% transparency
+                '* other *',
+                'rgba(204, 204, 204, 0)', // 0% transparency
+                'rgba(0, 0, 0, 0)' // Default color for unmatched cases
+            ]
+        },
+
+        filter: ['!=', ['get', 'BFE_TODO'], null]
+    });
+
+    // Add overall production layer
+    map.addLayer({
+        id: 'prod-status',
+        type: 'fill',
+        source: 'ProjectAreas',
+        layout: {
+            // Make the layer visible by default.
+            'visibility': 'visible'
+        },
+        paint: {
+            'fill-color': [
+                'match',
+                ['get', 'Prod Stage'],
+
+                "Pass 2/2",
+                'rgb(42,255,135)', // 50% transparency
+                "Pass 1/2",
+                'rgba(5,244,152,0.75)', // 50% transparency
+                "DD Submit",
+                'rgba(29,208,202,0.7)', // 50% transparency
+                "DD Internal",
+                'rgba(189,189,0,0.70)', // 50% transparency
+                'DD Mapping',
+                'rgba(255,252,88,0.68)', // 50% transparency
+                'Phase 1',
+                'rgba(182,6,2,0.56)', // 50% transparency
+                '* other *',
+                'rgba(126,126,126,0.5)', // 0% transparency
+                'rgba(0, 0, 0, 0)' // Default color for unmatched cases
+            ]
+        }
+    });
+    // log("Layers added", map.getLayer('pbl-areas'), map.getLayer('grid-status'), map.getLayer('prod-status'));
 
     /*    // Fit bounds
     console.log("Layer added");
@@ -143,7 +221,7 @@ map.on('load', () => {
         paint: {
             'fill-color': 'rgba(255, 255, 255, 0.5)' // Transparent white for highlight
         },
-        filter: ['==', 'loc_id', ''] // Initially no feature is highlighted
+        filter: ['==', 'HUC8', ''] // Initially no feature is highlighted
     });
 
     // Add outline layer
@@ -157,52 +235,44 @@ map.on('load', () => {
         }
     });
 
-    // Add labels for features with PBL_Assign values
+    // Add grids notes layer 1
     map.addLayer({
-        id: 'pbl-areas-labels-with-pbl',
-        type: 'symbol',
-        source: 'ProjectAreas',
-        layout: {
-            'text-field': ['concat', ['get', 'PBL_Assign'], ', ', ['get', 'Name__HUC8']],
-            'text-size': 12,
-            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'] // Bold font
-        },
+        id: 'notes-update',
+        type: "circle",
+        source: 'UPDATEPoints',
+        filter: ['!=', ['get', 'Notes'], null],
         paint: {
-            'text-color': 'rgb(247, 247, 247)', // Text color
-            'text-halo-color': [
-                'match',
-                ['get', 'PBL_Assign'],
-                'RK', 'rgba(214, 95, 0, 0.5)', // Match fill color
-                'EC', 'rgba(0, 92, 175, 0.5)', // Match fill color
-                'QB', 'rgba(94, 229, 204, 0.5)', // Match fill color
-                'MT', 'rgba(59, 163, 208, 0.5)', // Match fill color
-                'MB', 'rgba(149, 55, 237, 0.5)', // Match fill color
-                'AE', 'rgba(55,188,237, 0.3)', // Match fill color
-                '* other *', 'rgba(204, 204, 204, 0)', // Default halo color
-                'rgba(0, 0, 0, 0)' // Default halo color for unmatched cases
-            ],
-            'text-halo-width': 1 // Halo width
+            'circle-color': "rgba(170,14,163,0.93)",
+            "circle-stroke-color": "rgba(255,101,248,0.93)",
+            "circle-stroke-width": 1,
+            'circle-radius': 15,
+    },
+        layout: {
+            // Make the layer visible by default.
+            'visibility': 'visible'
         },
-        filter: ['!=', ['get', 'PBL_Assign'], null] // Filter to only include features with PBL_Assign
     });
 
-    // Add labels for features without PBL_Assign values
+    // Add grids notes layer 1
     map.addLayer({
-        id: 'pbl-areas-labels-without-pbl',
-        type: 'symbol',
-        source: 'ProjectAreas',
-        layout: {
-            'text-field': ['get', 'Name__HUC8'],
-            'text-size': 12,
-            'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'] // Regular font
-        },
+        id: 'notes-todo',
+        type: "circle",
+        source: 'TODOPoints',
+        filter: ['!=', ['get', 'Notes'], null],
         paint: {
-            'text-color': 'rgb(247, 247, 247)', // Text color
-            'text-halo-color': 'rgb(69,89,51)', // No halo
-            'text-halo-width': 1 // No halo width
+            'circle-color': "rgba(0,43,128,0.93)",
+            "circle-stroke-color": "rgba(108,164,255,0.93)",
+            "circle-stroke-width": 1,
+            "circle-emissive-strength": 0.5,
+            'circle-radius': 15,
+    },
+        layout: {
+            // Make the layer visible by default.
+            'visibility': 'visible'
         },
-        filter: ['==', ['get', 'PBL_Assign'], null] // Filter to include features without PBL_Assign or PBL_Assign is an empty string
     });
+    // console.log("Circles added", map.getLayer('grid-notes-update'), map.getLayer('grid-notes-todo'));
+
 
     // Add state boundary layer
     map.addLayer({
@@ -234,6 +304,57 @@ map.on('load', () => {
         }
     });
 
+    // Add labels for features with PBL_Assign values
+    map.addLayer({
+        id: 'pbl-areas-labels-with-pbl',
+        type: 'symbol',
+        source: 'ProjectAreas',
+        anchor: 'center',
+        layout: {
+            'text-field': ['get', 'PBL_Assign'],
+            'text-size': 12,
+            'text-anchor': 'top',
+            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'], // Bold font
+            'text-allow-overlap': true, // Allow overlapping labels
+            'visibility': 'none',
+        },
+        paint: {
+            'text-color': 'rgb(247, 247, 247)', // Text color
+            'text-halo-color': [
+                'match',
+                ['get', 'PBL_Assign'],
+                'RK', 'rgba(214, 95, 0, 0.5)', // Match fill color
+                'EC', 'rgba(0, 92, 175, 0.5)', // Match fill color
+                'QB', 'rgba(94, 229, 204, 0.5)', // Match fill color
+                'MT', 'rgba(59, 163, 208, 0.5)', // Match fill color
+                'MB', 'rgba(149, 55, 237, 0.5)', // Match fill color
+                'AE', 'rgba(55,188,237, 0.3)', // Match fill color
+                '* other *', 'rgba(204, 204, 204, 0)', // Default halo color
+                'rgba(0, 0, 0, 0)' // Default halo color for unmatched cases
+            ],
+            'text-halo-width': 1 // Halo width
+        },
+        filter: ['!=', ['get', 'PBL_Assign'], null] // Filter to only include features with PBL_Assign
+    });
+
+    // Add labels for areas
+    map.addLayer({
+        id: 'areas-labels',
+        type: 'symbol',
+        source: 'ProjectAreas',
+        layout: {
+            'text-field': ['get', 'Name'],
+            'text-size': 12,
+            'text-anchor': 'bottom',
+            'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'] // Regular font
+        },
+        paint: {
+            'text-color': 'rgb(0,28,58)', // Text color
+            'text-halo-color': 'rgba(90,185,255,0.68)', // No halo
+            'text-halo-width': 2
+        } // Filter to include features without PBL_Assign or PBL_Assign is an empty string
+});
+
     // Add a transparent fill layer for interaction
     map.addLayer({
         id: 'areas-interaction',
@@ -246,25 +367,37 @@ map.on('load', () => {
 
     console.log('Layers added');
     // create legend
-    const layersToInclude = [
-        { id: 'pbl-areas', alias: 'Assignments' },
-        { id: 'grid-status', alias: 'Grid Status' },
-        // Add more layers as needed
-    ];
-    const mapLegend = populateLegend(map, layersToInclude);
-    // Assuming `map` and `layersToInclude` are already defined
-    updateLegendOnVisibilityChange(map, layersToInclude);
+    const legendLayers  = {
+        'BFE TODO': 'bfe-todo',
+        'Production Status': 'prod-status',
+        'Updates': 'notes-update',
+        'TODOs': 'notes-todo',
+        'Grid Status': 'grid-status',
+        'Assignment': 'pbl-areas',};
 
-    const layerGroups = {
-    'Grid Statuses': ['grid-status'],
-    'Assignments': ['pbl-areas', 'pbl-areas-labels-with-pbl',],
+    // Add more groups and layers as needed
+    const mapLegend = populateLegend(map, legendLayers);
+    updateLegendOnVisibilityChange(map, legendLayers);
+
+    // Add layer-group control
+    const controlLayers = {
+        'BFE TODO': ['bfe-todo'],
+        'Production Status': ['prod-status'],
+        'Grid Status': ['grid-status'],
+        'Updates': ['notes-update'],
+        'ToDo': ['notes-todo'],
+        'Assignment': ['pbl-areas', 'pbl-areas-labels-with-pbl',],
     // Add more groups and layers as needed
     };
-    createLayerControls(map, layerGroups);
+    createLayerControls(map, controlLayers);
 
+    // Add editor functionality
+    // getEditor(map, ['areas-interaction']);
 
     map.on('click', async (e) => {
-    const features = map.queryRenderedFeatures(e.point);
+    const features = map.queryRenderedFeatures(e.point, {
+        layers: ['areas-interaction'],  // replace 'your-interaction-layer' with the id of your layer
+    });
     if (!features.length) {
         console.log('No features found');
         if (loc_popup) {
@@ -284,7 +417,7 @@ map.on('load', () => {
         return;
     }
 
-    console.log('Features found');
+    // console.log('Features found');
     // Remove any existing popup to prevent content from appending
     if (loc_popup) {
         loc_popup.remove();
@@ -295,8 +428,8 @@ map.on('load', () => {
         // Calculate the centroid of the polygon
         const centroid = turf.centroid(clickedfeature);
         const coordinates = centroid.geometry.coordinates;
-        let locid = features[0].properties["loc_id"];
-        console.log("Feature ID: ", locid);
+        let featid = features[0].properties["HUC8"];
+        // console.log("Feature ID: ", locid);
 
         // Ensure coordinates are in the correct format
         if (!Array.isArray(coordinates) || coordinates.length !== 2) {
@@ -327,15 +460,15 @@ map.on('load', () => {
     map.on('mousemove', 'areas-interaction', (e) => {
         if (e.features.length > 0) {
             const feature = e.features[0];
-            const fid = feature.properties.loc_id;
+            const fid = feature.properties.HUC8;
             if (fid !== undefined) {
-                map.setFilter('areas-highlight', ['==', 'loc_id', fid]);
+                map.setFilter('areas-highlight', ['==', 'HUC8', fid]);
             }
         }
     });
 
     map.on('mouseleave', 'areas-interaction', () => {
-        map.setFilter('areas-highlight', ['==', 'loc_id', '']);
+        map.setFilter('areas-highlight', ['==', 'HUC8', '']);
     });
 
     // Add event listeners for mouse enter and leave
@@ -353,6 +486,94 @@ map.on('load', () => {
         const bounds = map.getZoom();
 
         // Log the bounds to the console
-        console.log('Current Map Bounds:', bounds);
+        // console.log('Current Map Bounds:', bounds);
     });
 });
+
+
+// Excel Table
+async function displayExcelTable(filePath) {
+    const response = await fetch(filePath);
+    const arrayBuffer = await response.arrayBuffer();
+    const data = new Uint8Array(arrayBuffer);
+    const workbook = XLSX.read(data, { type: 'array' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const htmlString = XLSX.utils.sheet_to_html(worksheet);
+    document.getElementById('excel-table-container').innerHTML = htmlString;
+}
+
+/*function toggleTable() {
+    const tableContainer = document.getElementById('excel-table-container');
+    if (tableContainer.style.display === 'none' || tableContainer.style.display === '') {
+        tableContainer.style.display = 'block';
+    } else {
+        tableContainer.style.display = 'none';
+    }
+}*/
+document.getElementById('toggle-table-btn').addEventListener('click', toggleTable);
+
+// Call the function with the path to your Excel file
+displayExcelTable('./data/tables/Iowa_BLE_Tracking.xlsx');
+
+const BORDER_SIZE = 4;
+const panel = document.getElementById("excel-table-container");
+const toggleButton = document.getElementById("toggle-table-btn");
+
+let m_pos;
+function resize(e){
+  const dy = m_pos - e.y;
+  m_pos = e.y;
+  panel.style.height = (parseInt(getComputedStyle(panel, '').height) + dy) + "px";
+  console.log("Panel resized, height: ", panel.style.height);
+  updateToggleButtonPosition();
+}
+
+panel.addEventListener("mousedown", function(e) {
+  if (e.offsetY < BORDER_SIZE) {
+    m_pos = e.y;
+    document.addEventListener("mousemove", resize, false);
+  }
+}, false);
+
+document.addEventListener("mouseup", function() {
+  document.removeEventListener("mousemove", resize, false);
+}, false);
+
+function toggleTable() {
+  const tableContainer = document.getElementById('excel-table-container');
+  if (tableContainer.style.display === 'none' || tableContainer.style.display === '') {
+    tableContainer.style.display = 'block';
+    updateToggleButtonPosition();
+  } else {
+    tableContainer.style.display = 'none';
+    resetToggleButtonPosition();
+  }
+  console.log('Table toggled');
+  tableFormatting(tableContainer);
+}
+
+function updateToggleButtonPosition() {
+  const tableContainer = document.getElementById('excel-table-container');
+  const tableHeight = parseInt(getComputedStyle(tableContainer, '').height);
+  toggleButton.style.bottom = (tableHeight + 10) + 'px'; // Adjust based on the height of the table container
+}
+
+function resetToggleButtonPosition() {
+  toggleButton.style.bottom = '10px'; // Reset to the original position
+}
+
+// Table formatting
+function tableFormatting(table) {
+  const headerRow = table.rows[0]; // Example: 1st row
+  const specificColumnIndex = 2; // Example: third column
+    // Add class to the specific row
+    headerRow.classList.add('highlight-row');
+
+    // Add class to the specific column cells
+    for (let i = 0; i < table.rows.length; i++) {
+        table.rows[i].cells[specificColumnIndex].classList.add('highlight-column');
+    }
+}
+
+document.getElementById('toggle-table-btn').addEventListener('click', toggleTable);
