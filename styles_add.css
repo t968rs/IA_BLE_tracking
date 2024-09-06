@@ -20,6 +20,84 @@ body {
     box-shadow: 0 2px 10px rgba(0,0,0,0.3);
 }
 
+#excel-table-container {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 100px; /* Initial height */
+    overflow: auto;
+    background-color: #e1e1e1;
+    border-top: 4px solid #8973af;
+    padding-top: 4px;
+    font-family: "Arial", sans-serif;
+    font-size: 9px;
+    resize: vertical; /* Allow vertical resizing */
+    display: none; /* Initially hidden */
+}
+
+#excel-table-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px; /* Height of the border area */
+    cursor: ns-resize; /* Change mouse pointer style when hovering over the border */
+}
+
+/*#excel-table-container:hover {
+    cursor: ns-resize; !* Change mouse pointer style when hovering over the border *!
+}*/
+
+.highlight-row {
+    background-color: #202020; /* Example: light gray background */
+    font-weight: bold; /* Example: bold text */
+    font-size: 12px; /* Example: larger font size */
+    font-family: "Century Gothic", sans-serif;
+    color: #dcdcdc; /* Example: red text */
+}
+
+.highlight-column {
+    color: #ff0000; /* Example: red text */
+    font-style: italic; /* Example: italic text */
+}
+
+#excel-table-container::after {
+    content: '';
+    background-color: #ccc;
+    position: absolute;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    cursor: e-resize;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+th {
+    background-color: #f2f2f2;
+}
+
+#toggle-table-btn {
+    position: fixed;
+    bottom: 50px; /* Adjust based on the initial height of the table container */
+    left: 10px;
+    padding: 5px;
+    background-color: #255897;
+    border-radius: 5px;
+    border-color: #4c91af;
+    color: white;
+    font-family: "Century Gothic", sans-serif;
+    border: solid 1px #4c91af;
+    cursor: pointer;
+}
+
 /* Ensure the button is visible */
 #edit-mode-btn {
     position: absolute;
@@ -84,7 +162,7 @@ body {
 #controls-container {
     position: absolute;
     width: 20%;
-    bottom: 1%;
+    bottom: 100px;
     right: 1%;
     display: flex;
     flex-direction: column;

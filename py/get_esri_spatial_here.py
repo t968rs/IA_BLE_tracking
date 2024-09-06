@@ -10,7 +10,15 @@ def process_date(x):
     try:
         # Try to parse the date to check if it's a valid datetime
         dt = datetime.fromisoformat(str(x))
-        return dt.strftime('%Y/%m/%d')
+        new_date = dt.strftime('%Y/%m/%d')
+
+        # Check for 0s
+        number_contents = [c for c in new_date if c.isnumeric()]
+        number_contents = list(set(number_contents))
+        if len(number_contents) == 1 and number_contents[0] == "0":
+            return ""
+
+        return new_date
     except ValueError:
         return x
 
@@ -73,7 +81,7 @@ column_mapping = {"Iowa_BLE_Tracking": {"huc8": "HUC8", "which_grid": "which_gri
                                         'has_AECOM_': None,
                                         'Extent': None}}
 
-column_orders = {"Iowa_BLE_Tracking": {"first": ['huc8', 'which_grid', "name", "BFE_TODO", "PBL_Assign", "Phase_1_Su"],
+column_orders = {"Iowa_BLE_Tracking": {"first": ['huc8', "name", "BFE_TODO", "PBL_Assign", "Phase_1_Su"],
                                        "last": ['geometry']}, }
 
 PROD_STATUS_MAPPING = {"Draft DFIRM Submitted": "DD Submit",
@@ -84,7 +92,7 @@ PROD_STATUS_MAPPING = {"Draft DFIRM Submitted": "DD Submit",
                        "Pass 2/2 Validation": "Pass 2/2", }
 
 
-def remove_time_from_date_columns(gdf):
+def format_dates(gdf):
     """
     Remove the time part from date columns in a GeoDataFrame.
 
@@ -102,6 +110,7 @@ def remove_time_from_date_columns(gdf):
             gdf[col] = gdf[col].astype(str)
             gdf[col] = gdf[col].apply(process_date)
             gdf[col] = gdf[col].str.replace("0000/00/00", "")
+    gdf = gdf.replace("0000/00/00", "")
 
     return gdf
 
@@ -291,7 +300,7 @@ class WriteNewGeoJSON:
             # Fix* times
             time_cs = [c for c in gdf.columns if gdf[c].astype(str).str.contains('T').any()]
             print(f" Time columns: {time_cs}")
-            gdf = remove_time_from_date_columns(gdf)
+            gdf = format_dates(gdf)
             gdf = gdf.to_crs(epsg=4326)
             self.c_lists[fname] = [c for c in gdf.columns.to_list()]
             print(f'   {fname} Input Columns: {self.c_lists[fname]}, \n   CRS: {self.crs_dict[fname]}')
@@ -310,6 +319,7 @@ class WriteNewGeoJSON:
 
             # Export main Geojsons
             if cname_to_summarize is not None and cname_to_summarize in gdf.columns:
+                # Rename Production Stage columns
                 if "Prod Stage" in gdf.columns:
                     gdf["Prod Stage"] = gdf["Prod Stage"].replace(PROD_STATUS_MAPPING)
                 unique_names = gdf[cname_to_summarize].unique()
@@ -354,7 +364,7 @@ class WriteNewGeoJSON:
                         yield filtered_gdf
 
 
-cname = "Prod Stage"
+cname = "Addl_Grd_MM"
 keywords = ["TODO", "UPDATE"]
 to_gdf = WriteNewGeoJSON()
 to_gdf.export_geojsons(cname, *keywords)

@@ -27,7 +27,7 @@ function containsUnwantedSubstring(property) {
 
 // Function to create popup content with table formatting
 export async function areaPopupContent(clickedfeature) {
-    let popupContent = '<strong><p style="font-size: 14px;">Iowa BLE Area Info</strong><p>';
+    let popupContent = '<strong><p style="font-size: 12px;">Iowa BLE Area Info</strong><p>';
     popupContent += '<table class="popup-table"><thead><tr><th></th><th></th></tr></thead><tbody>';
 
     for (let property in clickedfeature.properties) {
@@ -80,7 +80,7 @@ export function fitMapToFeatureBounds(map, feature) {
     const geo = feature.geometry;
 
     const turfBbox = turf.bbox(geo);
-    console.log("Turf BBOX: ", turfBbox);
+    // console.log("Turf BBOX: ", turfBbox);
     const bboxBounds = new mapboxgl.LngLatBounds(
         [turfBbox[0], turfBbox[1]], // Southwest corner
         [turfBbox[2], turfBbox[3]]  // Northeast corner
@@ -98,8 +98,8 @@ export function fitMapToFeatureBounds(map, feature) {
     map.once('moveend', () => {
         const newBounds = map.getBounds();
         const newZoom = map.getZoom();
-        console.log("New Map Bounds after fitting:", newBounds);
-        console.log("New Zoom after fitting:", newZoom);
+        // console.log("New Map Bounds after fitting:", newBounds);
+        // console.log("New Zoom after fitting:", newZoom);
 
         // Workaround: Manually set the map bounds if the automatic fitBounds method fails
         if (newBounds._sw.lat < -90 || newBounds._ne.lat > - 75 || newBounds._sw.lng < 30 || newBounds._ne.lng > 50) {
@@ -107,8 +107,8 @@ export function fitMapToFeatureBounds(map, feature) {
             map.fitBounds(new mapboxgl.LngLatBounds(swCorner, neCorner));
         }
     });
-    console.log("SW: ", swCorner, "NE: ", neCorner);
-    console.log("Current Zoom: ", currentZoom);
+    // console.log("SW: ", swCorner, "NE: ", neCorner);
+    // console.log("Current Zoom: ", currentZoom);
 }
 
 // Function to ensure the popup fits within the current map bounds
@@ -143,7 +143,6 @@ export function ensurePopupFits(map, popup, coordinates) {
 }
 
 // Function to close the popup
-// Function to close the popup
 export function closePopup() {
     const popup = document.querySelector('.popup-container');
     if (popup) {
@@ -175,7 +174,7 @@ export async function populateLegend(map, layersToInclude) {
     const groupLayers = {};
     for (const layer of mapLayers) {
         for (const [group, layer_id] of Object.entries(layersToInclude)) {
-            console.log("Group: ", group, " Group Layers: ", layer_id);
+            // console.log("Group: ", group, " Group Layers: ", layer_id);
             if (layer_id.includes(layer.id)) {
                 const visibility = map.getLayoutProperty(layer_id, 'visibility');
                 if (visibility === 'visible') {
@@ -196,7 +195,7 @@ export async function populateLegend(map, layersToInclude) {
 
             let colorProperty = "";
             const colorProps = Object.keys(paint).filter(c => c.includes('color'));
-            console.log(group, "Color Props: ", colorProps);
+            // log(group, "Color Props: ", colorProps);
             if ("fill-color" in colorProps) {
                 colorProperty = paint['fill-color'];
             }
@@ -204,7 +203,7 @@ export async function populateLegend(map, layersToInclude) {
                 colorProperty = paint[colorProps[0]];
             }
 
-            console.log(group, "  Color Property: ", colorProperty);
+            // console.log(group, "  Color Property: ", colorProperty);
             if (colorProperty && typeof colorProperty === 'string') {
                 const aliasItem = await createLegendItem('', "", true);
                 legend.appendChild(aliasItem);
@@ -221,12 +220,12 @@ export async function populateLegend(map, layersToInclude) {
 
                 // Add alias name once
                 const aliasItem = await createLegendItem('', group, true);
-                console.log("Alias Item: ", aliasItem);
+                // console.log("Alias Item: ", aliasItem);
                 legend.appendChild(aliasItem);
 
                 for (let i = 0; i < colorMapping.length; i += 2) {
                     const propertyValue = colorMapping[i];
-                    console.log("Property Value: ", propertyValue);
+                    // console.log("Property Value: ", propertyValue);
                     const color = colorMapping[i + 1];
 
                     // Skip "other" or "*" values
