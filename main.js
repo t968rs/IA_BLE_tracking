@@ -491,7 +491,7 @@ map.on('load', () => {
 });
 
 
-// Excel Table
+/*// Excel Table
 async function displayExcelTable(filePath) {
     const response = await fetch(filePath);
     const arrayBuffer = await response.arrayBuffer();
@@ -503,18 +503,10 @@ async function displayExcelTable(filePath) {
     document.getElementById('excel-table-container').innerHTML = htmlString;
 }
 
-/*function toggleTable() {
-    const tableContainer = document.getElementById('excel-table-container');
-    if (tableContainer.style.display === 'none' || tableContainer.style.display === '') {
-        tableContainer.style.display = 'block';
-    } else {
-        tableContainer.style.display = 'none';
-    }
-}*/
 document.getElementById('toggle-table-btn').addEventListener('click', toggleTable);
 
 // Call the function with the path to your Excel file
-displayExcelTable('./data/tables/Iowa_BLE_Tracking.xlsx');
+displayExcelTable('./data/tables/Iowa_BLE_Tracking.xlsx');*/
 
 const BORDER_SIZE = 4;
 const panel = document.getElementById("excel-table-container");
@@ -550,20 +542,21 @@ function toggleTable() {
     resetToggleButtonPosition();
   }
   console.log('Table toggled');
-  tableFormatting(tableContainer);
+  // tableFormatting(tableContainer);
 }
 
 function updateToggleButtonPosition() {
   const tableContainer = document.getElementById('excel-table-container');
   const tableHeight = parseInt(getComputedStyle(tableContainer, '').height);
-  toggleButton.style.bottom = (tableHeight + 10) + 'px'; // Adjust based on the height of the table container
+  console.log('Table height:', tableHeight);
+  toggleButton.style.bottom = (tableHeight + 75) + 'px'; // Adjust based on the height of the table container
 }
 
 function resetToggleButtonPosition() {
-  toggleButton.style.bottom = '10px'; // Reset to the original position
+  toggleButton.style.bottom = '50px'; // Reset to the original position
 }
 
-// Table formatting
+/*// Table formatting
 function tableFormatting(table) {
   const headerRow = table.rows[0]; // Example: 1st row
   const specificColumnIndex = 2; // Example: third column
@@ -574,6 +567,6 @@ function tableFormatting(table) {
     for (let i = 0; i < table.rows.length; i++) {
         table.rows[i].cells[specificColumnIndex].classList.add('highlight-column');
     }
-}
+}*/
 
 document.getElementById('toggle-table-btn').addEventListener('click', toggleTable);

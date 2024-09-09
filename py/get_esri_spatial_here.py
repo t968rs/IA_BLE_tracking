@@ -151,7 +151,7 @@ def gdf_to_excel(gdf, out_loc, filename=None, sheetname="Sheet1"):
 
         # Append to the existing Excel file
         # Mod write kwargs based on situations
-        write_kwargs = {"sheet_name": sheetname, "header": False, "startrow": 1}
+        write_kwargs = {"sheet_name": sheetname, "header": True, "startrow": 1}
         if situations["Target Sheet Exists"]:
             write_kwargs["sheet_name"] = sheetname + "_values"
         else:
