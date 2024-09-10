@@ -414,6 +414,9 @@ class WriteNewGeoJSON:
 
             else:
                 print(f"{cname_to_summarize} not in {name} columns")
+                oupath = self.output_folder + f"{name}.geojson"
+                if not os.path.exists(oupath):
+                    gdf_to_geojson(gdf, self.output_folder, name)
 
         self.gdf_dict.update(new_gdf)
 
