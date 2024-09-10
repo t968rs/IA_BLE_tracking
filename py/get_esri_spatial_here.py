@@ -67,9 +67,11 @@ def add_numbered_primary_key(gdf, col_name):
     return gdf
 
 
-column_mapping = {"Iowa_BLE_Tracking": {"huc8": "HUC8", "which_grid": "which_grid", "name": "Name", "Name HUC8": None,
+COLUMN_MAPPING = {"Iowa_BLE_Tracking": {"huc8": "HUC8", "which_grid": "which_grid", "name": "Name", "Name HUC8": None,
                                         "BFE_TODO": "BFE_TODO",
                                         "has_AECOM": "Has AECOM Tie",
+                                        "FRP_Perc_Complete": "FRP_Perc_Complete",
+                                        "FRP": "FRP",
                                         'PBL_Assign': "P02a_Assign", 'Phase_1_Su': "P01_MM", 'RAW_Grid': "RAW_Grd_MM",
                                         'DFIRM_Grid': "DFIRM_Grd_MM", 'Addl_Grids': "Addl_Grd_MM",
                                         'Production': "Prod Stage", 'Mapping_In': "P01 Analyst",
@@ -81,7 +83,8 @@ column_mapping = {"Iowa_BLE_Tracking": {"huc8": "HUC8", "which_grid": "which_gri
                                         'has_AECOM_': None,
                                         'Extent': None}}
 
-column_orders = {"Iowa_BLE_Tracking": {"first": ['huc8', "name", "BFE_TODO", "PBL_Assign", "Phase_1_Su"],
+COLUMN_ORDERS = {"Iowa_BLE_Tracking": {"first": ['huc8', "Name", "FRP_Perc_Complete", "FRP", "BFE_TODO", "PBL_Assign",
+                                                 "Phase_1_Su"],
                                        "last": ['geometry']}, }
 
 PROD_STATUS_MAPPING = {"Draft DFIRM Submitted": "DD Submit",
@@ -90,6 +93,8 @@ PROD_STATUS_MAPPING = {"Draft DFIRM Submitted": "DD Submit",
                        "DD Mapping": "DD Mapping",
                        "Pass 1/2 Validation": "Pass 1/2",
                        "Pass 2/2 Validation": "Pass 2/2", }
+
+SPECIAL_COLUMNS = {"FRP": 3}
 
 
 def format_dates(gdf):
@@ -115,14 +120,19 @@ def format_dates(gdf):
     return gdf
 
 
-def gdf_to_excel(gdf, out_loc, filename=None, sheetname="Sheet1"):
+def df_to_excel(df, out_loc, filename=None, sheetname="Sheet1"):
     print(f"\nExcel Stuff for {filename}")
     if filename is None:
         filename = "output"
     outpath = os.path.join(out_loc, f"{filename}.xlsx")
     os.makedirs(out_loc, exist_ok=True)
 
-    df = pd.DataFrame(gdf.drop(columns='geometry'))
+    if isinstance(df, gpd.GeoDataFrame) or "geometry" in df.columns:
+        df = pd.DataFrame(df.drop(columns=['geometry']))
+
+    for c in df.columns:
+        if "legend" in c.lower():
+            df.drop(columns=c, inplace=True)
 
     # Check existing sheets for target and value sheets
     if os.path.exists(outpath):
@@ -141,8 +151,9 @@ def gdf_to_excel(gdf, out_loc, filename=None, sheetname="Sheet1"):
             existing_df = pd.read_excel(outpath, sheet_name=sheetname, header=0)
             print(f" Existing: {existing_df.head()}")
             existing_columns = existing_df.columns.to_list()
+            print(f"Existing Columns: {existing_columns}")
             # df.drop(columns=[c for c in df.columns if c not in existing_columns], inplace=True)
-            print(f"Unique Names: {df['Name'].unique()}")
+            # print(f"Unique Names: {df['Name'].unique()}")
         except Exception as e:
             print(f"Error reading existing file: {e}")
             os.remove(outpath)
@@ -161,10 +172,16 @@ def gdf_to_excel(gdf, out_loc, filename=None, sheetname="Sheet1"):
         with pd.ExcelWriter(outpath, engine='openpyxl', mode="a", if_sheet_exists="overlay") as writer:
             # Clear the existing data in the sheet
             print(f" Sheets: {writer.sheets}")
-            sheet = writer.sheets[sheetname]
+            if situations["Target Sheet Exists"]:
+                sheet = writer.sheets[sheetname + "_values"]
+            if situations["Value Sheet Exists"]:
+                sheet = writer.sheets[sheetname + "_values"]
 
             first_df_col = df.columns[0]
-            if first_df_col in existing_columns:
+            print(f"  First Column: {first_df_col}")
+            if "_Perc" in first_df_col:
+                min_out_column = first_df_col.split("_")[0] + " %"
+            elif first_df_col in existing_columns:
                 min_out_column = first_df_col
             else:
                 min_out_column = sheet.min_column
@@ -198,6 +215,8 @@ def reorder_gdf_columns(gdf, first_columns, last_columns=None):
     middle_columns = [col for col in gdf.columns if col not in first_columns and col not in last_columns]
 
     # New column order
+    first_columns = [col for col in first_columns if col in gdf.columns]
+    last_columns = [col for col in last_columns if col in gdf.columns]
     new_column_order = first_columns + middle_columns + last_columns
 
     # Reorder the columns in the GeoDataFrame
@@ -285,15 +304,26 @@ class WriteNewGeoJSON:
             print(f"     Duplicate Names: {duplicate_names}")
             # print(f"     Duplicates: {duplicates.drop(columns='geometry')}")
             gdf = add_numbered_primary_key(gdf, 'loc_id')
-            if fname in column_orders:
-                gdf = reorder_gdf_columns(gdf, column_orders[fname]["first"], column_orders[fname]["last"])
-            if fname in column_mapping:
-                cmapping = {k: v for k, v in column_mapping[fname].items() if v is not None and k in gdf.columns}
-                removals = [c for c in column_mapping[fname].keys() if
-                            column_mapping[fname][c] is None and c in gdf.columns]
+            if fname in COLUMN_ORDERS:
+                gdf = reorder_gdf_columns(gdf, COLUMN_ORDERS[fname]["first"], COLUMN_ORDERS[fname]["last"])
+            if fname in COLUMN_MAPPING:
+                cmapping = {k: v for k, v in COLUMN_MAPPING[fname].items() if v is not None and k in gdf.columns}
+                removals = [c for c in COLUMN_MAPPING[fname].keys() if
+                            COLUMN_MAPPING[fname][c] is None and c in gdf.columns]
                 print(f'     Column Removals: {removals}')
                 gdf.drop(columns=removals, inplace=True)
                 gdf.rename(columns=cmapping, inplace=True)
+
+                # Mod order list-dictionary to reflect new column names
+                for c in COLUMN_ORDERS[fname]["first"]:
+                    if c in COLUMN_MAPPING[fname]:
+                        COLUMN_ORDERS[fname]["first"][COLUMN_ORDERS[fname]["first"].index(c)] = COLUMN_MAPPING[fname][c]
+                print(f'\n New Column Order Dict: {COLUMN_ORDERS[fname]}')
+            for c in gdf.columns:
+                if c in SPECIAL_COLUMNS:
+                    self.add_summation_columns(gdf, c, SPECIAL_COLUMNS[c])
+                    if c in COLUMN_ORDERS[fname]["first"]:
+                        gdf = reorder_gdf_columns(gdf, COLUMN_ORDERS[fname]["first"], COLUMN_ORDERS[fname]["last"])
             else:
                 print(f"     No column mapping for {fname}")
 
@@ -305,6 +335,54 @@ class WriteNewGeoJSON:
             self.c_lists[fname] = [c for c in gdf.columns.to_list()]
             print(f'   {fname} Input Columns: {self.c_lists[fname]}, \n   CRS: {self.crs_dict[fname]}')
             self.gdf_dict[fname] = gdf
+
+    @staticmethod
+    def add_summation_columns(gdf, column, max_length):
+        """
+        Add columns to a GeoDataFrame that summarize the values of another column.
+
+        Parameters:
+        gdf (GeoDataFrame): The GeoDataFrame to which the columns will be added.
+        column (str): The column whose values will be summarized.
+        max_length (int): The maximum number of characters in the new column names.
+
+        Returns:
+        GeoDataFrame: The GeoDataFrame with the new columns.
+        """
+        # Add percentage complete column
+        perc_complete_column = f"{column}_Perc_Complete"
+        gdf['temp_split'] = gdf[column].apply(
+            lambda x: [part for part in x.split(";") if part not in [None, ""]] if ";" in str(x) else None)
+        gdf['num_parts'] = gdf['temp_split'].apply(lambda x: len(x) if x not in [None, ""] else 0.0)
+        gdf[perc_complete_column] = gdf['num_parts'] / max_length * 100
+        gdf[perc_complete_column] = gdf[perc_complete_column].round()
+
+        # Add legend column
+        legend_column = f"{perc_complete_column}_Legend"
+        min_val = int(gdf[perc_complete_column].min())
+        max_val = 100
+        perc_steps = int(round(max_val / max_length))
+        print(f"  Min: {min_val}, Max: {max_val}, Steps: {perc_steps}")
+
+        # Initialize the legend column with empty strings
+        gdf[legend_column] = ""
+
+        # Iterate over the range and apply the legend values
+        for i in range(min_val, max_val, perc_steps):
+            range_label = f"{i}%"
+            gdf[legend_column] = gdf[legend_column].mask(
+                (gdf[perc_complete_column] >= i) & (gdf[perc_complete_column] < i + perc_steps),
+                range_label
+            )
+
+        # Handle the max_val separately to include it in the last range
+        gdf[legend_column] = gdf[legend_column].mask(
+            gdf[perc_complete_column] >= max_val - perc_steps,
+            f"{max_val}%"
+        )
+
+        gdf.drop(columns=['temp_split', 'num_parts'], inplace=True)
+        return gdf
 
     def export_geojsons(self, cname_to_summarize=None, *args):
         print(f'{self.gdf_dict.keys()}')
@@ -323,14 +401,16 @@ class WriteNewGeoJSON:
                 if "Prod Stage" in gdf.columns:
                     gdf["Prod Stage"] = gdf["Prod Stage"].replace(PROD_STATUS_MAPPING)
                 unique_names = gdf[cname_to_summarize].unique()
-                print(f"Unique {cname_to_summarize} values: {[u for u in unique_names if u]}")
+                print(f"Unique {cname_to_summarize} values: {[u for u in unique_names]}")
                 print(f'   Plus, {None if None in unique_names else "No-NULL"}  values')
                 gdf_to_geojson(gdf, self.output_folder, name)
+                df = gdf.drop(columns='geometry')
+                df_to_json(df, self.output_folder, name)
 
                 # Excel Export
                 excel_folder = os.path.dirname(os.path.dirname(self.output_folder)) + "/tables/"
                 os.makedirs(excel_folder, exist_ok=True)
-                gdf_to_excel(gdf, excel_folder, name, sheetname="Tracking_Main")
+                df_to_excel(df, excel_folder, name, sheetname="Tracking_Main")
 
             else:
                 print(f"{cname_to_summarize} not in {name} columns")
@@ -364,7 +444,7 @@ class WriteNewGeoJSON:
                         yield filtered_gdf
 
 
-cname = "Addl_Grd_MM"
+cname = "FRP_Perc_Complete_Legend"
 keywords = ["TODO", "UPDATE"]
 to_gdf = WriteNewGeoJSON()
 to_gdf.export_geojsons(cname, *keywords)

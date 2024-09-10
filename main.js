@@ -193,25 +193,29 @@ map.on('load', () => {
     });
     // log("Layers added", map.getLayer('pbl-areas'), map.getLayer('grid-status'), map.getLayer('prod-status'));
 
-    /*    // Fit bounds
-    console.log("Layer added");
-    map.on('data', (e) => {
-    if (e.dataType === 'source' && e.sourceId === 'ProjectAreas' && map.getLayer('pbl-areas')) {
-        const features = map.querySourceFeatures('ProjectAreas', { sourceLayer: 'pbl-areas' });
-        if (features.length > 0) {
-            const bbox = turf.bbox({
-                type: 'FeatureCollection',
-                features: features
-                });
-            map.fitBounds(bbox, {
-                padding: 30,  // Increase the padding to zoom out more
-                maxZoom: 15,
-                minZoom: 3,
-                duration: 1000
-                });
-            }
+    // Add FRP Status Layers
+    map.addLayer({
+        id: 'frp-status',
+        type: 'fill',
+        source: 'ProjectAreas',
+        layout: {
+            // Make the layer invisible by default.
+            'visibility': 'none'
+        },
+        paint: {
+            'fill-color': [
+                'match',
+                ['get', 'FRP_Perc_Complete_Legend'],
+                "0%", 'rgba(255,0,0,0.19)', // Default color for values less than the first stop
+                "33%", 'rgba(255,187,0,0.75)', // Color for values >= 30
+                // 50, 'rgba(255, 165, 0, 0.5)', // Color for values >= 40
+                "67%", 'rgba(255,251,0,0.66)', // Color for values >= 60
+                // 76, 'rgb(0,92,175)', // Color for values >= 60
+                "100%", 'rgba(42,221,1,0.5)', // Color for values >= 100
+                'rgba(128,128,128,0)' // Default color for unmatched cases
+            ]
         }
-    });*/
+    });
 
     // Add highlight hover layer
     map.addLayer({
@@ -373,7 +377,8 @@ map.on('load', () => {
         'Updates': 'notes-update',
         'TODOs': 'notes-todo',
         'Grid Status': 'grid-status',
-        'Assignment': 'pbl-areas',};
+        'Assignment': 'pbl-areas',
+        'FRP Status': 'frp-status',};
 
     // Add more groups and layers as needed
     const mapLegend = populateLegend(map, legendLayers);
@@ -381,6 +386,7 @@ map.on('load', () => {
 
     // Add layer-group control
     const controlLayers = {
+        'FRP Status': ['frp-status'],
         'BFE TODO': ['bfe-todo'],
         'Production Status': ['prod-status'],
         'Grid Status': ['grid-status'],
