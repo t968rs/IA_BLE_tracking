@@ -57,7 +57,7 @@ function containsUnwantedSubstring(property) {
 }
 
 // Function to create popup content with table formatting
-export async function areaPopupContent(clickedfeature) {
+export async function areaPopupContent(clickedfeature, addONS) {
     let popupContent = '<strong><p style="font-size: 12px;">Iowa BLE Area Info</strong><p>';
     popupContent += '<table class="popup-table"><thead><tr><th></th><th></th></tr></thead><tbody>';
 
@@ -76,11 +76,52 @@ export async function areaPopupContent(clickedfeature) {
             popupContent += `<tr><td><strong>${displayProperty}</strong></td><td>${displayValue}</td></tr>`;
         }
     }
+    if (addONS !== undefined && addONS !== null && addONS !== "" && addONS !== " ") {
+        for (let [key, value] of Object.entries(addONS)) {
+            popupContent += `<tr><td><strong>${key}</strong></td><td>${value}</td></tr>`;
+        }
 
+    }
     popupContent += '</tbody></table>';
+    // Adjust the popup position
+    adjustPopupPosition(popupContent);
     return popupContent;
 }
 
+function adjustPopupPosition(popup) {
+    const mapContainer = document.getElementById('map');
+    const legend = document.querySelector('.map-legend');
+    const controls = document.getElementById('#controls-container');
+
+    const mapRect = mapContainer.getBoundingClientRect();
+    const legendRect = legend.getBoundingClientRect();
+    const controlsRect = controls.getBoundingClientRect();
+    const popupRect = popup.getBoundingClientRect();
+
+    // Adjust position to stay within the map area
+    if (popupRect.right > mapRect.right) {
+        popup.style.left = `${mapRect.right - popupRect.width}px`;
+    }
+    if (popupRect.bottom > mapRect.bottom) {
+        popup.style.top = `${mapRect.bottom - popupRect.height}px`;
+    }
+    if (popupRect.left < mapRect.left) {
+        popup.style.left = `${mapRect.left}px`;
+    }
+    if (popupRect.top < mapRect.top) {
+        popup.style.top = `${mapRect.top}px`;
+    }
+
+    // Adjust position to avoid overlapping with legend
+    if (popupRect.right > legendRect.left && popupRect.left < legendRect.right) {
+        popup.style.left = `${legendRect.right + 10}px`;
+    }
+
+    // Adjust position to avoid overlapping with controls
+    if (popupRect.bottom > controlsRect.top && popupRect.top < controlsRect.bottom) {
+        popup.style.top = `${controlsRect.bottom + 10}px`;
+    }
+}
 
 // Function to fit map to the bounds of the specified layer
 export function fitMapToFeatureBounds(map, feature) {

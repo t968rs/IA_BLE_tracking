@@ -417,6 +417,9 @@ class WriteNewGeoJSON:
                 oupath = self.output_folder + f"{name}.geojson"
                 if not os.path.exists(oupath):
                     gdf_to_geojson(gdf, self.output_folder, name)
+                outpath = self.output_folder + f"{name}.json"
+                if not os.path.exists(outpath):
+                    df_to_json(gdf, self.output_folder, name)
 
         self.gdf_dict.update(new_gdf)
 
