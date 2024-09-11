@@ -57,10 +57,14 @@ function containsUnwantedSubstring(property) {
 }
 
 // Function to create popup content with table formatting
-export async function areaPopupContent(clickedfeature, addONS) {
-    let popupContent = '<strong><p style="font-size: 12px;">Iowa BLE Area Info</strong><p>';
+export async function areaPopupContent(map, clickedfeature, addONS) {
+    let popupContent = '<strong><p class="popup-table">Iowa BLE Area Info</strong><p>';
     popupContent += '<table class="popup-table"><thead><tr><th></th><th></th></tr></thead><tbody>';
-
+    if (addONS !== undefined && addONS !== null && addONS !== "" && addONS !== " ") {
+        for (let [key, value] of Object.entries(addONS)) {
+            popupContent += `<tr><td><strong>${key}</strong></td><td>${value}</td></tr>`;
+        }
+    }
     for (let property in clickedfeature.properties) {
         if (!unwanted.includes(property) && !containsUnwantedSubstring(property)) {
             let displayValue, displayProperty;
@@ -70,57 +74,42 @@ export async function areaPopupContent(clickedfeature, addONS) {
             } else {
                 displayValue = clickedfeature.properties[property];
                 displayProperty = property.replace(/_/g, ' ')
-                    .replace('  ', ' ').replace("Su", "Submit")
+                displayProperty = displayProperty.replace('  ', ' ').replace("Su", "Submit")
                     .replace("Mapping In", "Ph1 Mapped By")
+                    .replace("Perc", "%")
             }
             popupContent += `<tr><td><strong>${displayProperty}</strong></td><td>${displayValue}</td></tr>`;
         }
     }
-    if (addONS !== undefined && addONS !== null && addONS !== "" && addONS !== " ") {
-        for (let [key, value] of Object.entries(addONS)) {
-            popupContent += `<tr><td><strong>${key}</strong></td><td>${value}</td></tr>`;
-        }
 
-    }
     popupContent += '</tbody></table>';
-    // Adjust the popup position
-    adjustPopupPosition(popupContent);
+
+    // Fit the map to the popup and feature
+    fitMapToPopup(map, clickedfeature);
+
     return popupContent;
 }
 
-function adjustPopupPosition(popup) {
-    const mapContainer = document.getElementById('map');
-    const legend = document.querySelector('.map-legend');
-    const controls = document.getElementById('#controls-container');
+// Function to fit the map to the bounds of the popup and its feature
+function fitMapToPopup(map, feature) {
+    // Get the bounding box of the feature
+    const featureBounds = new mapboxgl.LngLatBounds();
+    console.log("BONUDS: ", featureBounds);
+    feature.geometry.coordinates[0].forEach(coord => {
+        const [lng, lat] = coord;
+        // console.log("Lat: ", lat, " Lng: ", lng);
+        if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+            featureBounds.extend(coord);
+        } else {
+            console.error(`Invalid coordinate: [${lng}, ${lat}]`);
+        }
+    });
 
-    const mapRect = mapContainer.getBoundingClientRect();
-    const legendRect = legend.getBoundingClientRect();
-    const controlsRect = controls.getBoundingClientRect();
-    const popupRect = popup.getBoundingClientRect();
-
-    // Adjust position to stay within the map area
-    if (popupRect.right > mapRect.right) {
-        popup.style.left = `${mapRect.right - popupRect.width}px`;
-    }
-    if (popupRect.bottom > mapRect.bottom) {
-        popup.style.top = `${mapRect.bottom - popupRect.height}px`;
-    }
-    if (popupRect.left < mapRect.left) {
-        popup.style.left = `${mapRect.left}px`;
-    }
-    if (popupRect.top < mapRect.top) {
-        popup.style.top = `${mapRect.top}px`;
-    }
-
-    // Adjust position to avoid overlapping with legend
-    if (popupRect.right > legendRect.left && popupRect.left < legendRect.right) {
-        popup.style.left = `${legendRect.right + 10}px`;
-    }
-
-    // Adjust position to avoid overlapping with controls
-    if (popupRect.bottom > controlsRect.top && popupRect.top < controlsRect.bottom) {
-        popup.style.top = `${controlsRect.bottom + 10}px`;
-    }
+    // Fit the map to the feature bounds
+    map.jumpTo({
+        center: featureBounds.getCenter(),
+        zoom: 8,
+    });
 }
 
 // Function to fit map to the bounds of the specified layer
@@ -172,8 +161,8 @@ export function ensurePopupFits(map, popup, coordinates) {
     const popupBounds = new mapboxgl.LngLatBounds();
 
     // Calculate the popup's bounding box
-    const popupWidth = 200; // Approximate width of the popup in pixels
-    const popupHeight = 100; // Approximate height of the popup in pixels
+    const popupWidth = 300; // Approximate width of the popup in pixels
+    const popupHeight = 200; // Approximate height of the popup in pixels
     const popupOffset = popup.options.offset || [0, 0];
 
     // Convert pixel dimensions to map coordinates
@@ -256,6 +245,17 @@ export async function populateLegend(map, layersToInclude) {
 
     for (const [group, map_lyr] of Object.entries(groupLayers)) {
         if (map_lyr && map_lyr.paint) {
+            if (!["Updates", "TODOs"].includes(group)) {
+                // Group Heading
+                const heading = document.createElement('div');
+                heading.className = 'legend-group';
+                const headingWords = document.createElement('span');
+                headingWords.style.height = '11px'; // Adjust the height as needed
+                headingWords.innerHTML = group;
+                heading.appendChild(headingWords);
+                legend.appendChild(heading);
+            }
+
             const paint = map_lyr.paint;
             let colorProperty = "";
             const colorProps = Object.keys(paint).filter(c => c.includes('color'));
@@ -300,6 +300,10 @@ export async function populateLegend(map, layersToInclude) {
                 }
             }
         }
+    // Add a small gap between legend items
+    const gap = document.createElement('div');
+    gap.style.height = '10px'; // Adjust the height as needed
+    legend.appendChild(gap);
     }
 }
 
@@ -334,6 +338,7 @@ export function createLayerControls(map, layerGroups) {
         groupCheckbox.checked = allVisibleinGroup(map, layers) === 'visible';
 
         groupCheckbox.addEventListener('change', () => toggleLayerGroup(map, layers, groupCheckbox.checked));
+
         checkboxCell.appendChild(groupCheckbox);
 
         const labelCell = document.createElement('td');

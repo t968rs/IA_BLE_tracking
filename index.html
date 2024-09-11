@@ -15,24 +15,15 @@
 <body>
     <div id="title-box">Iowa BLE Project Tracking Map</div>
     <div id="map"></div>
-<!--    <button id="edit-mode-btn">Edit Mode</button>
-    <div id="edit-form" style="display: none;">
-        <h3>Edit Feature</h3>
-        <form id="feature-edit-form">
-            &lt;!&ndash; Dynamic form fields will be added here &ndash;&gt;
-            <button type="submit" id="save-btn">Save</button>
-            <button type="button" id="exit-edit-mode-btn">Exit Edit Mode</button>
-        </form>
-    </div>-->
     <div id="controls-container">
-        <div id="legend" class="map-legend"></div>
         <div id="layer-controls">
             <table id="layer-controls-table"></table>
         </div>
-        <div class="popup-container">
-            <button class="close-btn" onclick="closePopup()" type="button" aria-label="Close popup">×</button>
-            <ul id="popup-content"></ul>
-        </div>
+        <div id="legend" class="map-legend"></div>
+    </div>
+    <div class="popup-container" style="display: none;">
+        <button class="close-btn" onclick="closePopup()" type="button" aria-label="Close popup">×</button>
+        <ul id="popup-content"></ul>
     </div>
     <script src="main.js" type="module"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
