@@ -75,7 +75,6 @@ map.on('load', () => {
     });
     map.doubleClickZoom.enable();
 
-
     // Assignments Layer pbl-areas
     map.addLayer({
         id: 'pbl-areas',
@@ -88,7 +87,7 @@ map.on('load', () => {
         paint: {
             'fill-color': [
                 'match',
-                ['get', 'PBL_Assign'],
+                ['get', 'P02a_Assign'],
                 'RK',
                 'rgba(214, 95, 0, 0.5)', // 50% transparency
                 'EC',
@@ -101,12 +100,10 @@ map.on('load', () => {
                 'rgba(149, 55, 237, 0.5)', // 50% transparency
                 'AE',
                 'rgba(55,188,237, 0.3)', // Match fill color
-                '* other *',
                 'rgba(204, 204, 204, 0)', // 0% transparency
-                'rgba(0, 0, 0, 0)' // Default color for unmatched cases
             ]
         },
-        filter: ['!=', ['get', 'PBL_Assign'], null]
+        filter: ['!=', ['get', 'P02a_Assign'], null]
     });
 
     // Add grid status layer
@@ -171,7 +168,7 @@ map.on('load', () => {
         source: 'ProjectAreas',
         layout: {
             // Make the layer visible by default.
-            'visibility': 'visible'
+            'visibility': 'none'
         },
         paint: {
             'fill-color': [
@@ -196,7 +193,6 @@ map.on('load', () => {
             ]
         }
     });
-    // log("Layers added", map.getLayer('pbl-areas'), map.getLayer('grid-status'), map.getLayer('prod-status'));
 
     // Add FRP Status Layers
     map.addLayer({
@@ -232,7 +228,6 @@ map.on('load', () => {
             'line-width': 1
         }
     });
-
 
     // Ensure the source is added before the layer
     if (map.getSource('CustomModelBoundaries')) {
@@ -280,11 +275,11 @@ map.on('load', () => {
             'circle-color': "rgba(170,14,163,0.93)",
             "circle-stroke-color": "rgba(255,101,248,0.93)",
             "circle-stroke-width": 1,
-            'circle-radius': 15,
+            'circle-radius': 10,
     },
         layout: {
             // Make the layer visible by default.
-            'visibility': 'visible'
+            'visibility': 'none'
         },
     });
 
@@ -299,15 +294,13 @@ map.on('load', () => {
             "circle-stroke-color": "rgba(108,164,255,0.93)",
             "circle-stroke-width": 1,
             "circle-emissive-strength": 0.5,
-            'circle-radius': 15,
+            'circle-radius': 10,
     },
         layout: {
             // Make the layer visible by default.
-            'visibility': 'visible'
+            'visibility': 'none'
         },
     });
-    // console.log("Circles added", map.getLayer('grid-notes-update'), map.getLayer('grid-notes-todo'));
-
 
     // Add state boundary layer
     map.addLayer({
@@ -400,6 +393,20 @@ map.on('load', () => {
         }
     });
 
+    // Add layer-group control
+    const controlLayers = {
+        'FRP Status': ['frp-status'],
+        'BFE TODO': ['bfe-todo'],
+        'Production Status': ['prod-status'],
+        'Mod Model Outlines': ['model-outlines-mod'],
+        'Grid Status': ['grid-status'],
+        'Updates': ['notes-update'],
+        'ToDo': ['notes-todo'],
+        'Assignment': ['pbl-areas', 'pbl-areas-labels-with-pbl',],
+    // Add more groups and layers as needed
+    };
+    createLayerControls(map, controlLayers);
+
     console.log(map.getStyle().layers)
     console.log('Layers added');
     // create legend
@@ -417,22 +424,7 @@ map.on('load', () => {
     const mapLegend = populateLegend(map, legendLayers);
     updateLegendOnVisibilityChange(map, legendLayers);
 
-    // Add layer-group control
-    const controlLayers = {
-        'FRP Status': ['frp-status'],
-        'BFE TODO': ['bfe-todo'],
-        'Production Status': ['prod-status'],
-        'Mod Model Outlines': ['model-outlines-mod'],
-        'Grid Status': ['grid-status'],
-        'Updates': ['notes-update'],
-        'ToDo': ['notes-todo'],
-        'Assignment': ['pbl-areas', 'pbl-areas-labels-with-pbl',],
-    // Add more groups and layers as needed
-    };
-    createLayerControls(map, controlLayers);
 
-    // Add editor functionality
-    // getEditor(map, ['areas-interaction']);
 
     map.on('click', async (e) => {
     const features = map.queryRenderedFeatures(e.point, {
@@ -484,7 +476,7 @@ map.on('load', () => {
         }
 
         if (clickedfeature.layer.id === 'areas-interaction') {
-            const mapPopupContent = await areaPopupContent(clickedfeature, addONS);
+            const mapPopupContent = await areaPopupContent(map, clickedfeature, addONS);
             // Create the popup
             loc_popup = new mapboxgl.Popup({
                 closeButton: true,
@@ -502,7 +494,6 @@ map.on('load', () => {
         // fitMapToFeatureBounds(map, clickedfeature);
     }
     });
-
 
     // Add event listeners for mouse enter and leave
     map.on('mousemove', 'areas-interaction', (e) => {
