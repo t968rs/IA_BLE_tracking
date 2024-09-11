@@ -43,6 +43,10 @@ map.on('load', () => {
         type: 'geojson',
         data: './data/spatial/Iowa_BLE_Tracking.geojson'
     });
+    map.addSource("CustomModelBoundaries", {
+        type: "geojson",
+        data: "./data/spatial/Iowa_WhereISmodel.geojson"
+    })
     map.addSource('TODOPoints', {
         type: 'geojson',
         data: './data/spatial/TODO_points.geojson'
@@ -57,6 +61,7 @@ map.on('load', () => {
     })
 
     // Fit bounds
+    // console.log(map.getStyle().sources);
     console.log("Map Added/Loaded");
     map.getSource('ProjectAreas').on('data', (e) => {
         if (e.isSourceLoaded) {
@@ -217,17 +222,6 @@ map.on('load', () => {
         }
     });
 
-    // Add highlight hover layer
-    map.addLayer({
-        id: 'areas-highlight',
-        type: 'fill',
-        source: 'ProjectAreas',
-        paint: {
-            'fill-color': 'rgba(255, 255, 255, 0.5)' // Transparent white for highlight
-        },
-        filter: ['==', 'HUC8', ''] // Initially no feature is highlighted
-    });
-
     // Add outline layer
     map.addLayer({
         id: 'areas-outline',
@@ -237,6 +231,43 @@ map.on('load', () => {
             'line-color': 'rgb(247, 247, 247)',
             'line-width': 1
         }
+    });
+
+
+    // Ensure the source is added before the layer
+    if (map.getSource('CustomModelBoundaries')) {
+        console.log('Source CustomModelBoundaries found');
+
+        // Add model outlines (CUSTOM OUTLINES)
+        map.addLayer({
+            id: 'model-outlines-mod',
+            type: "fill",
+            source: 'CustomModelBoundaries',
+            layout: {'visibility': 'none'},
+            paint: {
+                'fill-color': [
+                    "match",
+                    ["get", "Model_ID"],
+                    "1023000104", 'rgba(0,255,140,0.7)', // Color
+                    "1023000605", 'rgba(247,255,0,0.7)',
+                    "1023000703A", 'rgba(255,106,0,0.7)',
+                    'rgba(0,0,0,0)'
+                ],
+                'fill-outline-color': 'rgb(200,108,255)',
+                'fill-outline-width': 2
+            }
+        });
+    }
+
+    // Add highlight hover layer
+    map.addLayer({
+        id: 'areas-highlight',
+        type: 'fill',
+        source: 'ProjectAreas',
+        paint: {
+            'fill-color': 'rgba(255, 255, 255, 0.5)' // Transparent white for highlight
+        },
+        filter: ['==', 'HUC8', ''] // Initially no feature is highlighted
     });
 
     // Add grids notes layer 1
@@ -369,6 +400,7 @@ map.on('load', () => {
         }
     });
 
+    console.log(map.getStyle().layers)
     console.log('Layers added');
     // create legend
     const legendLayers  = {
@@ -378,7 +410,8 @@ map.on('load', () => {
         'TODOs': 'notes-todo',
         'Grid Status': 'grid-status',
         'Assignment': 'pbl-areas',
-        'FRP Status': 'frp-status',};
+        'FRP Status': 'frp-status',
+        'Mod Model Outlines': 'model-outlines-mod',};
 
     // Add more groups and layers as needed
     const mapLegend = populateLegend(map, legendLayers);
@@ -389,6 +422,7 @@ map.on('load', () => {
         'FRP Status': ['frp-status'],
         'BFE TODO': ['bfe-todo'],
         'Production Status': ['prod-status'],
+        'Mod Model Outlines': ['model-outlines-mod'],
         'Grid Status': ['grid-status'],
         'Updates': ['notes-update'],
         'ToDo': ['notes-todo'],
@@ -402,7 +436,7 @@ map.on('load', () => {
 
     map.on('click', async (e) => {
     const features = map.queryRenderedFeatures(e.point, {
-        layers: ['areas-interaction'],  // replace 'your-interaction-layer' with the id of your layer
+        layers: ['areas-interaction', 'model-outlines-mod'],  // replace 'your-interaction-layer' with the id of your layer
     });
     if (!features.length) {
         console.log('No features found');
@@ -413,6 +447,14 @@ map.on('load', () => {
         return;
     }
     // Check if the feature belongs to the 'areas-interaction' layer
+    let addONS = {};
+    for (const clickedfeature of features) {
+        // Calculate the centroid of the polygon
+        if ("DS_1" in clickedfeature.properties) {
+            const modelid = clickedfeature.properties["Model_ID"];
+            addONS = {"Model_ID": modelid};
+        }
+    }
     const feature = features.find(f => f.layer.id === 'areas-interaction');
     if (!feature) {
         console.log('Clicked feature is not part of areas-interaction');
@@ -423,7 +465,6 @@ map.on('load', () => {
         return;
     }
 
-    // console.log('Features found');
     // Remove any existing popup to prevent content from appending
     if (loc_popup) {
         loc_popup.remove();
@@ -434,8 +475,7 @@ map.on('load', () => {
         // Calculate the centroid of the polygon
         const centroid = turf.centroid(clickedfeature);
         const coordinates = centroid.geometry.coordinates;
-        let featid = features[0].properties["HUC8"];
-        // console.log("Feature ID: ", locid);
+        console.log('Clicked feature:', clickedfeature.layer.id);
 
         // Ensure coordinates are in the correct format
         if (!Array.isArray(coordinates) || coordinates.length !== 2) {
@@ -443,17 +483,19 @@ map.on('load', () => {
             continue;
         }
 
-        const mapPopupContent = await areaPopupContent(clickedfeature);
-        // Create the popup
-        loc_popup = new mapboxgl.Popup({
-            closeButton: true,
-            closeOnClick: true,
-            anchor: 'bottom', // Adjust anchor as needed (bottom, top, left, right)
-            offset: [0, -15] // Adjust offset as needed to make sure popup is visible
-        })
-        .setLngLat(coordinates)
-        .setHTML(mapPopupContent)
-        .addTo(map);
+        if (clickedfeature.layer.id === 'areas-interaction') {
+            const mapPopupContent = await areaPopupContent(clickedfeature, addONS);
+            // Create the popup
+            loc_popup = new mapboxgl.Popup({
+                closeButton: true,
+                closeOnClick: true,
+                anchor: 'bottom', // Adjust anchor as needed (bottom, top, left, right)
+                offset: [0, -15] // Adjust offset as needed to make sure popup is visible
+            })
+                .setLngLat(coordinates)
+                .setHTML(mapPopupContent)
+                .addTo(map);
+        }
 
 
         // Ensure the popup fits within the current map bounds

@@ -50,9 +50,9 @@ iframe {
     cursor: ns-resize; /* Change mouse pointer style when hovering over the border */
 }
 
-/*#excel-table-container:hover {
-    cursor: ns-resize; !* Change mouse pointer style when hovering over the border *!
-}*/
+#excel-table-container:hover {
+    background-color: #ceb4fb; /* Change mouse pointer style when hovering over the border *!
+}
 
 .highlight-row {
     background-color: #202020; /* Example: light gray background */
@@ -156,6 +156,7 @@ th {
         padding: 6px; /* Further adjust padding for very small screens */
     }
 }
+
 #map {
     position: absolute;
     top: 4%;
@@ -239,7 +240,7 @@ th {
             padding: 10px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.3);
             z-index: 1000; /* Ensure it appears above the map */
-            width: 200px; /* Adjust as needed */
+            width: 300px; /* Adjust as needed */
             height: auto;
             max-height: 200px;
             overflow-y: auto;
@@ -264,7 +265,22 @@ th {
 }
 
 .top-left-popup li {
-    margin-bottom: 5px; /* Optional: Add some spacing between list items */
+    margin-bottom: 2px; /* Optional: Add some spacing between list items */
+}
+
+.popup-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.popup-table th, .popup-table td {
+    border: 1px solid #ddd;
+    padding: 3px;
+}
+
+.popup-table th {
+    background-color: #f2f2f2;
+    text-align: left;
 }
 
 #layer-controls {
