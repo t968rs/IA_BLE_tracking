@@ -1,13 +1,11 @@
 // Add event listeners to the close buttons
 document.addEventListener('DOMContentLoaded', () => {
-    const closeLegendButton = document.querySelector('#legend .close-btn');
-    if (closeLegendButton) {
-        closeLegendButton.addEventListener('click', closeLegend);
-    }
-
-    const closePopupButton = document.querySelector('.popup-container .close-btn');
+    const closePopupButton = document.querySelector('.popup-container .close-btn, .mapboxgl-popup-content .close-btn');
     if (closePopupButton) {
+        console.log("Close button found:", closePopupButton);
         closePopupButton.addEventListener('click', closePopup);
+    } else {
+        console.error('Close button not found');
     }
 });
 
@@ -57,9 +55,9 @@ function containsUnwantedSubstring(property) {
 }
 
 // Function to create popup content with table formatting
-export async function areaPopupContent(map, clickedfeature, addONS) {
-    let popupContent = '<strong><p class="popup-table">Iowa BLE Area Info</strong><p>';
-    popupContent += '<table class="popup-table"><thead><tr><th></th><th></th></tr></thead><tbody>';
+export async function areaPopupContent(clickedfeature, addONS) {
+    let popupContent = '<div class="popup-table-title">Iowa BLE Area Info</div>';
+    popupContent += '<table class="popup-table">';
     if (addONS !== undefined && addONS !== null && addONS !== "" && addONS !== " ") {
         for (let [key, value] of Object.entries(addONS)) {
             popupContent += `<tr><td><strong>${key}</strong></td><td>${value}</td></tr>`;
@@ -85,13 +83,13 @@ export async function areaPopupContent(map, clickedfeature, addONS) {
     popupContent += '</tbody></table>';
 
     // Fit the map to the popup and feature
-    fitMapToPopup(map, clickedfeature);
+    const featureBounds = getFeatureBounds(clickedfeature);
 
-    return popupContent;
+    return [popupContent, featureBounds];
 }
 
 // Function to fit the map to the bounds of the popup and its feature
-function fitMapToPopup(map, feature) {
+function getFeatureBounds(feature) {
     // Get the bounding box of the feature
     const featureBounds = new mapboxgl.LngLatBounds();
     console.log("BONUDS: ", featureBounds);
@@ -106,10 +104,8 @@ function fitMapToPopup(map, feature) {
     });
 
     // Fit the map to the feature bounds
-    map.jumpTo({
-        center: featureBounds.getCenter(),
-        zoom: 8,
-    });
+    console.log("With popup Bounds: ", featureBounds);
+    return featureBounds;
 }
 
 // Function to fit map to the bounds of the specified layer
@@ -185,9 +181,12 @@ export function ensurePopupFits(map, popup, coordinates) {
 
 // Function to close the popup
 export function closePopup() {
-    const popup = document.querySelector('.popup-container');
+    console.log("closePopup function called");
+    const popup = document.querySelector('.popup-container .close-btn, .mapboxgl-popup-content .close-btn');
     if (popup) {
+        console.log("Popup element found:", popup);
         popup.style.display = 'none';
+        console.log("Popup close clicked");
     } else {
         console.error('Popup element not found');
     }
@@ -377,14 +376,4 @@ function convertToArray(obj) {
         return Object.values(obj); // Convert object to array
     }
 }
-/*// Example of updating the popup content and displaying the popup
-function updatePopupContent(content) {
-    const popup = document.getElementById('top-left-popup');
-    const contentElement = document.getElementById('popup-content');
-    if (!popup || !contentElement) {
-        console.error('Popup or content element not found');
-        return;
-    }
-    contentElement.innerHTML = content;
-    popup.style.display = 'block';
-}*/
+

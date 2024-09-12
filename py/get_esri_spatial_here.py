@@ -3,6 +3,71 @@ import geopandas as gpd
 import json
 import pandas as pd
 import warnings
+import typing as T
+from shapely.geometry import Polygon
+
+import pyproj
+
+
+def get_utm_zone(gdf):
+    # Get UTM area
+
+    # Get input CRS and bounding box
+    input_crs = gdf.crs
+    bbox = gdf.total_bounds.tolist()
+    extent_gdf = bbox_to_gdf(bbox, input_crs)
+
+    east_lon_degree, north_lat_degree, south_lat_degree, west_lon_degree = bbox
+    aoi = pyproj.aoi.AreaOfInterest(east_lon_degree, north_lat_degree, south_lat_degree, west_lon_degree)
+    # print(f"  AOI: {aoi}")
+    utm_list = pyproj.database.query_utm_crs_info("WGS 84", aoi)
+
+    areas_lookup = {}
+    for utm in utm_list:
+        utm_aoi = utm.area_of_use
+        aoi_bounds = utm_aoi.bounds
+        utm_gdf = bbox_to_gdf(aoi_bounds, input_crs)
+
+        # Get area of intersection
+        # extent_gdf_convert = extent_gdf.to_crs(epsg=utm.code)
+        intsct_area = extent_gdf.intersection(utm_gdf)
+        # Check if intersection is valid and not empty
+        if not intsct_area.is_empty.any():
+            intersect_units = intsct_area.crs.axis_info[0].unit_name
+            # print(f"  Intsct Units: {intersect_units}")
+            total_area = intsct_area.geometry.area.sum()
+            # print(f"  Intsct Area: {total_area}")
+            areas_lookup[utm.code] = total_area
+
+    max_area = max(areas_lookup, key=areas_lookup.get)
+    # print(f"  UTM Area: {max_area}")
+    return max_area
+
+
+def bbox_to_gdf(bbox_tuple, crs, name_str=None, outfolder=None) -> gpd.GeoDataFrame:
+    # function to return polygon
+    # long0, lat0, lat1, long1
+    west, south, east, north = bbox_tuple
+    vertices = [
+        (west, south),
+        (east, south),
+        (east, north),
+        (west, north),
+        (west, south)]  # Closing the polygon by repeating the first vertex
+    polygon = Polygon(vertices)
+
+    gdf = gpd.GeoDataFrame(geometry=[polygon], crs=crs)
+
+    gdf = gdf.buffer(0)
+    gdf = gdf[~gdf.is_empty]  # Step 2: Delete Null Geometry
+    gdf = gdf.explode(index_parts=False)
+    gdf.reset_index(drop=True, inplace=True)  # Optionally, reset index
+    if outfolder is not None and name_str is not None:
+        outpath = os.path.join(outfolder, f"box_test_{name_str}.shp")
+        gdf.to_file(outpath)
+    print(f'\n  Created pg from bounds')
+
+    return gdf
 
 
 def process_date(x):
@@ -96,6 +161,8 @@ PROD_STATUS_MAPPING = {"Draft DFIRM Submitted": "DD Submit",
 
 SPECIAL_COLUMNS = {"FRP": 3}
 
+STATIC_DATA = ["Iowa_WhereISmodel", "US_states"]
+
 
 def format_dates(gdf):
     """
@@ -118,6 +185,13 @@ def format_dates(gdf):
     gdf = gdf.replace("0000/00/00", "")
 
     return gdf
+
+
+def summarize_column(gdf, column):
+    if column in gdf.columns:
+        unique_names = gdf[column].unique()
+        print(f"Unique {column} values: {[u for u in unique_names]}")
+        print(f'   Plus, {None if None in unique_names else "No-NULL"}  values')
 
 
 def df_to_excel(df, out_loc, filename=None, sheetname="Sheet1"):
@@ -225,6 +299,42 @@ def reorder_gdf_columns(gdf, first_columns, last_columns=None):
     return gdf
 
 
+def aggregate_buffer_polygons(gdf, buffer_distance, summary_column: T.Union[str, list, None] = None):
+    """
+    Buffer and aggregate polygons in a GeoDataFrame.
+
+    Parameters:
+    gdf (GeoDataFrame): The GeoDataFrame containing the polygons to buffer and aggregate.
+    buffer_distance (float): The distance to buffer the polygons.
+    summary_column (str): The column to summarize the values of the polygons.
+
+    Returns:
+    GeoDataFrame: The GeoDataFrame with the buffered and aggregated polygons.
+    """
+    # .crs.axis_info[0].unit_name
+    convert_back = False
+    input_crs = gdf.crs
+    input_units = input_crs.axis_info[0].unit_name
+    print(f' Input CRS: {input_crs}, Units: {input_units}')
+    if input_crs.is_geographic or input_units != "metre":
+        max_area = get_utm_zone(gdf)
+        gdf = gdf.to_crs(epsg=max_area)
+        convert_back = True
+        print(f' Converted CRS to {gdf.crs}')
+    # Simplify the GeoDataFrame
+    gdf['geometry'] = gdf.simplify(tolerance=100)
+    # Aggregate the polygons
+    gdf = gdf.dissolve(by=summary_column).drop(
+        columns=[c for c in gdf.columns if c not in [summary_column, 'geometry']])
+    # Buffer the polygons
+    gdf['geometry'] = gdf['geometry'].buffer(buffer_distance, resolution=4)
+
+    if convert_back:
+        gdf = gdf.to_crs(input_crs)
+    gdf.to_file("buffered_polygons.shp")
+    return gdf
+
+
 def df_to_json(data, out_loc, filename=None):
     if isinstance(data, gpd.GeoDataFrame):
         df = pd.DataFrame(data.drop(columns='geometry'))
@@ -257,6 +367,8 @@ class WriteNewGeoJSON:
 
         self.esri_files = {}
         self.gdf_dict = {}
+        self.primary_spatial = None
+        self.cname_to_summarize = None
 
         self.crs_dict = {}
         self.c_lists = {}
@@ -384,58 +496,53 @@ class WriteNewGeoJSON:
         gdf.drop(columns=['temp_split', 'num_parts'], inplace=True)
         return gdf
 
-    def export_geojsons(self, cname_to_summarize=None, *args):
+    def export_geojsons(self, *kwd_args):
         print(f'{self.gdf_dict.keys()}')
 
+        # Iterate gdf dictionary
         new_gdf = {}
         for name, gdf in self.gdf_dict.items():
             print(f"Found {name}")
-
+            # Skip if static data and already exists
+            if name in STATIC_DATA:
+                outpath = self.output_folder + f"{name}.geojson"
+                if os.path.exists(outpath):
+                    continue
             # Create points
             points_gdf = get_centroids(gdf)
             new_gdf[f"{name}_points"] = points_gdf
 
-            # Export main Geojsons
-            if cname_to_summarize is not None and cname_to_summarize in gdf.columns:
-                # Rename Production Stage columns
-                if "Prod Stage" in gdf.columns:
-                    gdf["Prod Stage"] = gdf["Prod Stage"].replace(PROD_STATUS_MAPPING)
-                unique_names = gdf[cname_to_summarize].unique()
-                print(f"Unique {cname_to_summarize} values: {[u for u in unique_names]}")
-                print(f'   Plus, {None if None in unique_names else "No-NULL"}  values')
-                gdf_to_geojson(gdf, self.output_folder, name)
-                df = gdf.drop(columns='geometry')
-                df_to_json(df, self.output_folder, name)
+            columns = gdf.columns
+            # Rename Production Stage columns
+            if "Prod Stage" in columns:
+                gdf["Prod Stage"] = gdf["Prod Stage"].replace(PROD_STATUS_MAPPING)
+
+            gdf_to_geojson(gdf, self.output_folder, name)
+            df = gdf.drop(columns='geometry')
+            df_to_json(df, self.output_folder, name)
+
+            # Export Excel
+            if name == self.primary_spatial:
 
                 # Excel Export
                 excel_folder = os.path.dirname(os.path.dirname(self.output_folder)) + "/tables/"
                 os.makedirs(excel_folder, exist_ok=True)
                 df_to_excel(df, excel_folder, name, sheetname="Tracking_Main")
 
-            else:
-                print(f"{cname_to_summarize} not in {name} columns")
-                oupath = self.output_folder + f"{name}.geojson"
-                if not os.path.exists(oupath):
-                    gdf_to_geojson(gdf, self.output_folder, name)
-                outpath = self.output_folder + f"{name}.json"
-                if not os.path.exists(outpath):
-                    df_to_json(gdf, self.output_folder, name)
-
         self.gdf_dict.update(new_gdf)
 
-        print(f'Args: {args}')
-        for i, point_gdf in enumerate(self.export_specific_geojson(layer_names=None, args=args)):
+        print(f'Args: {kwd_args}')
+        for i, point_gdf in enumerate(self.export_specific_geojson(layer_names=None, args=kwd_args)):
             if isinstance(point_gdf, gpd.GeoDataFrame):
                 try:
-                    print(f' Exporting {args[i]}, {len(point_gdf)} points')
-                    gdf_to_geojson(point_gdf, self.output_folder, f"{args[i]}_points")
+                    print(f' Exporting {kwd_args[i]}, {len(point_gdf)} points')
+                    gdf_to_geojson(point_gdf, self.output_folder, f"{kwd_args[i]}_points")
                 except IndexError as ie:
-                    print(f'NUmber {i} does not have a gdf to export')
+                    print(f'Number {i} does not have a gdf to export')
                     print(f"Point GDF: {point_gdf}")
 
-    def export_specific_geojson(self, layer_names=None, args=None):
+    def export_specific_geojson(self, layer_names: list = None, args=None) -> gpd.GeoDataFrame:
 
-        print(f"Exporting specific GeoJSONs, {layer_names}, {args}")
         if layer_names is None:
             layer_names = ["Iowa_BLE_Tracking"]
 
@@ -449,8 +556,19 @@ class WriteNewGeoJSON:
                         filtered_gdf = filter_gdf_by_column(points_gdf, "Notes", keyword)
                         yield filtered_gdf
 
+    def update_iowa_status_map(self, summarize_column, kwd_list):
+        self.primary_spatial = "Iowa_BLE_Tracking"
+        self.cname_to_summarize = summarize_column
+        if not os.path.exists(f"{self.output_folder}Work_Areas.geojson"):
+            work_areas_gdf = aggregate_buffer_polygons(self.gdf_dict["Iowa_BLE_Tracking"],
+                                                       250, "TO_Area")
+            self.gdf_dict["Work_Areas"] = work_areas_gdf
+        self.export_geojsons(*kwd_list)
 
-cname = "FRP_Perc_Complete_Legend"
-keywords = ["TODO", "UPDATE"]
-to_gdf = WriteNewGeoJSON()
-to_gdf.export_geojsons(cname, *keywords)
+
+if __name__ == "__main__":
+    cname = None
+    keywords = ["TODO", "UPDATE"]
+    to_gdf = WriteNewGeoJSON()
+    to_gdf.update_iowa_status_map(cname, keywords)
+    print("Done")

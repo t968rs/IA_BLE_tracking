@@ -7,6 +7,7 @@ import {
     populateLegend,
     createLayerControls,
 } from './src/mapInteractions.js';
+// import MapboxDraw from "@mapbox/mapbox-gl-draw";
 
 // import { getEditor } from "./src/editor_functionality.js";
 
@@ -17,11 +18,11 @@ const map = new mapboxgl.Map({
     projection: 'albers', // Display the map as a globe, since satellite-v9 defaults to Mercator
     zoom: 7,
     minZoom: 0,
-    center: [-93, 42]
+    center: [-93.5, 42]
 });
 
 // Add user control
-map.addControl(new mapboxgl.NavigationControl());
+map.addControl(new mapboxgl.NavigationControl({showCompass: true, showZoom: true}));
 
 let loc_popup;
 
@@ -38,6 +39,11 @@ map.on('load', () => {
 
     // Call this function after the popup is created
     map.on('popupopen', fixAriaHiddenOnCloseButton);
+
+    map.addSource('WorkAreas', {
+        type: 'geojson',
+        data: './data/spatial/Work_Areas.geojson'
+    });
 
     map.addSource('ProjectAreas', {
         type: 'geojson',
@@ -59,21 +65,17 @@ map.on('load', () => {
         type: 'geojson',
         data: './data/spatial/US_states.geojson'
     })
+    const userDataSource = map.addSource('user', {
+        type: 'geojson',
+        data: './data/user_data/IA_user_data.geojson',
+        dynamic: true,
+        generateId: true
+    })
 
-    // Fit bounds
-    // console.log(map.getStyle().sources);
     console.log("Map Added/Loaded");
-    map.getSource('ProjectAreas').on('data', (e) => {
-        if (e.isSourceLoaded) {
-            map.fitBounds(turf.bbox(e.source.data), {
-                padding: 30,  // Increase the padding to zoom out more
-                maxZoom: 15,
-                minZoom: 8,
-                duration: 1000
-            });
-        }
-    });
+
     map.doubleClickZoom.enable();
+
 
     // Assignments Layer pbl-areas
     map.addLayer({
@@ -254,18 +256,7 @@ map.on('load', () => {
         });
     }
 
-    // Add highlight hover layer
-    map.addLayer({
-        id: 'areas-highlight',
-        type: 'fill',
-        source: 'ProjectAreas',
-        paint: {
-            'fill-color': 'rgba(255, 255, 255, 0.5)' // Transparent white for highlight
-        },
-        filter: ['==', 'HUC8', ''] // Initially no feature is highlighted
-    });
-
-    // Add grids notes layer 1
+        // Add grids notes layer 1
     map.addLayer({
         id: 'notes-update',
         type: "circle",
@@ -302,6 +293,17 @@ map.on('load', () => {
         },
     });
 
+    // Add highlight hover layer
+    map.addLayer({
+        id: 'areas-highlight',
+        type: 'fill',
+        source: 'ProjectAreas',
+        paint: {
+            'fill-color': 'rgba(255, 255, 255, 0.5)' // Transparent white for highlight
+        },
+        filter: ['==', 'HUC8', ''] // Initially no feature is highlighted
+    });
+
     // Add state boundary layer
     map.addLayer({
         id: 'state-boundary-fill',
@@ -329,6 +331,26 @@ map.on('load', () => {
             'line-color': 'rgb(64,108,32)',
             'line-width': 1.2,
             'line-dasharray': [2, 3] // Dashed line
+        }
+    });
+
+    // Add work areas layer
+    map.addLayer({
+        id: 'work-areas',
+        type: 'line',
+        source: "WorkAreas",
+        layout: {
+            'visibility': 'visible'
+        },
+        paint: {
+            'line-color': [
+                'match', ['get', 'TO_Area'],
+                "FY20_1A", 'rgba(0,196,255,1)', // Color for FY20_1A
+                "FY21_2A", 'rgba(0,128,255,1)', // Color for FY21_2A
+                "FY22_3B", 'rgba(161,0,255,1)', // Color for FY22_3A
+                'rgba(0,0,0,0)' // Default color for unmatched cases
+            ],
+            'line-width': 3
         }
     });
 
@@ -393,6 +415,16 @@ map.on('load', () => {
         }
     });
 
+    // add draw layer transparent
+    map.addLayer({
+        id: 'user-draw-layer',
+        type: 'fill',
+        source: 'user',
+        paint: {
+            'fill-color': 'rgba(0, 0, 0, 0)' // Fully transparent fill
+        }
+    });
+
     // Add layer-group control
     const controlLayers = {
         'FRP Status': ['frp-status'],
@@ -424,8 +456,7 @@ map.on('load', () => {
     const mapLegend = populateLegend(map, legendLayers);
     updateLegendOnVisibilityChange(map, legendLayers);
 
-
-
+    // Click actions
     map.on('click', async (e) => {
     const features = map.queryRenderedFeatures(e.point, {
         layers: ['areas-interaction', 'model-outlines-mod'],  // replace 'your-interaction-layer' with the id of your layer
@@ -476,7 +507,9 @@ map.on('load', () => {
         }
 
         if (clickedfeature.layer.id === 'areas-interaction') {
-            const mapPopupContent = await areaPopupContent(map, clickedfeature, addONS);
+            // Get the popup content
+            const  [mapPopupContent, featureBounds] = await areaPopupContent(clickedfeature, addONS);
+            console.log('Clicked feature and popup bounds:', clickedfeature, featureBounds);
             // Create the popup
             loc_popup = new mapboxgl.Popup({
                 closeButton: true,
@@ -487,6 +520,9 @@ map.on('load', () => {
                 .setLngLat(coordinates)
                 .setHTML(mapPopupContent)
                 .addTo(map);
+            const centerOfBounds = featureBounds.getCenter();
+            console.log('Center of bounds:', centerOfBounds);
+            map.jumpTo({center: centerOfBounds})
         }
 
 
