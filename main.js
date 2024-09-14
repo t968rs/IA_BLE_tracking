@@ -1,8 +1,6 @@
 import {
     areaPopupContent,
-    fitMapToFeatureBounds,
     closePopup,
-    ensurePopupFits,
     updateLegendOnVisibilityChange,
     populateLegend,
     createLayerControls,
@@ -10,6 +8,8 @@ import {
 // import MapboxDraw from "@mapbox/mapbox-gl-draw";
 
 // import { getEditor } from "./src/editor_functionality.js";
+
+import Centroids from "./data/spatial/Centroids.json";
 
 mapboxgl.accessToken = 'pk.eyJ1IjoidDk2OHJzIiwiYSI6ImNpamF5cTcxZDAwY2R1bWx4cWJvd3JtYXoifQ.XqJkBCgSJeCCeF_yugpG5A';
 const map = new mapboxgl.Map({
@@ -25,6 +25,17 @@ const map = new mapboxgl.Map({
 map.addControl(new mapboxgl.NavigationControl({showCompass: true, showZoom: true}));
 
 let loc_popup;
+// Add event listeners to the close buttons
+document.addEventListener('DOMContentLoaded', () => {
+    const closePopupButton = document.querySelector('.popup-container .close-btn, .mapboxgl-popup-content .close-btn');
+    if (closePopupButton) {
+        console.log("Close button found:", closePopupButton);
+        closePopupButton.addEventListener('click', closePopup);
+    } else {
+        console.error('Close button not found');
+    }
+});
+console.log("Centroids: ", Centroids);
 
 // On Load event
 map.on('load', () => {
@@ -65,12 +76,18 @@ map.on('load', () => {
         type: 'geojson',
         data: './data/spatial/US_states.geojson'
     })
-    const userDataSource = map.addSource('user', {
+    map.addSource('BFE_EXAMPLE', {
         type: 'geojson',
-        data: './data/user_data/IA_user_data.geojson',
-        dynamic: true,
-        generateId: true
+        data: './data/spatial/S_BFE_Example.geojson'
     })
+
+
+    // const userDataSource = map.addSource('user', {
+    //     type: 'geojson',
+    //     data: './data/user_data/IA_user_data.geojson',
+    //     dynamic: true,
+    //     generateId: true
+    // })
 
     console.log("Map Added/Loaded");
 
@@ -233,7 +250,7 @@ map.on('load', () => {
 
     // Ensure the source is added before the layer
     if (map.getSource('CustomModelBoundaries')) {
-        console.log('Source CustomModelBoundaries found');
+        // console.log('Source CustomModelBoundaries found');
 
         // Add model outlines (CUSTOM OUTLINES)
         map.addLayer({
@@ -425,6 +442,17 @@ map.on('load', () => {
         }
     });
 
+    //add temp bfe layer
+    map.addLayer({
+        id: 'bfe-example',
+        type: 'line',
+        source: 'BFE_EXAMPLE',
+        paint: {
+            'line-color': 'rgb(0,0,0)',
+            'line-width': 2
+        }
+    });
+
     // Add layer-group control
     const controlLayers = {
         'FRP Status': ['frp-status'],
@@ -435,11 +463,13 @@ map.on('load', () => {
         'Updates': ['notes-update'],
         'ToDo': ['notes-todo'],
         'Assignment': ['pbl-areas', 'pbl-areas-labels-with-pbl',],
+        'BFE Example': ['bfe-example'],
     // Add more groups and layers as needed
     };
     createLayerControls(map, controlLayers);
 
-    console.log(map.getStyle().layers)
+    console.log("Sources: ", map.getStyle().sources)
+    console.log("Layers: ", map.getStyle().layers)
     console.log('Layers added');
     // create legend
     const legendLayers  = {
