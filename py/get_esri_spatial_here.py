@@ -132,6 +132,12 @@ def add_numbered_primary_key(gdf, col_name):
     return gdf
 
 
+GROUP_LAYERS_LOOKUP = {
+    "Iowa_BLE_Tracking": {"name": 'Production Status', 'zoom': 7},
+    "Iowa_WhereISmodel": {"name": 'Mod Model Outlines', 'zoom': 8},
+    "S_BFE_Example": {"name": 'BFE Example', 'zoom': 11},
+}
+
 COLUMN_MAPPING = {"Iowa_BLE_Tracking": {"huc8": "HUC8", "which_grid": "which_grid", "name": "Name", "Name HUC8": None,
                                         "BFE_TODO": "BFE_TODO",
                                         "has_AECOM": "Has AECOM Tie",
@@ -510,12 +516,29 @@ class WriteNewGeoJSON:
         gdf.drop(columns=['temp_split', 'num_parts'], inplace=True)
         return gdf
 
+    def output_centroids(self):
+        centroids = {}
+        for name, gdf in self.gdf_dict.items():
+            extent_gdf = bbox_to_gdf(gdf.total_bounds, gdf.crs, name)
+            centroid = extent_gdf.geometry.centroid
+            print(f"  Centroid: {centroid}")
+            center_tuple = (centroid.x[0], centroid.y[0])
+            print(f"  Center: {center_tuple}")
+            centroid_info = GROUP_LAYERS_LOOKUP.get(name, None)
+            if centroid_info:
+                outname = centroid_info.get("name", None)
+                if outname:
+                    centroids[outname] = {"Centroid": center_tuple, "Zoom": centroid_info.get("zoom", 7)}
+
+        with open(self.output_folder + "Centroids.json", 'w') as f:
+            json.dump(centroids, f, indent=2)
+
     def export_geojsons(self, *kwd_args):
         print(f'{self.gdf_dict.keys()}')
 
         # Iterate gdf dictionary
         new_gdf = {}
-        centroids = []
+
         for name, gdf in self.gdf_dict.items():
             print(f"Found {name}")
             # Skip if static data and already exists
@@ -534,13 +557,6 @@ class WriteNewGeoJSON:
 
             # Export GeoJSON
             gdf_to_geojson(gdf, self.output_folder, name)
-            extent_gdf = bbox_to_gdf(gdf.total_bounds, gdf.crs, name)
-            centroid = extent_gdf.geometry.centroid
-            print(f"  Centroid: {centroid}")
-            center_tuple = (centroid.x[0], centroid.y[0])
-            print(f"  Center: {center_tuple}")
-            centroids.append({"name": name, "center": center_tuple})
-
             df = gdf.drop(columns='geometry')
             df_to_json(df, self.output_folder, name)
 
@@ -552,8 +568,6 @@ class WriteNewGeoJSON:
                 df_to_excel(df, excel_folder, name, sheetname="Tracking_Main")
 
         self.gdf_dict.update(new_gdf)
-        centroid_df = pd.DataFrame(centroids)
-        df_to_json(centroid_df, self.output_folder, "Centroids")
 
         print(f'Args: {kwd_args}')
         for i, point_gdf in enumerate(self.export_specific_geojson(layer_names=None, args=kwd_args)):
@@ -588,6 +602,7 @@ class WriteNewGeoJSON:
                                                        250, "TO_Area")
             self.gdf_dict["Work_Areas"] = work_areas_gdf
         self.export_geojsons(*kwd_list)
+        self.output_centroids()
 
 
 if __name__ == "__main__":

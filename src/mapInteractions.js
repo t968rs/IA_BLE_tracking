@@ -137,6 +137,7 @@ function getCenterFromSourceData(map, layerId) {
         );
         bounds.extend(bboxBounds);
     }
+    console.log("Bounds: ", bounds);
     return bounds.getCenter();
 }
 
@@ -268,7 +269,7 @@ export function updateLegendOnVisibilityChange(map, layersToInclude) {
     });
 }
 
-export function createLayerControls(map, layerGroups) {
+export function createLayerControls(map, layerGroups, Centroids) {
     const controlTable = document.getElementById('layer-controls-table');
     if (!controlTable) {
         console.error('Layer controls table not found');
@@ -296,15 +297,18 @@ export function createLayerControls(map, layerGroups) {
 
         groupRow.appendChild(checkboxCell);
         groupRow.appendChild(labelCell);
-        if (group === "BFE Example") {
+        if (group in Centroids) {
             console.log("Group: ", group);
+            let thisCentroid = Centroids[group]["Centroid"];
+            let thisZoom = Centroids[group]["Zoom"];
+            console.log("Centroid: ", thisCentroid);
             const zoomCell = document.createElement('td');
             const zoomToLayerButton = document.createElement('zoom-to-button');
             console.log("Zoom Button: ", zoomToLayerButton);
             zoomToLayerButton.textContent = 'Z2L';
             zoomToLayerButton.addEventListener('click', () => {
-                const center = getCenterFromSourceData(map, layers[0]);
-                map.flyTo({center: center, zoom: 10});
+                // const center = getCenterFromSourceData(map, layers[0]);
+                map.flyTo({center: thisCentroid, zoom: thisZoom});
             });
             zoomCell.appendChild(zoomToLayerButton);
             groupRow.appendChild(zoomCell);

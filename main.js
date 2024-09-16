@@ -6,10 +6,7 @@ import {
     createLayerControls,
 } from './src/mapInteractions.js';
 // import MapboxDraw from "@mapbox/mapbox-gl-draw";
-
 // import { getEditor } from "./src/editor_functionality.js";
-
-import Centroids from "./data/spatial/Centroids.json";
 
 mapboxgl.accessToken = 'pk.eyJ1IjoidDk2OHJzIiwiYSI6ImNpamF5cTcxZDAwY2R1bWx4cWJvd3JtYXoifQ.XqJkBCgSJeCCeF_yugpG5A';
 const map = new mapboxgl.Map({
@@ -35,6 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Close button not found');
     }
 });
+const response = await fetch("./data/spatial/Centroids.json");
+const Centroids = await response.json();
 console.log("Centroids: ", Centroids);
 
 // On Load event
@@ -78,9 +77,9 @@ map.on('load', () => {
     })
     map.addSource('BFE_EXAMPLE', {
         type: 'geojson',
-        data: './data/spatial/S_BFE_Example.geojson'
+        data: './data/spatial/S_BFE_Example.geojson',
+        tolerance: 0,
     })
-
 
     // const userDataSource = map.addSource('user', {
     //     type: 'geojson',
@@ -92,7 +91,6 @@ map.on('load', () => {
     console.log("Map Added/Loaded");
 
     map.doubleClickZoom.enable();
-
 
     // Assignments Layer pbl-areas
     map.addLayer({
@@ -248,32 +246,27 @@ map.on('load', () => {
         }
     });
 
-    // Ensure the source is added before the layer
-    if (map.getSource('CustomModelBoundaries')) {
-        // console.log('Source CustomModelBoundaries found');
+    // Add model outlines (CUSTOM OUTLINES)
+    map.addLayer({
+        id: 'model-outlines-mod',
+        type: "fill",
+        source: 'CustomModelBoundaries',
+        layout: {'visibility': 'none'},
+        paint: {
+            'fill-color': [
+                "match",
+                ["get", "Model_ID"],
+                "1023000104", 'rgba(0,255,140,0.7)', // Color
+                "1023000605", 'rgba(247,255,0,0.7)',
+                "1023000703A", 'rgba(255,106,0,0.7)',
+                'rgba(0,0,0,0)'
+            ],
+            'fill-outline-color': 'rgb(200,108,255)',
+            'fill-outline-width': 2
+        }
+    });
 
-        // Add model outlines (CUSTOM OUTLINES)
-        map.addLayer({
-            id: 'model-outlines-mod',
-            type: "fill",
-            source: 'CustomModelBoundaries',
-            layout: {'visibility': 'none'},
-            paint: {
-                'fill-color': [
-                    "match",
-                    ["get", "Model_ID"],
-                    "1023000104", 'rgba(0,255,140,0.7)', // Color
-                    "1023000605", 'rgba(247,255,0,0.7)',
-                    "1023000703A", 'rgba(255,106,0,0.7)',
-                    'rgba(0,0,0,0)'
-                ],
-                'fill-outline-color': 'rgb(200,108,255)',
-                'fill-outline-width': 2
-            }
-        });
-    }
-
-        // Add grids notes layer 1
+    // Add grids notes layer 1
     map.addLayer({
         id: 'notes-update',
         type: "circle",
@@ -433,14 +426,14 @@ map.on('load', () => {
     });
 
     // add draw layer transparent
-    map.addLayer({
-        id: 'user-draw-layer',
-        type: 'fill',
-        source: 'user',
-        paint: {
-            'fill-color': 'rgba(0, 0, 0, 0)' // Fully transparent fill
-        }
-    });
+    // map.addLayer({
+    //     id: 'user-draw-layer',
+    //     type: 'fill',
+    //     source: 'user',
+    //     paint: {
+    //         'fill-color': 'rgba(0, 0, 0, 0)' // Fully transparent fill
+    //     }
+    // });
 
     //add temp bfe layer
     map.addLayer({
@@ -466,7 +459,7 @@ map.on('load', () => {
         'BFE Example': ['bfe-example'],
     // Add more groups and layers as needed
     };
-    createLayerControls(map, controlLayers);
+    createLayerControls(map, controlLayers, Centroids);
 
     console.log("Sources: ", map.getStyle().sources)
     console.log("Layers: ", map.getStyle().layers)
