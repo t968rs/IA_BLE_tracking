@@ -83,7 +83,7 @@ export async function areaPopupContent(clickedfeature, addONS) {
 function getFeatureBounds(feature) {
     // Get the bounding box of the feature
     const featureBounds = new mapboxgl.LngLatBounds();
-    console.log("BONUDS: ", featureBounds);
+    console.log("BOUNDS: ", featureBounds);
     feature.geometry.coordinates[0].forEach(coord => {
         const [lng, lat] = coord;
         // console.log("Lat: ", lat, " Lng: ", lng);
@@ -110,35 +110,6 @@ export function closePopup() {
     } else {
         console.error('Popup element not found');
     }
-}
-
-function getCenterFromSourceData(map, layerId) {
-
-    // Get the source layer of the specified layer
-    const sourceLayer = map.getLayer(layerId).source;
-
-    // Get the source data of the source layer
-    const sourceData = map.getSource(sourceLayer).serialize();
-
-    // Create a new LngLatBounds object
-    const bounds = new mapboxgl.LngLatBounds();
-
-    // Iterate through the features in the source data
-    console.log("Source Data: ", sourceData);
-    console.log("Source Data Features: ", sourceData.features);
-    for (const feature of sourceData.features) {
-        // Get the coordinates of the feature
-        const geo = feature.geometry;
-        const turfBbox = turf.bbox(geo);
-        // console.log("Turf BBOX: ", turfBbox);
-        const bboxBounds = new mapboxgl.LngLatBounds(
-            [turfBbox[0], turfBbox[1]], // Southwest corner
-            [turfBbox[2], turfBbox[3]]  // Northeast corner
-        );
-        bounds.extend(bboxBounds);
-    }
-    console.log("Bounds: ", bounds);
-    return bounds.getCenter();
 }
 
 // Function to create legend items
@@ -308,7 +279,11 @@ export function createLayerControls(map, layerGroups, Centroids) {
             zoomToLayerButton.textContent = 'Z2L';
             zoomToLayerButton.addEventListener('click', () => {
                 // const center = getCenterFromSourceData(map, layers[0]);
-                map.flyTo({center: thisCentroid, zoom: thisZoom});
+                let currentZoom = map.getZoom();
+                map.jumpTo({
+                    center: thisCentroid,
+                    zoom: thisZoom,
+                });
             });
             zoomCell.appendChild(zoomToLayerButton);
             groupRow.appendChild(zoomCell);

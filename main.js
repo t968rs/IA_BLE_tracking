@@ -5,6 +5,8 @@ import {
     populateLegend,
     createLayerControls,
 } from './src/mapInteractions.js';
+
+import { precisionRound } from "./src/maths.js";
 // import MapboxDraw from "@mapbox/mapbox-gl-draw";
 // import { getEditor } from "./src/editor_functionality.js";
 
@@ -532,7 +534,7 @@ map.on('load', () => {
         if (clickedfeature.layer.id === 'areas-interaction') {
             // Get the popup content
             const  [mapPopupContent, featureBounds] = await areaPopupContent(clickedfeature, addONS);
-            console.log('Clicked feature and popup bounds:', clickedfeature, featureBounds);
+            // console.log('Clicked feature and popup bounds:', clickedfeature, featureBounds);
             // Create the popup
             loc_popup = new mapboxgl.Popup({
                 closeButton: true,
@@ -543,9 +545,43 @@ map.on('load', () => {
                 .setLngLat(coordinates)
                 .setHTML(mapPopupContent)
                 .addTo(map);
-            const centerOfBounds = featureBounds.getCenter();
-            console.log('Center of bounds:', centerOfBounds);
-            map.jumpTo({center: centerOfBounds})
+
+            // Calc feature specs and zoom specs
+            const mapZoom = precisionRound(map.getZoom(), 1);
+            let featureCenter = featureBounds.getCenter();
+            let featureHeight = featureBounds.getNorth() - featureBounds.getSouth();
+            const cameraOffset = [0, featureHeight];
+
+            const newCameraTransform = map.cameraForBounds(featureBounds, {
+                offset: cameraOffset,
+                padding: {top: 5, bottom:0, left: 5, right: 5}
+            });
+            let calcZoom = 7;
+            let camZoom = newCameraTransform.zoom + 2 * featureHeight;
+            camZoom = precisionRound(camZoom, 1);
+            let centerArray = featureCenter.toArray();
+            centerArray[1] = centerArray[1] + featureHeight * 0.3;
+            let cameraCenter = new mapboxgl.LngLat(centerArray[0], centerArray[1]);
+            console.log('Camera Center: ', cameraCenter);
+            console.log('Feature Center: ', featureCenter);
+            if (mapZoom > camZoom) {
+                console.log('Map Zoom is greater than calculated zoom', mapZoom, camZoom);
+                calcZoom = camZoom;
+            }
+            else if (mapZoom < camZoom) {
+                console.log('Map Zoom is less than calculated zoom', mapZoom, camZoom);
+                calcZoom = camZoom;
+            }
+            // console.log('Feature Bounds:', featureBounds);
+            console.log('Calc Zoom:', calcZoom);
+            console.log('Map Zoom:', mapZoom);
+            console.log('Feature Height:', featureHeight);
+            // console.log('Center of bounds:', featureCenter);
+            map.jumpTo({
+                center: cameraCenter,
+                zoom: calcZoom,
+            })
+
         }
 
 
