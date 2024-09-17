@@ -1,13 +1,4 @@
-// Add event listeners to the close buttons
-document.addEventListener('DOMContentLoaded', () => {
-    const closePopupButton = document.querySelector('.popup-container .close-btn, .mapboxgl-popup-content .close-btn');
-    if (closePopupButton) {
-        console.log("Close button found:", closePopupButton);
-        closePopupButton.addEventListener('click', closePopup);
-    } else {
-        console.error('Close button not found');
-    }
-});
+
 
 function rangePercent(start, stop, step) {
     console.log("Start: ", start, " Stop: ", stop, " Step: ", step);
@@ -108,77 +99,6 @@ function getFeatureBounds(feature) {
     return featureBounds;
 }
 
-// Function to fit map to the bounds of the specified layer
-export function fitMapToFeatureBounds(map, feature) {
-    // Create a new LngLatBounds object
-    const bounds = new mapboxgl.LngLatBounds();
-
-    // Get the coordinates of the feature
-    const geo = feature.geometry;
-
-    const turfBbox = turf.bbox(geo);
-    // console.log("Turf BBOX: ", turfBbox);
-    const bboxBounds = new mapboxgl.LngLatBounds(
-        [turfBbox[0], turfBbox[1]], // Southwest corner
-        [turfBbox[2], turfBbox[3]]  // Northeast corner
-    );
-
-    // Fit the map to the bounds with a larger padding to zoom out more, a max zoom of 15, and a duration of 1000
-    map.fitBounds(bboxBounds, {
-        padding: 30,  // Increase the padding to zoom out more
-        maxZoom: 15,
-        minZoom: 3,
-        duration: 1000
-    });
-    const currentZoom = map.getZoom();
-    // Log the new map bounds and zoom level after fitting
-    map.once('moveend', () => {
-        const newBounds = map.getBounds();
-        const newZoom = map.getZoom();
-        // console.log("New Map Bounds after fitting:", newBounds);
-        // console.log("New Zoom after fitting:", newZoom);
-
-        // Workaround: Manually set the map bounds if the automatic fitBounds method fails
-        if (newBounds._sw.lat < -90 || newBounds._ne.lat > - 75 || newBounds._sw.lng < 30 || newBounds._ne.lng > 50) {
-            console.warn("Automatic fitBounds failed, manually setting bounds.");
-            map.fitBounds(new mapboxgl.LngLatBounds(swCorner, neCorner));
-        }
-    });
-    // console.log("SW: ", swCorner, "NE: ", neCorner);
-    // console.log("Current Zoom: ", currentZoom);
-}
-
-// Function to ensure the popup fits within the current map bounds
-export function ensurePopupFits(map, popup, coordinates) {
-    // Get the current map bounds
-    const mapBounds = map.getBounds();
-
-    // Create a new LngLatBounds object for the popup
-    const popupBounds = new mapboxgl.LngLatBounds();
-
-    // Calculate the popup's bounding box
-    const popupWidth = 300; // Approximate width of the popup in pixels
-    const popupHeight = 200; // Approximate height of the popup in pixels
-    const popupOffset = popup.options.offset || [0, 0];
-
-    // Convert pixel dimensions to map coordinates
-    const sw = map.unproject([coordinates[0] - popupWidth / 2 + popupOffset[0], coordinates[1] + popupHeight / 2 + popupOffset[1]]);
-    const ne = map.unproject([coordinates[0] + popupWidth / 2 + popupOffset[0], coordinates[1] - popupHeight / 2 + popupOffset[1]]);
-
-    popupBounds.extend(sw);
-    popupBounds.extend(ne);
-
-    // Check if the popup's bounding box fits within the current map bounds
-    if (!mapBounds.contains(popupBounds.getSouthWest()) || !mapBounds.contains(popupBounds.getNorthEast())) {
-        // Adjust the map center to ensure the popup is fully visible
-        const newCenter = [
-            (popupBounds.getWest() + popupBounds.getEast()) / 2,
-            (popupBounds.getSouth() + popupBounds.getNorth()) / 2
-        ];
-        map.setCenter(newCenter);
-    }
-}
-
 // Function to close the popup
 export function closePopup() {
     console.log("closePopup function called");
@@ -190,6 +110,35 @@ export function closePopup() {
     } else {
         console.error('Popup element not found');
     }
+}
+
+function getCenterFromSourceData(map, layerId) {
+
+    // Get the source layer of the specified layer
+    const sourceLayer = map.getLayer(layerId).source;
+
+    // Get the source data of the source layer
+    const sourceData = map.getSource(sourceLayer).serialize();
+
+    // Create a new LngLatBounds object
+    const bounds = new mapboxgl.LngLatBounds();
+
+    // Iterate through the features in the source data
+    console.log("Source Data: ", sourceData);
+    console.log("Source Data Features: ", sourceData.features);
+    for (const feature of sourceData.features) {
+        // Get the coordinates of the feature
+        const geo = feature.geometry;
+        const turfBbox = turf.bbox(geo);
+        // console.log("Turf BBOX: ", turfBbox);
+        const bboxBounds = new mapboxgl.LngLatBounds(
+            [turfBbox[0], turfBbox[1]], // Southwest corner
+            [turfBbox[2], turfBbox[3]]  // Northeast corner
+        );
+        bounds.extend(bboxBounds);
+    }
+    console.log("Bounds: ", bounds);
+    return bounds.getCenter();
 }
 
 // Function to create legend items
@@ -320,7 +269,7 @@ export function updateLegendOnVisibilityChange(map, layersToInclude) {
     });
 }
 
-export function createLayerControls(map, layerGroups) {
+export function createLayerControls(map, layerGroups, Centroids) {
     const controlTable = document.getElementById('layer-controls-table');
     if (!controlTable) {
         console.error('Layer controls table not found');
@@ -332,6 +281,7 @@ export function createLayerControls(map, layerGroups) {
 
         const checkboxCell = document.createElement('td');
         const groupCheckbox = document.createElement('input');
+
         groupCheckbox.type = 'checkbox';
 
         groupCheckbox.checked = allVisibleinGroup(map, layers) === 'visible';
@@ -347,6 +297,22 @@ export function createLayerControls(map, layerGroups) {
 
         groupRow.appendChild(checkboxCell);
         groupRow.appendChild(labelCell);
+        if (group in Centroids) {
+            console.log("Group: ", group);
+            let thisCentroid = Centroids[group]["Centroid"];
+            let thisZoom = Centroids[group]["Zoom"];
+            console.log("Centroid: ", thisCentroid);
+            const zoomCell = document.createElement('td');
+            const zoomToLayerButton = document.createElement('zoom-to-button');
+            console.log("Zoom Button: ", zoomToLayerButton);
+            zoomToLayerButton.textContent = 'Z2L';
+            zoomToLayerButton.addEventListener('click', () => {
+                // const center = getCenterFromSourceData(map, layers[0]);
+                map.flyTo({center: thisCentroid, zoom: thisZoom});
+            });
+            zoomCell.appendChild(zoomToLayerButton);
+            groupRow.appendChild(zoomCell);
+        }
         controlTable.appendChild(groupRow);
     }
 }

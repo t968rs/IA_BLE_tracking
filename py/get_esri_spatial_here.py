@@ -132,6 +132,12 @@ def add_numbered_primary_key(gdf, col_name):
     return gdf
 
 
+GROUP_LAYERS_LOOKUP = {
+    "Iowa_BLE_Tracking": {"name": 'Production Status', 'zoom': 7},
+    "Iowa_WhereISmodel": {"name": 'Mod Model Outlines', 'zoom': 8},
+    "S_BFE_Example": {"name": 'BFE Example', 'zoom': 11},
+}
+
 COLUMN_MAPPING = {"Iowa_BLE_Tracking": {"huc8": "HUC8", "which_grid": "which_grid", "name": "Name", "Name HUC8": None,
                                         "BFE_TODO": "BFE_TODO",
                                         "has_AECOM": "Has AECOM Tie",
@@ -349,7 +355,12 @@ def df_to_json(data, out_loc, filename=None):
         json.dump(dicted, f)
 
 
-def gdf_to_geojson(gdf, out_loc, filename=None):
+def gdf_to_geojson(gdf: gpd.GeoDataFrame, out_loc, filename=None):
+    if not isinstance(gdf, gpd.GeoDataFrame):
+        if isinstance(gdf, gpd.GeoSeries):
+            gdf = gpd.GeoDataFrame(geometry=gdf)
+        print(f"Data type: {type(gdf)}")
+        raise ValueError("Data must be a GeoDataFrame")
     driver = "GeoJSON"
     outpath = out_loc + f"{filename}.geojson"
     os.makedirs(out_loc, exist_ok=True)
@@ -409,11 +420,17 @@ class WriteNewGeoJSON:
             # Column Mapping
             print(f'    {fname} Formatting...')
             self.crs_dict[fname] = gdf.crs
+            # Single-Part
             gdf = gdf.explode(ignore_index=True)
-            name_col = [c for c in gdf.columns if "name" in c.lower()][0]
-            duplicates = look_for_duplicates(gdf, name_col)
-            duplicate_names = duplicates[name_col].unique()
-            print(f"     Duplicate Names: {duplicate_names}")
+            is_name_column = [c for c in gdf.columns if "name" in c.lower()]
+            print(f"     Name Columns: {is_name_column}")
+            if len(is_name_column) > 0:
+                name_col = [c for c in gdf.columns if "name" in c.lower()][0]
+                uniques = gdf[name_col].unique().sort()
+                duplicates = look_for_duplicates(gdf, name_col)
+                duplicate_names = duplicates[name_col].unique().sort()
+                print(f"     Unique Names: {uniques}")
+                print(f"     Duplicate Names: {duplicate_names}")
             # print(f"     Duplicates: {duplicates.drop(columns='geometry')}")
             gdf = add_numbered_primary_key(gdf, 'loc_id')
             if fname in COLUMN_ORDERS:
@@ -430,22 +447,25 @@ class WriteNewGeoJSON:
                 for c in COLUMN_ORDERS[fname]["first"]:
                     if c in COLUMN_MAPPING[fname]:
                         COLUMN_ORDERS[fname]["first"][COLUMN_ORDERS[fname]["first"].index(c)] = COLUMN_MAPPING[fname][c]
-                print(f'\n New Column Order Dict: {COLUMN_ORDERS[fname]}')
+                print(f'\n     New Column Order Dict: {COLUMN_ORDERS[fname]}')
+
+            else:
+                print(f"     No column mapping for {fname}")
+
+            # Summaation columns
             for c in gdf.columns:
                 if c in SPECIAL_COLUMNS:
                     self.add_summation_columns(gdf, c, SPECIAL_COLUMNS[c])
                     if c in COLUMN_ORDERS[fname]["first"]:
                         gdf = reorder_gdf_columns(gdf, COLUMN_ORDERS[fname]["first"], COLUMN_ORDERS[fname]["last"])
-            else:
-                print(f"     No column mapping for {fname}")
 
-            # Fix* times
-            time_cs = [c for c in gdf.columns if gdf[c].astype(str).str.contains('T').any()]
-            print(f" Time columns: {time_cs}")
+            # Fix* times and dates
             gdf = format_dates(gdf)
             gdf = gdf.to_crs(epsg=4326)
+
+            # Store and print
             self.c_lists[fname] = [c for c in gdf.columns.to_list()]
-            print(f'   {fname} Input Columns: {self.c_lists[fname]}, \n   CRS: {self.crs_dict[fname]}')
+            print(f'     {fname} Input Columns: {self.c_lists[fname]}, \n   CRS: {self.crs_dict[fname]}')
             self.gdf_dict[fname] = gdf
 
     @staticmethod
@@ -496,11 +516,29 @@ class WriteNewGeoJSON:
         gdf.drop(columns=['temp_split', 'num_parts'], inplace=True)
         return gdf
 
+    def output_centroids(self):
+        centroids = {}
+        for name, gdf in self.gdf_dict.items():
+            extent_gdf = bbox_to_gdf(gdf.total_bounds, gdf.crs, name)
+            centroid = extent_gdf.geometry.centroid
+            print(f"  Centroid: {centroid}")
+            center_tuple = (centroid.x[0], centroid.y[0])
+            print(f"  Center: {center_tuple}")
+            centroid_info = GROUP_LAYERS_LOOKUP.get(name, None)
+            if centroid_info:
+                outname = centroid_info.get("name", None)
+                if outname:
+                    centroids[outname] = {"Centroid": center_tuple, "Zoom": centroid_info.get("zoom", 7)}
+
+        with open(self.output_folder + "Centroids.json", 'w') as f:
+            json.dump(centroids, f, indent=2)
+
     def export_geojsons(self, *kwd_args):
         print(f'{self.gdf_dict.keys()}')
 
         # Iterate gdf dictionary
         new_gdf = {}
+
         for name, gdf in self.gdf_dict.items():
             print(f"Found {name}")
             # Skip if static data and already exists
@@ -517,13 +555,13 @@ class WriteNewGeoJSON:
             if "Prod Stage" in columns:
                 gdf["Prod Stage"] = gdf["Prod Stage"].replace(PROD_STATUS_MAPPING)
 
+            # Export GeoJSON
             gdf_to_geojson(gdf, self.output_folder, name)
             df = gdf.drop(columns='geometry')
             df_to_json(df, self.output_folder, name)
 
             # Export Excel
             if name == self.primary_spatial:
-
                 # Excel Export
                 excel_folder = os.path.dirname(os.path.dirname(self.output_folder)) + "/tables/"
                 os.makedirs(excel_folder, exist_ok=True)
@@ -556,14 +594,15 @@ class WriteNewGeoJSON:
                         filtered_gdf = filter_gdf_by_column(points_gdf, "Notes", keyword)
                         yield filtered_gdf
 
-    def update_iowa_status_map(self, summarize_column, kwd_list):
+    def update_iowa_status_map(self, summ_column, kwd_list):
         self.primary_spatial = "Iowa_BLE_Tracking"
-        self.cname_to_summarize = summarize_column
+        self.cname_to_summarize = summ_column
         if not os.path.exists(f"{self.output_folder}Work_Areas.geojson"):
             work_areas_gdf = aggregate_buffer_polygons(self.gdf_dict["Iowa_BLE_Tracking"],
                                                        250, "TO_Area")
             self.gdf_dict["Work_Areas"] = work_areas_gdf
         self.export_geojsons(*kwd_list)
+        self.output_centroids()
 
 
 if __name__ == "__main__":

@@ -124,12 +124,26 @@ th {
     background-color: #4c91af;
 }
 
+#zoom-to-button {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    padding: 3px;
+    z-index: 1000;
+    background-color: #255897;
+    border-radius: 5px;
+    color: white;
+    font-family: "Century Gothic", sans-serif;
+    border: solid 1px #4c91af;
+    cursor: pointer;
+}
+
 /* Ensure the button is visible */
 #edit-mode-btn {
     position: absolute;
     top: 50px; /* Adjust as needed */
     left: 10px; /* Adjust as needed */
-    z-index: 1000; /* Ensure it is above other elements */
+    z-index: 10; /* Ensure it is above other elements */
     background-color: #4c91af; /* Button background color */
     color: white; /* Button text color */
     border: none; /* Remove default border */
@@ -188,7 +202,7 @@ th {
 
 #controls-container {
     position: absolute;
-    width: 180px; /* Adjust width as needed */
+    width: 200px; /* Adjust width as needed */
     top: 50px; /* Adjust as needed */
     bottom: 50px;
     height: 80%;

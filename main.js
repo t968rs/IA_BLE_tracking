@@ -1,14 +1,11 @@
 import {
     areaPopupContent,
-    fitMapToFeatureBounds,
     closePopup,
-    ensurePopupFits,
     updateLegendOnVisibilityChange,
     populateLegend,
     createLayerControls,
 } from './src/mapInteractions.js';
 // import MapboxDraw from "@mapbox/mapbox-gl-draw";
-
 // import { getEditor } from "./src/editor_functionality.js";
 
 mapboxgl.accessToken = 'pk.eyJ1IjoidDk2OHJzIiwiYSI6ImNpamF5cTcxZDAwY2R1bWx4cWJvd3JtYXoifQ.XqJkBCgSJeCCeF_yugpG5A';
@@ -25,6 +22,19 @@ const map = new mapboxgl.Map({
 map.addControl(new mapboxgl.NavigationControl({showCompass: true, showZoom: true}));
 
 let loc_popup;
+// Add event listeners to the close buttons
+document.addEventListener('DOMContentLoaded', () => {
+    const closePopupButton = document.querySelector('.popup-container .close-btn, .mapboxgl-popup-content .close-btn');
+    if (closePopupButton) {
+        console.log("Close button found:", closePopupButton);
+        closePopupButton.addEventListener('click', closePopup);
+    } else {
+        console.error('Close button not found');
+    }
+});
+const response = await fetch("./data/spatial/Centroids.json");
+const Centroids = await response.json();
+console.log("Centroids: ", Centroids);
 
 // On Load event
 map.on('load', () => {
@@ -65,17 +75,22 @@ map.on('load', () => {
         type: 'geojson',
         data: './data/spatial/US_states.geojson'
     })
-    const userDataSource = map.addSource('user', {
+    map.addSource('BFE_EXAMPLE', {
         type: 'geojson',
-        data: './data/user_data/IA_user_data.geojson',
-        dynamic: true,
-        generateId: true
+        data: './data/spatial/S_BFE_Example.geojson',
+        tolerance: 0,
     })
+
+    // const userDataSource = map.addSource('user', {
+    //     type: 'geojson',
+    //     data: './data/user_data/IA_user_data.geojson',
+    //     dynamic: true,
+    //     generateId: true
+    // })
 
     console.log("Map Added/Loaded");
 
     map.doubleClickZoom.enable();
-
 
     // Assignments Layer pbl-areas
     map.addLayer({
@@ -231,32 +246,27 @@ map.on('load', () => {
         }
     });
 
-    // Ensure the source is added before the layer
-    if (map.getSource('CustomModelBoundaries')) {
-        console.log('Source CustomModelBoundaries found');
+    // Add model outlines (CUSTOM OUTLINES)
+    map.addLayer({
+        id: 'model-outlines-mod',
+        type: "fill",
+        source: 'CustomModelBoundaries',
+        layout: {'visibility': 'none'},
+        paint: {
+            'fill-color': [
+                "match",
+                ["get", "Model_ID"],
+                "1023000104", 'rgba(0,255,140,0.7)', // Color
+                "1023000605", 'rgba(247,255,0,0.7)',
+                "1023000703A", 'rgba(255,106,0,0.7)',
+                'rgba(0,0,0,0)'
+            ],
+            'fill-outline-color': 'rgb(200,108,255)',
+            'fill-outline-width': 2
+        }
+    });
 
-        // Add model outlines (CUSTOM OUTLINES)
-        map.addLayer({
-            id: 'model-outlines-mod',
-            type: "fill",
-            source: 'CustomModelBoundaries',
-            layout: {'visibility': 'none'},
-            paint: {
-                'fill-color': [
-                    "match",
-                    ["get", "Model_ID"],
-                    "1023000104", 'rgba(0,255,140,0.7)', // Color
-                    "1023000605", 'rgba(247,255,0,0.7)',
-                    "1023000703A", 'rgba(255,106,0,0.7)',
-                    'rgba(0,0,0,0)'
-                ],
-                'fill-outline-color': 'rgb(200,108,255)',
-                'fill-outline-width': 2
-            }
-        });
-    }
-
-        // Add grids notes layer 1
+    // Add grids notes layer 1
     map.addLayer({
         id: 'notes-update',
         type: "circle",
@@ -416,12 +426,23 @@ map.on('load', () => {
     });
 
     // add draw layer transparent
+    // map.addLayer({
+    //     id: 'user-draw-layer',
+    //     type: 'fill',
+    //     source: 'user',
+    //     paint: {
+    //         'fill-color': 'rgba(0, 0, 0, 0)' // Fully transparent fill
+    //     }
+    // });
+
+    //add temp bfe layer
     map.addLayer({
-        id: 'user-draw-layer',
-        type: 'fill',
-        source: 'user',
+        id: 'bfe-example',
+        type: 'line',
+        source: 'BFE_EXAMPLE',
         paint: {
-            'fill-color': 'rgba(0, 0, 0, 0)' // Fully transparent fill
+            'line-color': 'rgb(0,0,0)',
+            'line-width': 2
         }
     });
 
@@ -435,11 +456,13 @@ map.on('load', () => {
         'Updates': ['notes-update'],
         'ToDo': ['notes-todo'],
         'Assignment': ['pbl-areas', 'pbl-areas-labels-with-pbl',],
+        'BFE Example': ['bfe-example'],
     // Add more groups and layers as needed
     };
-    createLayerControls(map, controlLayers);
+    createLayerControls(map, controlLayers, Centroids);
 
-    console.log(map.getStyle().layers)
+    console.log("Sources: ", map.getStyle().sources)
+    console.log("Layers: ", map.getStyle().layers)
     console.log('Layers added');
     // create legend
     const legendLayers  = {
