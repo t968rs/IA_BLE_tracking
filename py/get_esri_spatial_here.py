@@ -594,9 +594,9 @@ class WriteNewGeoJSON:
                         filtered_gdf = filter_gdf_by_column(points_gdf, "Notes", keyword)
                         yield filtered_gdf
 
-    def update_iowa_status_map(self, summarize_column, kwd_list):
+    def update_iowa_status_map(self, summ_column, kwd_list):
         self.primary_spatial = "Iowa_BLE_Tracking"
-        self.cname_to_summarize = summarize_column
+        self.cname_to_summarize = summ_column
         if not os.path.exists(f"{self.output_folder}Work_Areas.geojson"):
             work_areas_gdf = aggregate_buffer_polygons(self.gdf_dict["Iowa_BLE_Tracking"],
                                                        250, "TO_Area")
