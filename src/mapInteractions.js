@@ -308,7 +308,11 @@ export function createLayerControls(map, layerGroups, Centroids) {
             zoomToLayerButton.textContent = 'Z2L';
             zoomToLayerButton.addEventListener('click', () => {
                 // const center = getCenterFromSourceData(map, layers[0]);
-                map.flyTo({center: thisCentroid, zoom: thisZoom});
+                let currentZoom = map.getZoom();
+                map.jumpTo({
+                    center: thisCentroid,
+                    zoom: thisZoom,
+                });
             });
             zoomCell.appendChild(zoomToLayerButton);
             groupRow.appendChild(zoomCell);
