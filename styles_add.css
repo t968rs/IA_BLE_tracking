@@ -2,6 +2,7 @@
 body {
     margin: 0;
     padding: 1px;
+    font-family: 'Century Gothic', sans-serif;
 }
 
 iframe {
@@ -168,12 +169,14 @@ th {
 }
 
 #title-box {
+    top: 0; /* Position at the top */
+    height: 30px; /* Set height */
     background: #4c91af; /* Green background */
     color: white; /* White text */
     text-align: center; /* Centered text */
+    vertical-align: center; /* Centered vertically */
     padding: 10px; /* Some padding */
-    font-family: 'Arial', sans-serif; /* Font family */
-    font-size: 20px; /* Font size */
+    font-size: 18px; /* Font size */
     font-weight: bold; /* Bold text */
     box-shadow: 0 2px 10px rgba(0,0,0,0.3); /* Shadow for a nice effect */
 }
@@ -190,6 +193,13 @@ th {
     #title-box {
         font-size: 14px; /* Further adjust font size for very small screens */
         padding: 6px; /* Further adjust padding for very small screens */
+    }
+}
+
+@media (max-height: 900px) {
+    #title-box {
+        font-size: 12px; /* Further adjust font size for very small screens */
+        padding: 4px; /* Further adjust padding for very small screens */
     }
 }
 
