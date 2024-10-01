@@ -165,7 +165,7 @@ PROD_STATUS_MAPPING = {"Draft DFIRM Submitted": "DD Submit",
                        "Pass 1/2 Validation": "Pass 1/2",
                        "Pass 2/2 Validation": "Pass 2/2", }
 
-SPECIAL_COLUMNS = {"FRP": 3}
+SPECIAL_COLUMNS = {"FRP": 2}
 
 STATIC_DATA = ["Iowa_WhereISmodel", "US_states"]
 
@@ -493,25 +493,16 @@ class WriteNewGeoJSON:
         legend_column = f"{perc_complete_column}_Legend"
         min_val = int(gdf[perc_complete_column].min())
         max_val = 100
-        perc_steps = int(round(max_val / max_length))
+        perc_steps = int(max_val / max_length)
         print(f"  Min: {min_val}, Max: {max_val}, Steps: {perc_steps}")
 
         # Initialize the legend column with empty strings
         gdf[legend_column] = ""
 
         # Iterate over the range and apply the legend values
-        for i in range(min_val, max_val, perc_steps):
-            range_label = f"{i}%"
-            gdf[legend_column] = gdf[legend_column].mask(
-                (gdf[perc_complete_column] >= i) & (gdf[perc_complete_column] < i + perc_steps),
-                range_label
-            )
-
-        # Handle the max_val separately to include it in the last range
-        gdf[legend_column] = gdf[legend_column].mask(
-            gdf[perc_complete_column] >= max_val - perc_steps,
-            f"{max_val}%"
-        )
+        gdf[legend_column] = gdf[perc_complete_column].apply(
+            lambda x: f"{int(x)}%")
+        print(f"\n\tLegend Column: {legend_column}, {gdf[legend_column].unique()}")
 
         gdf.drop(columns=['temp_split', 'num_parts'], inplace=True)
         return gdf
