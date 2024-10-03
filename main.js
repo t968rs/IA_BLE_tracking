@@ -227,9 +227,9 @@ map.on('load', () => {
                 'match',
                 ['get', 'FRP_Perc_Complete_Legend'],
                 "0%", 'rgba(255,0,0,0.19)', // Default color for values less than the first stop
-                "50%", 'rgba(255,187,0,0.75)', // Color for values >= 30
+                "33%", 'rgba(255,187,0,0.75)', // Color for values >= 30
                 // 50, 'rgba(255, 165, 0, 0.5)', // Color for values >= 40
-                // "67%", 'rgba(255,251,0,0.66)', // Color for values >= 60
+                "67%", 'rgba(255,251,0,0.66)', // Color for values >= 60
                 // 76, 'rgb(0,92,175)', // Color for values >= 60
                 "100%", 'rgba(42,221,1,0.5)', // Color for values >= 100
                 'rgba(128,128,128,0)' // Default color for unmatched cases

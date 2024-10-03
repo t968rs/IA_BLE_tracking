@@ -165,7 +165,7 @@ PROD_STATUS_MAPPING = {"Draft DFIRM Submitted": "DD Submit",
                        "Pass 1/2 Validation": "Pass 1/2",
                        "Pass 2/2 Validation": "Pass 2/2", }
 
-SPECIAL_COLUMNS = {"FRP": 2}
+SPECIAL_COLUMNS = {"FRP": 3}
 
 STATIC_DATA = ["Iowa_WhereISmodel", "US_states"]
 
