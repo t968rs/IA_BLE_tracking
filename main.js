@@ -187,7 +187,7 @@ map.on('load', () => {
         source: 'ProjectAreas',
         layout: {
             // Make the layer visible by default.
-            'visibility': 'none'
+            'visibility': 'visible'
         },
         paint: {
             'fill-color': [
@@ -442,6 +442,9 @@ map.on('load', () => {
         id: 'bfe-example',
         type: 'line',
         source: 'BFE_EXAMPLE',
+        layout: {
+            'visibility': 'none'    // Make the layer visible by default.
+        },
         paint: {
             'line-color': 'rgb(0,0,0)',
             'line-width': 2
