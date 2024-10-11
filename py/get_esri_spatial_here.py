@@ -143,13 +143,19 @@ COLUMN_MAPPING = {"Iowa_BLE_Tracking": {"huc8": "HUC8", "which_grid": "which_gri
                                         "has_AECOM": "Has AECOM Tie",
                                         "FRP_Perc_Complete": "FRP_Perc_Complete",
                                         "FRP": "FRP",
-                                        'PBL_Assign': "P02a_Assign", 'Phase_1_Su': "P01_MM", 'RAW_Grid': "RAW_Grd_MM",
-                                        'DFIRM_Grid': "DFIRM_Grd_MM", 'Addl_Grids': "Addl_Grd_MM",
-                                        'Production': "Prod Stage", 'Mapping_In': "P01 Analyst",
+                                        'PBL_Assign': "P02a_Assign",
+                                        'Phase_1_Su': "P01_MM",
+                                        'RAW_Grid': "RAW_Grd_MM",
+                                        'DFIRM_Grid': "DFIRM_Grd_MM",
+                                        'Addl_Grids': "Addl_Grd_MM",
+                                        'Production': "Prod Stage",
+                                        'Mapping_In': "P01 Analyst",
                                         'Has_Tie_In': "AECOM Tie-in",
                                         'Name__HUC8': None,
-                                        'TO_Area': "TO_Area", 'Final_Mode': "Model Complete",
-                                        'Contractor': None, 'loc_id': None,
+                                        'TO_Area': "TO_Area",
+                                        'Final_Mode': "Model Complete",
+                                        'Contractor': None,
+                                        'loc_id': None,
                                         'Grids_Note': "Notes",
                                         'has_AECOM_': None,
                                         'Extent': None}}
@@ -158,12 +164,12 @@ COLUMN_ORDERS = {"Iowa_BLE_Tracking": {"first": ['huc8', "Name", "FRP_Perc_Compl
                                                  "Phase_1_Su"],
                                        "last": ['geometry']}, }
 
-PROD_STATUS_MAPPING = {"Draft DFIRM Submitted": "DD Submit",
+PROD_STATUS_MAPPING = {"DD Submit": "DD Submit",
                        "DD Validation": "DD Internal",
-                       "Phase 1 Delivered": "Phase 1",
+                       "Phase 1": "Phase 1",
                        "DD Mapping": "DD Mapping",
-                       "Pass 1/2 Validation": "Pass 1/2",
-                       "Pass 2/2 Validation": "Pass 2/2", }
+                       "Pass 1/2": "Pass 1/2",
+                       "Pass 2/2": "Pass 2/2", }
 
 SPECIAL_COLUMNS = {"FRP": 3}
 
@@ -352,7 +358,7 @@ def df_to_json(data, out_loc, filename=None):
     outpath_table = out_loc + filename + ".json"
     dicted = df.to_dict(orient='index')
     with open(outpath_table, 'w') as f:
-        json.dump(dicted, f)
+        json.dump(dicted, f, indent=2)
 
 
 def gdf_to_geojson(gdf: gpd.GeoDataFrame, out_loc, filename=None):
@@ -597,7 +603,7 @@ class WriteNewGeoJSON:
 
 
 if __name__ == "__main__":
-    cname = None
+    cname = "Prod Stage"
     keywords = ["TODO", "UPDATE"]
     to_gdf = WriteNewGeoJSON()
     to_gdf.update_iowa_status_map(cname, keywords)
