@@ -190,7 +190,7 @@ def format_dates(gdf):
     # Convert Timestamp objects to strings
     for col in gdf.columns:
         if pd.api.types.is_datetime64_any_dtype(gdf[col]):
-            print(f"Converting {col} to string")
+            print(f"\t\tConverting {col} to string")
             gdf[col] = gdf[col].astype(str)
             gdf[col] = gdf[col].apply(process_date)
             gdf[col] = gdf[col].str.replace("0000/00/00", "")
@@ -425,43 +425,50 @@ class WriteNewGeoJSON:
 
             # Column Mapping
             print(f'    {fname} Formatting...')
+            print(f"\tColumns: {gdf.columns}")
             self.crs_dict[fname] = gdf.crs
             # Single-Part
             gdf = gdf.explode(ignore_index=True)
-            is_name_column = [c for c in gdf.columns if "name" in c.lower()]
-            print(f"     Name Columns: {is_name_column}")
-            if len(is_name_column) > 0:
-                name_col = [c for c in gdf.columns if "name" in c.lower()][0]
-                uniques = gdf[name_col].unique().sort()
-                duplicates = look_for_duplicates(gdf, name_col)
-                duplicate_names = duplicates[name_col].unique().sort()
-                print(f"     Unique Names: {uniques}")
-                print(f"     Duplicate Names: {duplicate_names}")
+            name_cols = [c for c in gdf.columns if "name" in c.lower()]
+            print(f"     Name Columns: {name_cols}")
+            if len(name_cols) > 0:
+                for c in name_cols:
+                    print(f"\t\t{c}")
+                    uniques = sorted(gdf[c].unique())
+                    duplicates = look_for_duplicates(gdf, c)
+                    duplicate_names = duplicates[c].unique()
+                    print(f"\t\tUnique Names: {uniques}")
+                    print(f"\t\tDuplicate Names: {duplicate_names}")
             # print(f"     Duplicates: {duplicates.drop(columns='geometry')}")
             gdf = add_numbered_primary_key(gdf, 'loc_id')
             if fname in COLUMN_ORDERS:
                 gdf = reorder_gdf_columns(gdf, COLUMN_ORDERS[fname]["first"], COLUMN_ORDERS[fname]["last"])
             if fname in COLUMN_MAPPING:
+                # print(f"\tColumns: {gdf.columns}")
                 cmapping = {k: v for k, v in COLUMN_MAPPING[fname].items() if v is not None and k in gdf.columns}
                 removals = [c for c in COLUMN_MAPPING[fname].keys() if
                             COLUMN_MAPPING[fname][c] is None and c in gdf.columns]
                 print(f'     Column Removals: {removals}')
                 gdf.drop(columns=removals, inplace=True)
+                # print(f"\tColumns: {gdf.columns}")
                 gdf.rename(columns=cmapping, inplace=True)
+                # print(f"\tColumns: {gdf.columns}")
 
                 # Mod order list-dictionary to reflect new column names
                 for c in COLUMN_ORDERS[fname]["first"]:
                     if c in COLUMN_MAPPING[fname]:
                         COLUMN_ORDERS[fname]["first"][COLUMN_ORDERS[fname]["first"].index(c)] = COLUMN_MAPPING[fname][c]
-                print(f'\n     New Column Order Dict: {COLUMN_ORDERS[fname]}')
+                print(f'     New Column Order Dict: {COLUMN_ORDERS[fname]}')
 
             else:
                 print(f"     No column mapping for {fname}")
 
-            # Summaation columns
+            # Summation columns
+            print(f"\tColumns: {gdf.columns}")
             for c in gdf.columns:
                 if c in SPECIAL_COLUMNS:
-                    self.add_summation_columns(gdf, c, SPECIAL_COLUMNS[c])
+                    print(f"     Summarizing {c}")
+                    gdf = self.add_summation_columns(gdf, c, SPECIAL_COLUMNS[c])
                     if c in COLUMN_ORDERS[fname]["first"]:
                         gdf = reorder_gdf_columns(gdf, COLUMN_ORDERS[fname]["first"], COLUMN_ORDERS[fname]["last"])
 
@@ -471,7 +478,7 @@ class WriteNewGeoJSON:
 
             # Store and print
             self.c_lists[fname] = [c for c in gdf.columns.to_list()]
-            print(f'     {fname} Input Columns: {self.c_lists[fname]}, \n   CRS: {self.crs_dict[fname]}')
+            print(f'     {fname} Input Columns: {self.c_lists[fname]}, \n     CRS: {self.crs_dict[fname]}')
             self.gdf_dict[fname] = gdf
 
     @staticmethod
@@ -537,12 +544,14 @@ class WriteNewGeoJSON:
         new_gdf = {}
 
         for name, gdf in self.gdf_dict.items():
-            print(f"Found {name}")
+            print(f"\n\nFound {name}")
+
             # Skip if static data and already exists
             if name in STATIC_DATA:
                 outpath = self.output_folder + f"{name}.geojson"
                 if os.path.exists(outpath):
                     continue
+
             # Create points
             points_gdf = get_centroids(gdf)
             new_gdf[f"{name}_points"] = points_gdf
@@ -598,6 +607,7 @@ class WriteNewGeoJSON:
             work_areas_gdf = aggregate_buffer_polygons(self.gdf_dict["Iowa_BLE_Tracking"],
                                                        250, "TO_Area")
             self.gdf_dict["Work_Areas"] = work_areas_gdf
+
         self.export_geojsons(*kwd_list)
         self.output_centroids()
 
