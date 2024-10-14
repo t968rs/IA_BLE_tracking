@@ -469,8 +469,6 @@ class WriteNewGeoJSON:
                 if c in SPECIAL_COLUMNS:
                     print(f"     Summarizing {c}")
                     gdf = self.add_summation_columns(gdf, c, SPECIAL_COLUMNS[c])
-                    if c in COLUMN_ORDERS[fname]["first"]:
-                        gdf = reorder_gdf_columns(gdf, COLUMN_ORDERS[fname]["first"], COLUMN_ORDERS[fname]["last"])
 
             # Fix* times and dates
             gdf = format_dates(gdf)
