@@ -133,12 +133,12 @@ def add_numbered_primary_key(gdf, col_name):
 
 
 GROUP_LAYERS_LOOKUP = {
-    "Iowa_BLE_Tracking": {"name": 'Production Status', 'zoom': 7},
+    "IA_BLE_Tracking": {"name": 'Production Status', 'zoom': 7},
     "Iowa_WhereISmodel": {"name": 'Mod Model Outlines', 'zoom': 8},
     "S_BFE_Example": {"name": 'BFE Example', 'zoom': 11},
 }
 
-COLUMN_MAPPING = {"Iowa_BLE_Tracking": {"huc8": "HUC8", "which_grid": "which_grid", "name": "Name", "Name HUC8": None,
+COLUMN_MAPPING = {"IA_BLE_Tracking": {"huc8": "HUC8", "which_grid": "which_grid", "name": "Name", "Name HUC8": None,
                                         "BFE_TODO": "BFE_TODO",
                                         "has_AECOM": "Has AECOM Tie",
                                         "FRP_Perc_Complete": "FRP_Perc_Complete",
@@ -160,7 +160,7 @@ COLUMN_MAPPING = {"Iowa_BLE_Tracking": {"huc8": "HUC8", "which_grid": "which_gri
                                         'has_AECOM_': None,
                                         'Extent': None}}
 
-COLUMN_ORDERS = {"Iowa_BLE_Tracking": {"first": ['huc8', "Name", "FRP_Perc_Complete", "FRP", "BFE_TODO", "PBL_Assign",
+COLUMN_ORDERS = {"IA_BLE_Tracking": {"first": ['huc8', "Name", "FRP_Perc_Complete", "FRP", "BFE_TODO", "PBL_Assign",
                                                  "Phase_1_Su"],
                                        "last": ['geometry']}, }
 
@@ -173,7 +173,7 @@ PROD_STATUS_MAPPING = {"DD Submit": "DD Submit",
 
 SPECIAL_COLUMNS = {"FRP": 3}
 
-STATIC_DATA = ["Iowa_WhereISmodel", "US_states"]
+STATIC_DATA = ["Iowa_WhereISmodel", "US_states", "S_Submittal_Info_IA_BLE"]
 
 
 def format_dates(gdf):
@@ -611,7 +611,7 @@ class WriteNewGeoJSON:
 
 
 if __name__ == "__main__":
-    cname = "Prod Stage"
+    cname = "Production"
     keywords = ["TODO", "UPDATE"]
     to_gdf = WriteNewGeoJSON()
     to_gdf.update_iowa_status_map(cname, keywords)

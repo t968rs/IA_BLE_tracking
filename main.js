@@ -59,7 +59,7 @@ map.on('load', () => {
 
     map.addSource('ProjectAreas', {
         type: 'geojson',
-        data: './data/spatial/Iowa_BLE_Tracking.geojson'
+        data: './data/spatial/IA_BLE_Tracking.geojson'
     });
     map.addSource("CustomModelBoundaries", {
         type: "geojson",
@@ -195,7 +195,7 @@ map.on('load', () => {
                 ['get', 'Prod Stage'],
 
                 "Pass 2/2",
-                'rgb(42,255,135)', // 50% transparency
+                'rgba(5,48,37,0.75)', // 50% transparency
                 "Pass 1/2",
                 'rgba(5,244,152,0.75)', // 50% transparency
                 "DD Submit",
