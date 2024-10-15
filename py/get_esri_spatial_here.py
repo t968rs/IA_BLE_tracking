@@ -599,7 +599,7 @@ class WriteNewGeoJSON:
                         yield filtered_gdf
 
     def update_iowa_status_map(self, summ_column, kwd_list):
-        self.primary_spatial = "Iowa_BLE_Tracking"
+        self.primary_spatial = "IA_BLE_Tracking"
         self.cname_to_summarize = summ_column
         if not os.path.exists(f"{self.output_folder}Work_Areas.geojson"):
             work_areas_gdf = aggregate_buffer_polygons(self.gdf_dict["Iowa_BLE_Tracking"],
