@@ -108,13 +108,13 @@ map.on('load', () => {
                 'match',
                 ['get', 'Draft_MIP'],
                 'Approved',
-                'rgba(0,214,118,0.69)', // 50% transparency
+                'rgba(2,248,138,0.69)', // 50% transparency
                 'In Backcheck',
-                'rgba(129,250,0,0.69)', // 50% transparency
+                'rgba(225,250,0,0.69)', // 50% transparency
                 'Submitted',
-                'rgba(2,246,228,0.5)', // 50% transparency
+                'rgba(2,226,246,0.67)', // 50% transparency
                 'In-Progress',
-                'rgba(251,113,2,0.76)', // 50% transparency
+                'rgba(251,113,2,0.67)', // 50% transparency
                 'Next',
                 'rgba(0,84,112,0.3)', // Match fill color
                 'rgba(204, 204, 204, 0)', // 0% transparency
@@ -136,13 +136,13 @@ map.on('load', () => {
                 'match',
                 ['get', 'FP_MIP'],
                 'Approved',
-                'rgba(0,214,118,0.69)', // 50% transparency
+                'rgba(2,248,138,0.69)', // 50% transparency
                 'In Backcheck',
-                'rgba(129,250,0,0.69)', // 50% transparency
+                'rgba(225,250,0,0.69)', // 50% transparency
                 'Submitted',
-                'rgba(2,246,228,0.5)', // 50% transparency
+                'rgba(2,226,246,0.67)', // 50% transparency
                 'In-Progress',
-                'rgba(251,113,2,0.76)', // 50% transparency
+                'rgba(251,113,2,0.67)', // 50% transparency
                 'Next',
                 'rgba(0,84,112,0.3)', // Match fill color
                 'rgba(204, 204, 204, 0)', // 0% transparency
@@ -164,13 +164,13 @@ map.on('load', () => {
                 'match',
                 ['get', 'Hydra_MIP'],
                 'Approved',
-                'rgba(0,214,118,0.69)', // 50% transparency
+                'rgba(2,248,138,0.69)', // 50% transparency
                 'In Backcheck',
-                'rgba(129,250,0,0.69)', // 50% transparency
+                'rgba(225,250,0,0.69)', // 50% transparency
                 'Submitted',
-                'rgba(2,246,228,0.5)', // 50% transparency
+                'rgba(2,226,246,0.67)', // 50% transparency
                 'In-Progress',
-                'rgba(251,113,2,0.76)', // 50% transparency
+                'rgba(251,113,2,0.67)', // 50% transparency
                 'Next',
                 'rgba(0,84,112,0.3)', // Match fill color
                 'rgba(204, 204, 204, 0)', // 0% transparency
