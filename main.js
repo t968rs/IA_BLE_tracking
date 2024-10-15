@@ -94,9 +94,37 @@ map.on('load', () => {
 
     map.doubleClickZoom.enable();
 
-    // Assignments Layer pbl-areas
+    // MIP Submission, Draft
     map.addLayer({
-        id: 'pbl-areas',
+        id: 'draft-mip',
+        type: 'fill',
+        source: 'ProjectAreas',
+        layout: {
+            // Make the layer visible by default.
+            'visibility': 'visible'
+        },
+        paint: {
+            'fill-color': [
+                'match',
+                ['get', 'Draft_MIP'],
+                'Approved',
+                'rgba(0,214,118,0.69)', // 50% transparency
+                'In Backcheck',
+                'rgba(129,250,0,0.69)', // 50% transparency
+                'Submitted',
+                'rgba(2,246,228,0.5)', // 50% transparency
+                'In-Progress',
+                'rgba(251,113,2,0.76)', // 50% transparency
+                'Next',
+                'rgba(0,84,112,0.3)', // Match fill color
+                'rgba(204, 204, 204, 0)', // 0% transparency
+            ]
+        },
+    });
+
+    // MIP Submission, Floodplain
+    map.addLayer({
+        id: 'fp-mip',
         type: 'fill',
         source: 'ProjectAreas',
         layout: {
@@ -106,23 +134,48 @@ map.on('load', () => {
         paint: {
             'fill-color': [
                 'match',
-                ['get', 'P02a_Assign'],
-                'RK',
-                'rgba(214, 95, 0, 0.5)', // 50% transparency
-                'EC',
-                'rgba(0, 92, 175, 0.5)', // 50% transparency
-                'QB',
-                'rgba(94, 229, 204, 0.5)', // 50% transparency
-                'MT',
-                'rgba(59, 163, 208, 0.5)', // 50% transparency
-                'MB',
-                'rgba(149, 55, 237, 0.5)', // 50% transparency
-                'AE',
-                'rgba(55,188,237, 0.3)', // Match fill color
+                ['get', 'FP_MIP'],
+                'Approved',
+                'rgba(0,214,118,0.69)', // 50% transparency
+                'In Backcheck',
+                'rgba(129,250,0,0.69)', // 50% transparency
+                'Submitted',
+                'rgba(2,246,228,0.5)', // 50% transparency
+                'In-Progress',
+                'rgba(251,113,2,0.76)', // 50% transparency
+                'Next',
+                'rgba(0,84,112,0.3)', // Match fill color
                 'rgba(204, 204, 204, 0)', // 0% transparency
             ]
         },
-        filter: ['!=', ['get', 'P02a_Assign'], null]
+    });
+
+    // MIP Submission, Hydraulics
+    map.addLayer({
+        id: 'hydraulics-mip',
+        type: 'fill',
+        source: 'ProjectAreas',
+        layout: {
+            // Make the layer visible by default.
+            'visibility': 'none'
+        },
+        paint: {
+            'fill-color': [
+                'match',
+                ['get', 'Hydra_MIP'],
+                'Approved',
+                'rgba(0,214,118,0.69)', // 50% transparency
+                'In Backcheck',
+                'rgba(129,250,0,0.69)', // 50% transparency
+                'Submitted',
+                'rgba(2,246,228,0.5)', // 50% transparency
+                'In-Progress',
+                'rgba(251,113,2,0.76)', // 50% transparency
+                'Next',
+                'rgba(0,84,112,0.3)', // Match fill color
+                'rgba(204, 204, 204, 0)', // 0% transparency
+            ]
+        },
     });
 
     // Add grid status layer
@@ -154,31 +207,6 @@ map.on('load', () => {
         filter: ['!=', ['get', 'which_grid'], null]
     });
 
-    // Add specific to-do layer
-    map.addLayer({
-        id: 'bfe-todo',
-        type: 'fill',
-        source: 'ProjectAreas',
-        layout: {
-            // Make the layer visible by default.
-            'visibility': 'none'
-        },
-        paint: {
-            'fill-color': [
-                'match',
-                ['get', 'BFE_TODO'],
-                'T',
-                'rgba(214,50,0,0.5)', // 50% transparency
-                'F',
-                'rgba(22,220,0,0.75)', // 50% transparency
-                '* other *',
-                'rgba(204, 204, 204, 0)', // 0% transparency
-                'rgba(0, 0, 0, 0)' // Default color for unmatched cases
-            ]
-        },
-
-        filter: ['!=', ['get', 'BFE_TODO'], null]
-    });
 
     // Add overall production layer
     map.addLayer({
@@ -187,7 +215,7 @@ map.on('load', () => {
         source: 'ProjectAreas',
         layout: {
             // Make the layer visible by default.
-            'visibility': 'visible'
+            'visibility': 'none'
         },
         paint: {
             'fill-color': [
@@ -437,31 +465,15 @@ map.on('load', () => {
     //     }
     // });
 
-    //add temp bfe layer
-    map.addLayer({
-        id: 'bfe-example',
-        type: 'line',
-        source: 'BFE_EXAMPLE',
-        layout: {
-            'visibility': 'none'    // Make the layer visible by default.
-        },
-        paint: {
-            'line-color': 'rgb(0,0,0)',
-            'line-width': 2
-        }
-    });
-
     // Add layer-group control
     const controlLayers = {
+        'Draft MIP': ['draft-mip'],
+        'FP MIP': ['fp-mip'],
+        'Hydraulics MIP': ['hydraulics-mip'],
         'FRP Status': ['frp-status'],
-        'BFE TODO': ['bfe-todo'],
-        'Production Status': ['prod-status'],
+        'Draft Status Detail': ['prod-status'],
         'Mod Model Outlines': ['model-outlines-mod'],
         'Grid Status': ['grid-status'],
-        'Updates': ['notes-update'],
-        'ToDo': ['notes-todo'],
-        'Assignment': ['pbl-areas', 'pbl-areas-labels-with-pbl',],
-        'BFE Example': ['bfe-example'],
     // Add more groups and layers as needed
     };
     createLayerControls(map, controlLayers, Centroids);
@@ -471,7 +483,9 @@ map.on('load', () => {
     console.log('Layers added');
     // create legend
     const legendLayers  = {
-        'BFE TODO': 'bfe-todo',
+        'Draft MIP Status': 'draft-mip',
+        'FP MIP Status': 'fp-mip',
+        'Hydra MIP Status': 'hydraulics-mip',
         'Production Status': 'prod-status',
         'Updates': 'notes-update',
         'TODOs': 'notes-todo',

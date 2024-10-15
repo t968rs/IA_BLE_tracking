@@ -139,6 +139,9 @@ GROUP_LAYERS_LOOKUP = {
 }
 
 COLUMN_MAPPING = {"IA_BLE_Tracking": {"huc8": "HUC8", "which_grid": "which_grid", "name": "Name", "Name HUC8": None,
+                                        "Draft_MIP": "Draft_MIP",
+                                        "FP_MIP": "FP_MIP",
+                                        "Hydra MIP": "Hydraulics MIP",
                                         "BFE_TODO": "BFE_TODO",
                                         "has_AECOM": "Has AECOM Tie",
                                         "FRP_Perc_Complete": "FRP_Perc_Complete",
@@ -160,7 +163,8 @@ COLUMN_MAPPING = {"IA_BLE_Tracking": {"huc8": "HUC8", "which_grid": "which_grid"
                                         'has_AECOM_': None,
                                         'Extent': None}}
 
-COLUMN_ORDERS = {"IA_BLE_Tracking": {"first": ['huc8', "Name", "FRP_Perc_Complete", "FRP", "BFE_TODO", "PBL_Assign",
+COLUMN_ORDERS = {"IA_BLE_Tracking": {"first": ['huc8', "Name", "Draft_MIP", "FP_MIP", "Hydraulics MIP",
+                                               "FRP_Perc_Complete", "FRP", "BFE_TODO", "PBL_Assign",
                                                  "Phase_1_Su"],
                                        "last": ['geometry']}, }
 
