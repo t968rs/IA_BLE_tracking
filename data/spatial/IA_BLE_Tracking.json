@@ -1,7 +1,7 @@
 {
   "0": {
     "HUC8": "07060001",
-    "FRP": "CSLF; PAC; Velocity",
+    "FRP": "WSE/Depth; CSLF; PAC; Velocity",
     "P02a_Assign": "QB",
     "P01_MM": "11/30/2023",
     "Name": "Coon-Yellow",
@@ -21,7 +21,7 @@
   },
   "1": {
     "HUC8": "07060002",
-    "FRP": "CSLF; PAC; Velocity",
+    "FRP": "WSE/Depth; CSLF; PAC; Velocity",
     "P02a_Assign": "MB",
     "P01_MM": "11/30/2023",
     "Name": "Upper Iowa",
@@ -41,7 +41,7 @@
   },
   "2": {
     "HUC8": "07060004",
-    "FRP": "CSLF; PAC; Velocity",
+    "FRP": "WSE/Depth; CSLF; PAC; Velocity",
     "P02a_Assign": "EC",
     "P01_MM": "5/22/2024",
     "Name": "Turkey",
@@ -61,7 +61,7 @@
   },
   "3": {
     "HUC8": "07060006",
-    "FRP": "CSLF; PAC; Velocity",
+    "FRP": "WSE/Depth; CSLF; PAC; Velocity",
     "P02a_Assign": "RK",
     "P01_MM": "5/22/2024",
     "Name": "Maquoketa",
@@ -81,7 +81,7 @@
   },
   "4": {
     "HUC8": "07080102",
-    "FRP": "CSLF; PAC; Velocity",
+    "FRP": "WSE/Depth; CSLF; PAC; Velocity",
     "P02a_Assign": "KTG",
     "P01_MM": "12/30/2023",
     "Name": "Upper Wapsipinicon",
@@ -101,7 +101,7 @@
   },
   "5": {
     "HUC8": "07080103",
-    "FRP": "CSLF; PAC; Velocity",
+    "FRP": "WSE/Depth; CSLF; PAC; Velocity",
     "P02a_Assign": "MT",
     "P01_MM": "5/22/2024",
     "Name": "Lower Wapsipinicon",
@@ -141,7 +141,7 @@
   },
   "7": {
     "HUC8": "07080206",
-    "FRP": "CSLF; PAC; Velocity",
+    "FRP": "WSE/Depth; CSLF; PAC; Velocity",
     "P02a_Assign": "QB",
     "P01_MM": "7/13/2024",
     "Name": "Lower Cedar",
@@ -341,7 +341,7 @@
   },
   "17": {
     "HUC8": "07060005",
-    "FRP": "CSLF; PAC; Velocity",
+    "FRP": "WSE/Depth; CSLF; PAC; Velocity",
     "P02a_Assign": "EC",
     "P01_MM": "2/28/2024",
     "Name": "Apple-Plum",
@@ -361,7 +361,7 @@
   },
   "18": {
     "HUC8": "07080201",
-    "FRP": "CSLF; PAC; Velocity",
+    "FRP": "WSE/Depth; CSLF; PAC; Velocity",
     "P02a_Assign": "RK",
     "P01_MM": "12/30/2023",
     "Name": "Upper Cedar",
@@ -461,7 +461,7 @@
   },
   "23": {
     "HUC8": "07060003",
-    "FRP": "CSLF; PAC; Velocity",
+    "FRP": "WSE/Depth; CSLF; PAC; Velocity",
     "P02a_Assign": "MT",
     "P01_MM": "1/30/2024",
     "Name": "Grant-Little Maquoketa",
@@ -481,7 +481,7 @@
   },
   "24": {
     "HUC8": "07080101",
-    "FRP": "CSLF; PAC; Velocity",
+    "FRP": "WSE/Depth; CSLF; PAC; Velocity",
     "P02a_Assign": "MT",
     "P01_MM": "3/30/2024",
     "Name": "Copperas-Duck",

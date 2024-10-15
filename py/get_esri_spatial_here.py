@@ -171,7 +171,7 @@ PROD_STATUS_MAPPING = {"DD Submit": "DD Submit",
                        "Pass 1/2": "Pass 1/2",
                        "Pass 2/2": "Pass 2/2", }
 
-SPECIAL_COLUMNS = {"FRP": 3}
+SPECIAL_COLUMNS = {"FRP": 4}
 
 STATIC_DATA = ["Iowa_WhereISmodel", "US_states", "S_Submittal_Info_IA_BLE"]
 
