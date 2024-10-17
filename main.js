@@ -405,8 +405,8 @@ map.on('load', async () => {
 
     // Use a diverging color scheme from colorbrewer
     const colorRamp = [
-    '#8c0700', '#9f00c3', '#0045ac', '#00370d', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850'
-]; // Example diverging color ramp
+        '#8c0700', '#9f00c3', '#0045ac', '#00370d', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850'
+    ]; // Example diverging color ramp
     const colorStops = uniqueHUC8Values.flatMap((value, index) => [
         value, colorRamp[index % colorRamp.length]
     ]);
