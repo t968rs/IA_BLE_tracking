@@ -39,8 +39,9 @@ const Centroids = await response.json();
 console.log("Centroids: ", Centroids);
 
 // On Load event
-map.on('load', () => {
+map.on('load', async () => {
     console.log('Map loaded');
+
     // Function to remove aria-hidden from the close button
     function fixAriaHiddenOnCloseButton() {
         const closeButton = document.querySelector('.mapboxgl-popup-close-button');
@@ -295,21 +296,6 @@ map.on('load', () => {
         }
     });
 
-    // Add submittal info layer
-    map.addLayer({
-        id: 'submittal-info',
-        type: 'line',
-        source: 'S_Submittal_Info',
-        layout: {
-            'visibility': 'none'
-        },
-        paint: {
-            'line-color': 'rgb(0,20,149)',
-            'line-width': 2,
-            'line-dasharray': [2, 3] // Dashed line
-        }
-
-    });
 
     // // Add grids notes layer 1
     // map.addLayer({
@@ -373,7 +359,7 @@ map.on('load', () => {
         , type: "line"
         , source: "StateBoundary"
         , paint: {
-            "line-color":  'rgb(210,255,163)',
+            "line-color": 'rgb(210,255,163)',
             "line-width": 1.5
         }
     });
@@ -407,6 +393,58 @@ map.on('load', () => {
             ],
             'line-width': 3
         }
+    });
+
+
+    // Add submittal info layer
+    const response = await fetch("./data/spatial/S_Submittal_Info_IA_BLE.geojson");
+    const data = await response.json();
+    const HUC8Values = data.features.map(feature => Number(feature.properties.HUC8));
+    const uniqueHUC8Values = [...new Set(HUC8Values)].sort((a, b) => a - b);
+    console.log("Unique HUC8 Values:", uniqueHUC8Values);
+
+    // Use a diverging color scheme from colorbrewer
+    const colorRamp = [
+    '#d73027', '#f46d43', '#fdae61', '#affec1', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850'
+]; // Example diverging color ramp
+    const colorStops = uniqueHUC8Values.flatMap((value, index) => [
+        value, colorRamp[index % colorRamp.length]
+    ]);
+
+    map.addLayer({
+        id: 'submittal-info',
+        type: 'fill',
+        source: 'S_Submittal_Info',
+        layout: {
+            'visibility': 'none'
+        },
+        paint: {
+            'fill-color': [
+                'interpolate',
+                ['linear'],
+                ['to-number', ['get', 'HUC8']],
+                ...colorStops
+            ],
+            'fill-opacity': 0.5,
+
+        },
+    });
+    map.addLayer({
+        id: 'submittal-info_outline',
+        type: 'line',
+        source: 'S_Submittal_Info',
+        layout: {
+            'visibility': 'none'
+        },
+        paint: {
+            'line-color': [
+                'interpolate',
+                ['linear'],
+                ['to-number', ['get', 'HUC8']],
+                ...colorStops
+            ],
+            'line-width': 3
+        },
     });
 
     // Add labels for features with PBL_Assign values
@@ -458,7 +496,7 @@ map.on('load', () => {
             'text-halo-color': 'rgba(90,185,255,0.68)', // No halo
             'text-halo-width': 2
         } // Filter to include features without PBL_Assign or PBL_Assign is an empty string
-});
+    });
 
     // Add a transparent fill layer for interaction
     map.addLayer({
@@ -482,6 +520,7 @@ map.on('load', () => {
 
     // Add layer-group control
     const controlLayers = {
+
         'Draft MIP': ['draft-mip'],
         'FP MIP': ['fp-mip'],
         'Hydraulics MIP': ['hydraulics-mip'],
@@ -489,8 +528,9 @@ map.on('load', () => {
         'Draft Status Detail': ['prod-status'],
         'Grid Status': ['grid-status'],
         'Mod Model Outlines': ['model-outlines-mod'],
-        'S_Submittal_Info': ['submittal-info'],
-    // Add more groups and layers as needed
+        'S_Submittal_Info': ['submittal-info', 'submittal-info_outline'],
+        'TO Areas': ['work-areas'],
+        // Add more groups and layers as needed
     };
     createLayerControls(map, controlLayers, Centroids);
 
@@ -498,7 +538,7 @@ map.on('load', () => {
     console.log("Layers: ", map.getStyle().layers)
     console.log('Layers added');
     // create legend
-    const legendLayers  = {
+    const legendLayers = {
         'Draft MIP Status': 'draft-mip',
         'FP MIP Status': 'fp-mip',
         'Hydra MIP Status': 'hydraulics-mip',
@@ -506,7 +546,8 @@ map.on('load', () => {
         'Grid Status': 'grid-status',
         'FRP Status': 'frp-status',
         'Mod Model Outlines': 'model-outlines-mod',
-        'S_Submittal_Info': 'submittal-info',};
+        'Task Order Outline': 'work-areas',
+    };
 
     // Add more groups and layers as needed
     const mapLegend = populateLegend(map, legendLayers);
@@ -514,111 +555,110 @@ map.on('load', () => {
 
     // Click actions
     map.on('click', async (e) => {
-    const features = map.queryRenderedFeatures(e.point, {
-        layers: ['areas-interaction', 'model-outlines-mod'],  // replace 'your-interaction-layer' with the id of your layer
-    });
-    if (!features.length) {
-        console.log('No features found');
-        if (loc_popup) {
-            loc_popup.remove(); // Close the popup if no feature is clicked
-            loc_popup = null;
-        }
-        return;
-    }
-    // Check if the feature belongs to the 'areas-interaction' layer
-    let addONS = {};
-    for (const clickedfeature of features) {
-        // Calculate the centroid of the polygon
-        if ("DS_1" in clickedfeature.properties) {
-            const modelid = clickedfeature.properties["Model_ID"];
-            addONS = {"Model_ID": modelid};
-        }
-    }
-    const feature = features.find(f => f.layer.id === 'areas-interaction');
-    if (!feature) {
-        console.log('Clicked feature is not part of areas-interaction');
-        if (loc_popup) {
-            loc_popup.remove(); // Close the popup if no valid feature is clicked
-            loc_popup = null;
-        }
-        return;
-    }
-
-    // Remove any existing popup to prevent content from appending
-    if (loc_popup) {
-        loc_popup.remove();
-    }
-
-    // Handle the features found
-    for (const clickedfeature of features) {
-        // Calculate the centroid of the polygon
-        const centroid = turf.centroid(clickedfeature);
-        const coordinates = centroid.geometry.coordinates;
-        console.log('Clicked feature:', clickedfeature.layer.id);
-
-        // Ensure coordinates are in the correct format
-        if (!Array.isArray(coordinates) || coordinates.length !== 2) {
-            console.error('Invalid coordinates format');
-            continue;
-        }
-
-        if (clickedfeature.layer.id === 'areas-interaction') {
-            // Get the popup content
-            const  [mapPopupContent, featureBounds] = await areaPopupContent(clickedfeature, addONS);
-            // console.log('Clicked feature and popup bounds:', clickedfeature, featureBounds);
-            // Create the popup
-            loc_popup = new mapboxgl.Popup({
-                closeButton: true,
-                closeOnClick: true,
-                anchor: 'bottom', // Adjust anchor as needed (bottom, top, left, right)
-                offset: [0, -15] // Adjust offset as needed to make sure popup is visible
-            })
-                .setLngLat(coordinates)
-                .setHTML(mapPopupContent)
-                .addTo(map);
-
-            // Calc feature specs and zoom specs
-            const mapZoom = precisionRound(map.getZoom(), 1);
-            let featureCenter = featureBounds.getCenter();
-            let featureHeight = featureBounds.getNorth() - featureBounds.getSouth();
-            const cameraOffset = [0, featureHeight];
-
-            const newCameraTransform = map.cameraForBounds(featureBounds, {
-                offset: cameraOffset,
-                padding: {top: 5, bottom:0, left: 5, right: 5}
-            });
-            let calcZoom = 7;
-            let camZoom = newCameraTransform.zoom + 2 * featureHeight;
-            camZoom = precisionRound(camZoom, 1);
-            let centerArray = featureCenter.toArray();
-            centerArray[1] = centerArray[1] + featureHeight * 0.3;
-            let cameraCenter = new mapboxgl.LngLat(centerArray[0], centerArray[1]);
-            console.log('Camera Center: ', cameraCenter);
-            console.log('Feature Center: ', featureCenter);
-            if (mapZoom > camZoom) {
-                console.log('Map Zoom is greater than calculated zoom', mapZoom, camZoom);
-                calcZoom = camZoom;
+        const features = map.queryRenderedFeatures(e.point, {
+            layers: ['areas-interaction', 'model-outlines-mod'],  // replace 'your-interaction-layer' with the id of your layer
+        });
+        if (!features.length) {
+            console.log('No features found');
+            if (loc_popup) {
+                loc_popup.remove(); // Close the popup if no feature is clicked
+                loc_popup = null;
             }
-            else if (mapZoom < camZoom) {
-                console.log('Map Zoom is less than calculated zoom', mapZoom, camZoom);
-                calcZoom = camZoom;
+            return;
+        }
+        // Check if the feature belongs to the 'areas-interaction' layer
+        let addONS = {};
+        for (const clickedfeature of features) {
+            // Calculate the centroid of the polygon
+            if ("DS_1" in clickedfeature.properties) {
+                const modelid = clickedfeature.properties["Model_ID"];
+                addONS = {"Model_ID": modelid};
             }
-            // console.log('Feature Bounds:', featureBounds);
-            console.log('Calc Zoom:', calcZoom);
-            console.log('Map Zoom:', mapZoom);
-            console.log('Feature Height:', featureHeight);
-            // console.log('Center of bounds:', featureCenter);
-            map.jumpTo({
-                center: cameraCenter,
-                zoom: calcZoom,
-            })
-
+        }
+        const feature = features.find(f => f.layer.id === 'areas-interaction');
+        if (!feature) {
+            console.log('Clicked feature is not part of areas-interaction');
+            if (loc_popup) {
+                loc_popup.remove(); // Close the popup if no valid feature is clicked
+                loc_popup = null;
+            }
+            return;
         }
 
+        // Remove any existing popup to prevent content from appending
+        if (loc_popup) {
+            loc_popup.remove();
+        }
 
-        // Ensure the popup fits within the current map bounds
-        // fitMapToFeatureBounds(map, clickedfeature);
-    }
+        // Handle the features found
+        for (const clickedfeature of features) {
+            // Calculate the centroid of the polygon
+            const centroid = turf.centroid(clickedfeature);
+            const coordinates = centroid.geometry.coordinates;
+            console.log('Clicked feature:', clickedfeature.layer.id);
+
+            // Ensure coordinates are in the correct format
+            if (!Array.isArray(coordinates) || coordinates.length !== 2) {
+                console.error('Invalid coordinates format');
+                continue;
+            }
+
+            if (clickedfeature.layer.id === 'areas-interaction') {
+                // Get the popup content
+                const [mapPopupContent, featureBounds] = await areaPopupContent(clickedfeature, addONS);
+                // console.log('Clicked feature and popup bounds:', clickedfeature, featureBounds);
+                // Create the popup
+                loc_popup = new mapboxgl.Popup({
+                    closeButton: true,
+                    closeOnClick: true,
+                    anchor: 'bottom', // Adjust anchor as needed (bottom, top, left, right)
+                    offset: [0, -15] // Adjust offset as needed to make sure popup is visible
+                })
+                    .setLngLat(coordinates)
+                    .setHTML(mapPopupContent)
+                    .addTo(map);
+
+                // Calc feature specs and zoom specs
+                const mapZoom = precisionRound(map.getZoom(), 1);
+                let featureCenter = featureBounds.getCenter();
+                let featureHeight = featureBounds.getNorth() - featureBounds.getSouth();
+                const cameraOffset = [0, featureHeight];
+
+                const newCameraTransform = map.cameraForBounds(featureBounds, {
+                    offset: cameraOffset,
+                    padding: {top: 5, bottom: 0, left: 5, right: 5}
+                });
+                let calcZoom = 7;
+                let camZoom = newCameraTransform.zoom + 2 * featureHeight;
+                camZoom = precisionRound(camZoom, 1);
+                let centerArray = featureCenter.toArray();
+                centerArray[1] = centerArray[1] + featureHeight * 0.3;
+                let cameraCenter = new mapboxgl.LngLat(centerArray[0], centerArray[1]);
+                console.log('Camera Center: ', cameraCenter);
+                console.log('Feature Center: ', featureCenter);
+                if (mapZoom > camZoom) {
+                    console.log('Map Zoom is greater than calculated zoom', mapZoom, camZoom);
+                    calcZoom = camZoom;
+                } else if (mapZoom < camZoom) {
+                    console.log('Map Zoom is less than calculated zoom', mapZoom, camZoom);
+                    calcZoom = camZoom;
+                }
+                // console.log('Feature Bounds:', featureBounds);
+                console.log('Calc Zoom:', calcZoom);
+                console.log('Map Zoom:', mapZoom);
+                console.log('Feature Height:', featureHeight);
+                // console.log('Center of bounds:', featureCenter);
+                map.jumpTo({
+                    center: cameraCenter,
+                    zoom: calcZoom,
+                })
+
+            }
+
+
+            // Ensure the popup fits within the current map bounds
+            // fitMapToFeatureBounds(map, clickedfeature);
+        }
     });
 
     // Add event listeners for mouse enter and leave
