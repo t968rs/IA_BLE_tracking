@@ -57,31 +57,26 @@ map.on('load', async () => {
         type: 'geojson',
         data: './data/spatial/Work_Areas.geojson'
     });
-
     map.addSource('ProjectAreas', {
         type: 'geojson',
         data: './data/spatial/IA_BLE_Tracking.geojson'
     });
+    map.addSource('WorkAreaLabels', {
+        type: 'geojson',
+        data: './data/spatial/Work_Area_Labels.geojson'
+    });
     map.addSource("CustomModelBoundaries", {
         type: "geojson",
         data: "./data/spatial/Iowa_WhereISmodel.geojson"
-    })
-    // map.addSource('TODOPoints', {
-    //     type: 'geojson',
-    //     data: './data/spatial/TODO_points.geojson'
-    // })
-    // map.addSource('UPDATEPoints', {
-    //     type: 'geojson',
-    //     data: './data/spatial/UPDATE_points.geojson'
-    // })
+    });
     map.addSource('StateBoundary', {
         type: 'geojson',
         data: './data/spatial/US_states.geojson'
-    })
+    });
     map.addSource('S_Submittal_Info', {
         type: 'geojson',
         data: './data/spatial/S_Submittal_Info_IA_BLE.geojson',
-    })
+    });
 
     // const userDataSource = map.addSource('user', {
     //     type: 'geojson',
@@ -207,7 +202,6 @@ map.on('load', async () => {
         filter: ['!=', ['get', 'which_grid'], null]
     });
 
-
     // Add overall production layer
     map.addLayer({
         id: 'prod-status',
@@ -296,44 +290,6 @@ map.on('load', async () => {
         }
     });
 
-
-    // // Add grids notes layer 1
-    // map.addLayer({
-    //     id: 'notes-update',
-    //     type: "circle",
-    //     source: 'UPDATEPoints',
-    //     filter: ['!=', ['get', 'Notes'], null],
-    //     paint: {
-    //         'circle-color': "rgba(170,14,163,0.93)",
-    //         "circle-stroke-color": "rgba(255,101,248,0.93)",
-    //         "circle-stroke-width": 1,
-    //         'circle-radius': 10,
-    // },
-    //     layout: {
-    //         // Make the layer visible by default.
-    //         'visibility': 'none'
-    //     },
-    // });
-    //
-    // // Add grids notes layer 1
-    // map.addLayer({
-    //     id: 'notes-todo',
-    //     type: "circle",
-    //     source: 'TODOPoints',
-    //     filter: ['!=', ['get', 'Notes'], null],
-    //     paint: {
-    //         'circle-color': "rgba(0,43,128,0.93)",
-    //         "circle-stroke-color": "rgba(108,164,255,0.93)",
-    //         "circle-stroke-width": 1,
-    //         "circle-emissive-strength": 0.5,
-    //         'circle-radius': 10,
-    // },
-    //     layout: {
-    //         // Make the layer visible by default.
-    //         'visibility': 'none'
-    //     },
-    // });
-
     // Add highlight hover layer
     map.addLayer({
         id: 'areas-highlight',
@@ -385,32 +341,65 @@ map.on('load', async () => {
         },
         paint: {
             'line-color': [
-                'match', ['get', 'TO_Area'],
-                "FY20_1A", 'rgba(0,196,255,1)', // Color for FY20_1A
-                "FY21_2A", 'rgba(0,128,255,1)', // Color for FY21_2A
-                "FY22_3B", 'rgba(161,0,255,1)', // Color for FY22_3A
+                'match', ['get', 'MIP_Case'],
+                "21-07-0002S", 'rgb(19,97,0)', // Color for FY20_1A
+                "22-07-0035S", 'rgb(118,0,166)', // Color for FY21_2A
+                "23-07-0036S", 'rgb(193,3,47)', // Color for FY22_3A
+                "23-07-0037S", 'rgb(0,19,142)', // Color for FY22_3A
                 'rgba(0,0,0,0)' // Default color for unmatched cases
             ],
             'line-width': 3
         }
     });
 
+    // Add work area labels
+    map.addLayer({
+        id: 'work-area-labels',
+        type: 'symbol',
+        source: 'WorkAreaLabels',
+        layout: {
+            'text-field': ['get', 'MIP_Case'],
+            'text-font': ['Arial Unicode MS Bold'], // Bold font
+            'text-allow-overlap': false, // Allow overlapping labels
+            'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
+            'text-justify': 'auto',
+            'visibility': 'visible',
+            'text-size': 16,
+        },
+        paint: {
+            'text-color': [
+                'match', ['get', 'MIP_Case'],
+                "21-07-0002S", 'rgb(19,97,0)', // Color for FY20_1A
+                "22-07-0035S", 'rgb(118,0,166)', // Color for FY21_2A
+                "23-07-0036S", 'rgb(193,3,47)', // Color for FY22_3A
+                "23-07-0037S", 'rgb(0,19,142)', // Color for FY22_3A
+                'rgba(0,0,0,0)' // Default color for unmatched cases
+            ],
+            'text-halo-color': 'rgba(0,196,255,1)', // Halo color
+            'text-halo-width': 2
+        } // Filter to include features without PBL_Assign or PBL_Assign is an empty string
+    });
 
     // Add submittal info layer
-    const response = await fetch("./data/spatial/S_Submittal_Info_IA_BLE.geojson");
-    const data = await response.json();
-    const HUC8Values = data.features.map(feature => Number(feature.properties.HUC8));
-    const uniqueHUC8Values = [...new Set(HUC8Values)].sort((a, b) => a - b);
-    console.log("Unique HUC8 Values:", uniqueHUC8Values);
+    async function createColorStops() {
+        const response = await fetch("./data/spatial/S_Submittal_Info_IA_BLE.geojson");
+        const data = await response.json();
+        const HUC8Values = data.features.map(feature => Number(feature.properties.HUC8));
+        const uniqueHUC8Values = [...new Set(HUC8Values)].sort((a, b) => a - b);
+        console.log("Unique HUC8 Values:", uniqueHUC8Values);
 
-    // Use a diverging color scheme from colorbrewer
-    const colorRamp = [
-        '#8c0700', '#9f00c3', '#0045ac', '#00370d', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850'
-    ]; // Example diverging color ramp
-    const colorStops = uniqueHUC8Values.flatMap((value, index) => [
-        value, colorRamp[index % colorRamp.length]
-    ]);
+        // Use a diverging color scheme from colorbrewer
+        const colorRamp = [
+            '#8c0700', '#9f00c3', '#0045ac', '#00370d', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850'
+        ]; // Example diverging color ramp
 
+        const colorStops = uniqueHUC8Values.flatMap((value, index) => [
+            value, colorRamp[index % colorRamp.length]
+        ]);
+        return colorStops;
+    }
+
+    const colorStops = await createColorStops();
     map.addLayer({
         id: 'submittal-info',
         type: 'fill',
@@ -447,39 +436,6 @@ map.on('load', async () => {
         },
     });
 
-    // Add labels for features with PBL_Assign values
-    map.addLayer({
-        id: 'pbl-areas-labels-with-pbl',
-        type: 'symbol',
-        source: 'ProjectAreas',
-        anchor: 'center',
-        layout: {
-            'text-field': ['get', 'PBL_Assign'],
-            'text-size': 12,
-            'text-anchor': 'top',
-            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'], // Bold font
-            'text-allow-overlap': true, // Allow overlapping labels
-            'visibility': 'none',
-        },
-        paint: {
-            'text-color': 'rgb(247, 247, 247)', // Text color
-            'text-halo-color': [
-                'match',
-                ['get', 'PBL_Assign'],
-                'RK', 'rgba(214, 95, 0, 0.5)', // Match fill color
-                'EC', 'rgba(0, 92, 175, 0.5)', // Match fill color
-                'QB', 'rgba(94, 229, 204, 0.5)', // Match fill color
-                'MT', 'rgba(59, 163, 208, 0.5)', // Match fill color
-                'MB', 'rgba(149, 55, 237, 0.5)', // Match fill color
-                'AE', 'rgba(55,188,237, 0.3)', // Match fill color
-                '* other *', 'rgba(204, 204, 204, 0)', // Default halo color
-                'rgba(0, 0, 0, 0)' // Default halo color for unmatched cases
-            ],
-            'text-halo-width': 1 // Halo width
-        },
-        filter: ['!=', ['get', 'PBL_Assign'], null] // Filter to only include features with PBL_Assign
-    });
-
     // Add labels for areas
     map.addLayer({
         id: 'areas-labels',
@@ -487,15 +443,17 @@ map.on('load', async () => {
         source: 'ProjectAreas',
         layout: {
             'text-field': ['get', 'Name'],
-            'text-size': 12,
-            'text-anchor': 'bottom',
+            'text-size': 11,
+            'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
+            // 'text-radial-offset': 0.5,
+            'text-justify': 'auto',
             'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'] // Regular font
         },
         paint: {
             'text-color': 'rgb(0,28,58)', // Text color
             'text-halo-color': 'rgba(90,185,255,0.68)', // No halo
             'text-halo-width': 2
-        } // Filter to include features without PBL_Assign or PBL_Assign is an empty string
+        }
     });
 
     // Add a transparent fill layer for interaction
@@ -552,6 +510,7 @@ map.on('load', async () => {
     // Add more groups and layers as needed
     const mapLegend = populateLegend(map, legendLayers);
     updateLegendOnVisibilityChange(map, legendLayers);
+
 
     // Click actions
     map.on('click', async (e) => {
@@ -693,25 +652,9 @@ map.on('load', async () => {
         // Log the bounds to the console
         // console.log('Current Map Bounds:', bounds);
     });
+
 });
 
-
-/*// Excel Table
-async function displayExcelTable(filePath) {
-    const response = await fetch(filePath);
-    const arrayBuffer = await response.arrayBuffer();
-    const data = new Uint8Array(arrayBuffer);
-    const workbook = XLSX.read(data, { type: 'array' });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    const htmlString = XLSX.utils.sheet_to_html(worksheet);
-    document.getElementById('excel-table-container').innerHTML = htmlString;
-}
-
-document.getElementById('toggle-table-btn').addEventListener('click', toggleTable);
-
-// Call the function with the path to your Excel file
-displayExcelTable('./data/tables/Iowa_BLE_Tracking.xlsx');*/
 
 const BORDER_SIZE = 4;
 const panel = document.getElementById("excel-table-container");
