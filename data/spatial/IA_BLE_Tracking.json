@@ -318,8 +318,8 @@
     "TO_Area": "FY22_3B",
     "Model Complete": "2024/07/16",
     "Notes": "All Hydraulics Spatial Files uploaded 10/16",
-    "FRP_Perc_Complete": 0.0,
-    "FRP_Perc_Complete_Legend": "0%"
+    "FRP_Perc_Complete": 25.0,
+    "FRP_Perc_Complete_Legend": "25%"
   },
   "14": {
     "HUC8": "10230004",
@@ -387,8 +387,8 @@
     "TO_Area": "FY22_3B",
     "Model Complete": "2024/07/21",
     "Notes": "All Hydraulics Spatial Files uploaded 10/16",
-    "FRP_Perc_Complete": 0.0,
-    "FRP_Perc_Complete_Legend": "0%"
+    "FRP_Perc_Complete": 25.0,
+    "FRP_Perc_Complete_Legend": "25%"
   },
   "17": {
     "HUC8": "07060005",

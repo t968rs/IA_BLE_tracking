@@ -499,17 +499,20 @@ class WriteNewGeoJSON:
         # Add percentage complete column
         perc_complete_column = f"{column}_Perc_Complete"
         gdf['temp_split'] = gdf[column].apply(
-            lambda x: [part for part in x.split(";") if part not in [None, ""]] if ";" in str(x) else None)
+            lambda x: [] if x in [None, ""] else [part for part in str(x).split(";") if part not in [None, ""]] )
+        unique_test = gdf['temp_split'].explode().unique()
+        print(f"\n\tColumn: {column}, {unique_test}")
         gdf['num_parts'] = gdf['temp_split'].apply(lambda x: len(x) if x not in [None, ""] else 0.0)
+        print(f"\tNum Parts: {gdf['num_parts'].unique()}")
         gdf[perc_complete_column] = gdf['num_parts'] / max_length * 100
         gdf[perc_complete_column] = gdf[perc_complete_column].round()
 
         # Add legend column
         legend_column = f"{perc_complete_column}_Legend"
-        min_val = int(gdf[perc_complete_column].min())
+        min_val = 0
         max_val = 100
         perc_steps = int(max_val / max_length)
-        print(f"  Min: {min_val}, Max: {max_val}, Steps: {perc_steps}")
+        print(f"\tMin: {min_val}, Max: {max_val}, Steps: {perc_steps}")
 
         # Initialize the legend column with empty strings
         gdf[legend_column] = ""
@@ -517,7 +520,7 @@ class WriteNewGeoJSON:
         # Iterate over the range and apply the legend values
         gdf[legend_column] = gdf[perc_complete_column].apply(
             lambda x: f"{int(x)}%")
-        print(f"\n\tLegend Column: {legend_column}, {gdf[legend_column].unique()}")
+        print(f"\tLegend Column: {legend_column}, {gdf[legend_column].unique()}")
 
         gdf.drop(columns=['temp_split', 'num_parts'], inplace=True)
         return gdf
