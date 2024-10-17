@@ -65,22 +65,21 @@ map.on('load', () => {
         type: "geojson",
         data: "./data/spatial/Iowa_WhereISmodel.geojson"
     })
-    map.addSource('TODOPoints', {
-        type: 'geojson',
-        data: './data/spatial/TODO_points.geojson'
-    })
-    map.addSource('UPDATEPoints', {
-        type: 'geojson',
-        data: './data/spatial/UPDATE_points.geojson'
-    })
+    // map.addSource('TODOPoints', {
+    //     type: 'geojson',
+    //     data: './data/spatial/TODO_points.geojson'
+    // })
+    // map.addSource('UPDATEPoints', {
+    //     type: 'geojson',
+    //     data: './data/spatial/UPDATE_points.geojson'
+    // })
     map.addSource('StateBoundary', {
         type: 'geojson',
         data: './data/spatial/US_states.geojson'
     })
-    map.addSource('BFE_EXAMPLE', {
+    map.addSource('S_Submittal_Info', {
         type: 'geojson',
-        data: './data/spatial/S_BFE_Example.geojson',
-        tolerance: 0,
+        data: './data/spatial/S_Submittal_Info_IA_BLE.geojson',
     })
 
     // const userDataSource = map.addSource('user', {
@@ -289,49 +288,65 @@ map.on('load', () => {
                 "1023000104", 'rgba(0,255,140,0.7)', // Color
                 "1023000605", 'rgba(247,255,0,0.7)',
                 "1023000703A", 'rgba(255,106,0,0.7)',
-                'rgba(0,0,0,0)'
+                'rgb(0,0,0)'
             ],
             'fill-outline-color': 'rgb(200,108,255)',
             'fill-outline-width': 2
         }
     });
 
-    // Add grids notes layer 1
+    // Add submittal info layer
     map.addLayer({
-        id: 'notes-update',
-        type: "circle",
-        source: 'UPDATEPoints',
-        filter: ['!=', ['get', 'Notes'], null],
-        paint: {
-            'circle-color': "rgba(170,14,163,0.93)",
-            "circle-stroke-color": "rgba(255,101,248,0.93)",
-            "circle-stroke-width": 1,
-            'circle-radius': 10,
-    },
+        id: 'submittal-info',
+        type: 'line',
+        source: 'S_Submittal_Info',
         layout: {
-            // Make the layer visible by default.
             'visibility': 'none'
         },
+        paint: {
+            'line-color': 'rgb(0,20,149)',
+            'line-width': 2,
+            'line-dasharray': [2, 3] // Dashed line
+        }
+
     });
 
-    // Add grids notes layer 1
-    map.addLayer({
-        id: 'notes-todo',
-        type: "circle",
-        source: 'TODOPoints',
-        filter: ['!=', ['get', 'Notes'], null],
-        paint: {
-            'circle-color': "rgba(0,43,128,0.93)",
-            "circle-stroke-color": "rgba(108,164,255,0.93)",
-            "circle-stroke-width": 1,
-            "circle-emissive-strength": 0.5,
-            'circle-radius': 10,
-    },
-        layout: {
-            // Make the layer visible by default.
-            'visibility': 'none'
-        },
-    });
+    // // Add grids notes layer 1
+    // map.addLayer({
+    //     id: 'notes-update',
+    //     type: "circle",
+    //     source: 'UPDATEPoints',
+    //     filter: ['!=', ['get', 'Notes'], null],
+    //     paint: {
+    //         'circle-color': "rgba(170,14,163,0.93)",
+    //         "circle-stroke-color": "rgba(255,101,248,0.93)",
+    //         "circle-stroke-width": 1,
+    //         'circle-radius': 10,
+    // },
+    //     layout: {
+    //         // Make the layer visible by default.
+    //         'visibility': 'none'
+    //     },
+    // });
+    //
+    // // Add grids notes layer 1
+    // map.addLayer({
+    //     id: 'notes-todo',
+    //     type: "circle",
+    //     source: 'TODOPoints',
+    //     filter: ['!=', ['get', 'Notes'], null],
+    //     paint: {
+    //         'circle-color': "rgba(0,43,128,0.93)",
+    //         "circle-stroke-color": "rgba(108,164,255,0.93)",
+    //         "circle-stroke-width": 1,
+    //         "circle-emissive-strength": 0.5,
+    //         'circle-radius': 10,
+    // },
+    //     layout: {
+    //         // Make the layer visible by default.
+    //         'visibility': 'none'
+    //     },
+    // });
 
     // Add highlight hover layer
     map.addLayer({
@@ -472,8 +487,9 @@ map.on('load', () => {
         'Hydraulics MIP': ['hydraulics-mip'],
         'FRP Status': ['frp-status'],
         'Draft Status Detail': ['prod-status'],
-        'Mod Model Outlines': ['model-outlines-mod'],
         'Grid Status': ['grid-status'],
+        'Mod Model Outlines': ['model-outlines-mod'],
+        'S_Submittal_Info': ['submittal-info'],
     // Add more groups and layers as needed
     };
     createLayerControls(map, controlLayers, Centroids);
@@ -487,12 +503,10 @@ map.on('load', () => {
         'FP MIP Status': 'fp-mip',
         'Hydra MIP Status': 'hydraulics-mip',
         'Production Status': 'prod-status',
-        'Updates': 'notes-update',
-        'TODOs': 'notes-todo',
         'Grid Status': 'grid-status',
-        'Assignment': 'pbl-areas',
         'FRP Status': 'frp-status',
-        'Mod Model Outlines': 'model-outlines-mod',};
+        'Mod Model Outlines': 'model-outlines-mod',
+        'S_Submittal_Info': 'submittal-info',};
 
     // Add more groups and layers as needed
     const mapLegend = populateLegend(map, legendLayers);
