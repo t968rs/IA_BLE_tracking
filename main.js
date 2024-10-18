@@ -342,8 +342,8 @@ map.on('load', async () => {
         paint: {
             'line-color': [
                 'match', ['get', 'MIP_Case'],
-                "21-07-0002S", 'rgb(19,97,0)', // Color for FY20_1A
-                "22-07-0035S", 'rgb(118,0,166)', // Color for FY21_2A
+                "21-07-0002S", 'rgb(152,0,213)', // Color for FY20_1A
+                "22-07-0035S", 'rgb(15,71,0)', // Color for FY21_2A
                 "23-07-0036S", 'rgb(193,3,47)', // Color for FY22_3A
                 "23-07-0037S", 'rgb(0,19,142)', // Color for FY22_3A
                 'rgba(0,0,0,0)' // Default color for unmatched cases
@@ -369,8 +369,8 @@ map.on('load', async () => {
         paint: {
             'text-color': [
                 'match', ['get', 'MIP_Case'],
-                "21-07-0002S", 'rgb(19,97,0)', // Color for FY20_1A
-                "22-07-0035S", 'rgb(118,0,166)', // Color for FY21_2A
+                "21-07-0002S", 'rgb(152,0,213)', // Color for FY20_1A
+                "22-07-0035S", 'rgb(15,71,0)', // Color for FY21_2A
                 "23-07-0036S", 'rgb(193,3,47)', // Color for FY22_3A
                 "23-07-0037S", 'rgb(0,19,142)', // Color for FY22_3A
                 'rgba(0,0,0,0)' // Default color for unmatched cases

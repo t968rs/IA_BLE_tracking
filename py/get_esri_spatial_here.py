@@ -603,10 +603,15 @@ class WriteNewGeoJSON:
         centroids = {}
         for name, gdf in self.gdf_dict.items():
             extent_gdf = bbox_to_gdf(gdf.total_bounds, gdf.crs, name)
+            incrs = gdf.crs
+            datum = incrs.datum.name
+            print(f'\tDatum: {datum}')
+            extent_gdf = extent_gdf.to_crs(gdf.estimate_utm_crs())
             centroid = extent_gdf.geometry.centroid
-            print(f"  Centroid: {centroid}")
+            centroid = centroid.to_crs(incrs)
+            print(f"\t\tCentroid: {centroid}")
             center_tuple = (centroid.x[0], centroid.y[0])
-            print(f"  Center: {center_tuple}")
+            print(f"\t\tCenter: {center_tuple}")
             centroid_info = GROUP_LAYERS_LOOKUP.get(name, None)
             if centroid_info:
                 outname = centroid_info.get("name", None)
@@ -697,7 +702,7 @@ class WriteNewGeoJSON:
 
 
         self.export_geojsons(*kwd_list)
-        # self.output_centroids()
+        self.output_centroids()
 
 
 if __name__ == "__main__":
