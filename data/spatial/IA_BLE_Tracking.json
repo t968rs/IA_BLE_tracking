@@ -457,7 +457,7 @@
   },
   "19": {
     "HUC8": "10170204",
-    "Draft_MIP": "Submitted",
+    "Draft_MIP": "In-Progress",
     "FP_MIP": "In-Progress",
     "FRP": "WSE/Depth; Velocity",
     "BFE_TODO": "F",
@@ -529,7 +529,7 @@
   },
   "22": {
     "HUC8": "10170203",
-    "Draft_MIP": "Submitted",
+    "Draft_MIP": "In-Progress",
     "FP_MIP": "In-Progress",
     "FRP": "WSE/Depth; PAC; Velocity",
     "BFE_TODO": "F",
