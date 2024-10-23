@@ -238,7 +238,7 @@ PROD_STATUS_MAPPING = {"DD Submit": "DD Submit",
 
 SPECIAL_COLUMNS = {"FRP": 4}
 
-STATIC_DATA = ["Iowa_WhereISmodel", "US_states", "S_Submittal_Info_IA_BLE"]
+STATIC_DATA = ["Iowa_WhereISmodel", "US_states"]
 
 
 def format_dates(gdf):

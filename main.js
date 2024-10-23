@@ -486,7 +486,7 @@ map.on('load', async () => {
         'Draft Status Detail': ['prod-status'],
         'Grid Status': ['grid-status'],
         'Mod Model Outlines': ['model-outlines-mod'],
-        'S_Submittal_Info': ['submittal-info', 'submittal-info_outline'],
+        'Submitted Proj Outlines': ['submittal-info', 'submittal-info_outline'],
         'TO Areas': ['work-areas'],
         // Add more groups and layers as needed
     };

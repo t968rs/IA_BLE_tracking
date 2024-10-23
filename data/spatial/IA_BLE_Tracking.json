@@ -459,7 +459,7 @@
     "HUC8": "10170204",
     "Draft_MIP": "In-Progress",
     "FP_MIP": "In-Progress",
-    "FRP": "WSE/Depth; Velocity",
+    "FRP": "WSE/Depth; CSLF; Velocity",
     "BFE_TODO": "F",
     "P02a_Assign": null,
     "P01_MM": "2024/05/29",
@@ -476,8 +476,8 @@
     "Model Complete": "2024/02/10",
     "Notes": "All Hydraulics Spatial Files uploaded 10/16",
     "MIP_Case": "23-07-0036S",
-    "FRP_Perc_Complete": 50.0,
-    "FRP_Perc_Complete_Legend": "50%"
+    "FRP_Perc_Complete": 75.0,
+    "FRP_Perc_Complete_Legend": "75%"
   },
   "20": {
     "HUC8": "10230001",
@@ -531,7 +531,7 @@
     "HUC8": "10170203",
     "Draft_MIP": "In-Progress",
     "FP_MIP": "In-Progress",
-    "FRP": "WSE/Depth; PAC; Velocity",
+    "FRP": "WSE/Depth; CSLF; PAC; Velocity",
     "BFE_TODO": "F",
     "P02a_Assign": null,
     "P01_MM": "2024/03/30",
@@ -548,8 +548,8 @@
     "Model Complete": "2024/02/10",
     "Notes": "All Hydraulics Spatial Files uploaded 10/16",
     "MIP_Case": "23-07-0036S",
-    "FRP_Perc_Complete": 75.0,
-    "FRP_Perc_Complete_Legend": "75%"
+    "FRP_Perc_Complete": 100.0,
+    "FRP_Perc_Complete_Legend": "100%"
   },
   "23": {
     "HUC8": "07060003",
