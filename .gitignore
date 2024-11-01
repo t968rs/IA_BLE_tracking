@@ -5,6 +5,4 @@
 *.iml
 *.idea/
 /py/test
-/.idea
 .idea
-
