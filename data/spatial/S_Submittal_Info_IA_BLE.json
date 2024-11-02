@@ -319,8 +319,8 @@
     "EFF_DATE": "8888/08/08",
     "CONTRCT_NO": "0",
     "SOURCE_CIT": "STUDY22",
-    "Shape_Leng": 7.63352811313,
-    "Shape_Area": 0.698537734397,
+    "Shape_Leng": 7.21421761254,
+    "Shape_Area": 0.714026497836,
     "EPSG_Code": 3417,
     "loc_id": 13
   },
@@ -344,8 +344,8 @@
     "EFF_DATE": "8888/08/08",
     "CONTRCT_NO": "0",
     "SOURCE_CIT": "STUDY23",
-    "Shape_Leng": 3.92060322306,
-    "Shape_Area": 0.318980707988,
+    "Shape_Leng": 3.83710314598,
+    "Shape_Area": 0.319524965501,
     "EPSG_Code": 3417,
     "loc_id": 14
   },
@@ -420,7 +420,7 @@
     "CONTRCT_NO": "23ESDLQBAClar-003",
     "SOURCE_CIT": "STUDY29",
     "Shape_Leng": 3.65931628051,
-    "Shape_Area": 0.210214621694,
+    "Shape_Area": 0.210214621695,
     "EPSG_Code": 3417,
     "loc_id": 17
   },
@@ -595,7 +595,7 @@
     "CONTRCT_NO": "23ESDLQBAClar-003",
     "SOURCE_CIT": "STUDY30",
     "Shape_Leng": 4.35650274112,
-    "Shape_Area": 0.285238644854,
+    "Shape_Area": 0.285238644851,
     "EPSG_Code": 3417,
     "loc_id": 24
   },
