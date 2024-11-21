@@ -152,6 +152,10 @@ th {
     cursor: pointer; /* Pointer cursor on hover */
 }
 
+.hidden {
+  display: none;
+}
+
 #save-btn #exit-edit-mode-btn{
     position: absolute;
     top: 50px; /* Adjust as needed */
@@ -398,6 +402,30 @@ th {
     background-color: #30edd4; /* Highlight color on hover */
 }
 
+/* CSS styles (adjust as needed) */
+#popup-welcome {
+  position: fixed;
+    top: 50%;
+    left: 50%;
+  width: 60%;
+  height: 20%;
+    z-index: 1000;
+    /*border: 1px solid #289fff;*/
+    /*border-radius: 5px;*/
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.popup-content {
+  background-color: rgba(0, 74, 94, 0.9);
+  padding: 20px;
+  border-radius: 5px;
+    color: #cccccc;
+    font-family: 'Century Gothic', sans-serif;
+}
+
+
 #layer-controls-table td {
     padding: 5px;
     vertical-align: bottom;
@@ -412,3 +440,4 @@ th {
 #layer-controls-table input[type="checkbox"] {
     margin-right: 10px;
 }
+

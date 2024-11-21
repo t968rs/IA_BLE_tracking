@@ -45,6 +45,17 @@ function containsUnwantedSubstring(property) {
     return unwantedSubstrings.some(substring => property.toLowerCase().includes(substring));
 }
 
+export function showIt(docElementPassed) {
+    // docElementPassed.style.display = 'block';
+    docElementPassed.classList.remove("hidden");
+}
+
+export function hideIt(docElementPassed) {
+    // docElementPassed.style.display = 'none';
+    docElementPassed.classList.add("hidden");
+    docElementPassed.remove();
+}
+
 // Function to create popup content with table formatting
 export async function areaPopupContent(clickedfeature, addONS) {
     let popupContent = '<div class="popup-table-title">Iowa BLE Area Info</div>';

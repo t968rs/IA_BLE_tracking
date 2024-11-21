@@ -4,6 +4,8 @@ import {
     updateLegendOnVisibilityChange,
     populateLegend,
     createLayerControls,
+    showIt,
+    hideIt
 } from './src/mapInteractions.js';
 
 import { precisionRound } from "./src/maths.js";
@@ -26,14 +28,61 @@ map.addControl(new mapboxgl.NavigationControl({showCompass: true, showZoom: true
 let loc_popup;
 // Add event listeners to the close buttons
 document.addEventListener('DOMContentLoaded', () => {
-    const closePopupButton = document.querySelector('.popup-container .close-btn, .mapboxgl-popup-content .close-btn');
+    const geojsonFileUrl = './data/spatial/IA_BLE_Tracking.geojson';
+    const statusElement = document.querySelector('#popup-welcome p');
+    if (statusElement) {
+    fetch(geojsonFileUrl, { method: 'HEAD' }) // HEAD request fetches only headers
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            const lastModified = response.headers.get('Last-Modified');
+            const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            // Dont show seconds in the time
+            const timeOptions = { hour: 'numeric', minute: 'numeric', timeZoneName: 'short' };
+            if (lastModified) {
+                const formattedDate = new Date(lastModified).toLocaleDateString();
+                const formattedTime = new Date(lastModified).toLocaleTimeString([], timeOptions);
+                statusElement.innerHTML += `<b>${formattedDate} ${formattedTime}</b>`;
+            } else {
+                console.warn('Last-Modified header not found');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching the geojson file:', error);
+            statusElement.innerHTML += `<b>Unknown</b>`;
+        });
+    }
+
+
+    const closePopupButton = document.querySelector(
+        '.popup-container .close-btn, .mapboxgl-popup-content .close-btn'
+    );
+    const welcomePopup = document.getElementById("popup-welcome");
+    const confirmWelcome = document.getElementById("welcome-ok");
+
     if (closePopupButton) {
-        console.log("Close button found:", closePopupButton);
-        closePopupButton.addEventListener('click', closePopup);
+        closePopupButton.addEventListener('click', () => {
+            console.log("Close button clicked");
+            hideIt(welcomePopup);
+        });
     } else {
         console.error('Close button not found');
     }
+
+    if (welcomePopup && confirmWelcome) {
+        confirmWelcome.addEventListener("click", () => {
+            console.log("Confirm button clicked");
+            hideIt(welcomePopup);
+        });
+
+        console.log("Calling showIt for welcomePopup");
+        showIt(welcomePopup);
+    } else {
+        console.error('Popup or confirm button not found');
+    }
 });
+
 const response = await fetch("./data/spatial/Centroids.json");
 const Centroids = await response.json();
 console.log("Centroids: ", Centroids);
@@ -77,6 +126,8 @@ map.on('load', async () => {
         type: 'geojson',
         data: './data/spatial/S_Submittal_Info_IA_BLE.geojson',
     });
+
+
 
     // const userDataSource = map.addSource('user', {
     //     type: 'geojson',
