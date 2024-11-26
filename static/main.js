@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-const response = await fetch("./data/spatial/Centroids.json");
+const response = await fetch("/data/spatial/Centroids.json");
 const Centroids = await response.json();
 console.log("Centroids: ", Centroids);
 
@@ -104,30 +104,28 @@ map.on('load', async () => {
 
     map.addSource('WorkAreas', {
         type: 'geojson',
-        data: './data/spatial/Work_Areas.geojson'
+        data: '/data/spatial/Work_Areas.geojson'
     });
     map.addSource('ProjectAreas', {
         type: 'geojson',
-        data: './data/spatial/IA_BLE_Tracking.geojson'
+        data: '/data/spatial/IA_BLE_Tracking.geojson'
     });
     map.addSource('WorkAreaLabels', {
         type: 'geojson',
-        data: './data/spatial/Work_Area_Labels.geojson'
+        data: '/data/spatial/Work_Area_Labels.geojson'
     });
     map.addSource("CustomModelBoundaries", {
         type: "geojson",
-        data: "./data/spatial/Iowa_WhereISmodel.geojson"
+        data: "/data/spatial/Iowa_WhereISmodel.geojson"
     });
     map.addSource('StateBoundary', {
         type: 'geojson',
-        data: './data/spatial/US_states.geojson'
+        data: '/data/spatial/US_states.geojson'
     });
     map.addSource('S_Submittal_Info', {
         type: 'geojson',
-        data: './data/spatial/S_Submittal_Info_IA_BLE.geojson',
+        data: '/data/spatial/S_Submittal_Info_IA_BLE.geojson',
     });
-
-
 
     // const userDataSource = map.addSource('user', {
     //     type: 'geojson',
