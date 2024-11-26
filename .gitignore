@@ -6,3 +6,6 @@
 *.idea/
 /py/test
 .idea
+
+# Ignore virtual environment
+/venv/
