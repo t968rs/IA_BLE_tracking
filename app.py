@@ -1,8 +1,11 @@
 from flask import Flask, render_template, request, jsonify, send_from_directory
 import os
+from dotenv import load_dotenv
 
+
+load_dotenv()  # Load environment variables from .env file
 app = Flask(__name__)
-
+app.secret_key = os.getenv("SECRET_KEY")
 
 # Homepage route
 @app.route("/")
