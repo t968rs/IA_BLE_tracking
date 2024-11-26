@@ -12,7 +12,9 @@ import { precisionRound } from "./src/maths.js";
 // import MapboxDraw from "@mapbox/mapbox-gl-draw";
 // import { getEditor } from "./src/editor_functionality.js";
 
-mapboxgl.accessToken = 'pk.eyJ1IjoidDk2OHJzIiwiYSI6ImNpamF5cTcxZDAwY2R1bWx4cWJvd3JtYXoifQ.XqJkBCgSJeCCeF_yugpG5A';
+
+
+mapboxgl.accessToken = MAPBOX_TOKEN;
 const map = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/t968rs/clzn9s7ej006e01r31wsob7kj',
@@ -334,8 +336,7 @@ map.on('load', async () => {
                 "1023000703A", 'rgba(255,106,0,0.7)',
                 'rgb(0,0,0)'
             ],
-            'fill-outline-color': 'rgb(200,108,255)',
-            'fill-outline-width': 2
+            'fill-outline-color': 'rgb(200,108,255)'
         }
     });
 
