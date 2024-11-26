@@ -10,7 +10,9 @@ app.secret_key = os.getenv("SECRET_KEY")
 # Homepage route
 @app.route("/")
 def home():
-    return render_template("index.html")  # Dynamic reference to your HTML
+    mapbox_token = os.getenv("MAPBOX_TOKEN")
+    return render_template("index.html",
+                           mapbox_token=mapbox_token)  # Dynamic reference to your HTML
 
 
 # Example dynamic route
