@@ -199,35 +199,35 @@ GROUP_LAYERS_LOOKUP = {
 }
 
 COLUMN_MAPPING = {"IA_BLE_Tracking": {"huc8": "HUC8", "which_grid": "which_grid", "name": "Name", "Name HUC8": None,
-                                        "Draft_MIP": "Draft_MIP",
-                                        "FP_MIP": "FP_MIP",
-                                        "MIP_Case": "MIP_Case",
-                                        "Hydra MIP": "Hydraulics MIP",
-                                        "BFE_TODO": "BFE_TODO",
-                                        "has_AECOM": "Has AECOM Tie",
-                                        "FRP_Perc_Complete": "FRP_Perc_Complete",
-                                        "FRP": "FRP",
-                                        'PBL_Assign': "P02a_Assign",
-                                        'Phase_1_Su': "P01_MM",
-                                        'RAW_Grid': "RAW_Grd_MM",
-                                        'DFIRM_Grid': "DFIRM_Grd_MM",
-                                        'Addl_Grids': "Addl_Grd_MM",
-                                        'Production': "Prod Stage",
-                                        'Mapping_In': "P01 Analyst",
-                                        'Has_Tie_In': "AECOM Tie-in",
-                                        'Name__HUC8': None,
-                                        'TO_Area': "TO_Area",
-                                        'Final_Mode': "Model Complete",
-                                        'Contractor': None,
-                                        'loc_id': None,
-                                        'Grids_Note': "Notes",
-                                        'has_AECOM_': None,
-                                        'Extent': None}}
+                                      "Draft_MIP": "Draft_MIP",
+                                      "FP_MIP": "FP_MIP",
+                                      "MIP_Case": "MIP_Case",
+                                      "Hydra MIP": "Hydraulics MIP",
+                                      "BFE_TODO": "BFE_TODO",
+                                      "has_AECOM": "Has AECOM Tie",
+                                      "FRP_Perc_Complete": "FRP_Perc_Complete",
+                                      "FRP": "FRP",
+                                      'PBL_Assign': "P02a_Assign",
+                                      'Phase_1_Su': "P01_MM",
+                                      'RAW_Grid': "RAW_Grd_MM",
+                                      'DFIRM_Grid': "DFIRM_Grd_MM",
+                                      'Addl_Grids': "Addl_Grd_MM",
+                                      'Production': "Prod Stage",
+                                      'Mapping_In': "P01 Analyst",
+                                      'Has_Tie_In': "AECOM Tie-in",
+                                      'Name__HUC8': None,
+                                      'TO_Area': "TO_Area",
+                                      'Final_Mode': "Model Complete",
+                                      'Contractor': None,
+                                      'loc_id': None,
+                                      'Grids_Note': "Notes",
+                                      'has_AECOM_': None,
+                                      'Extent': None}}
 
 COLUMN_ORDERS = {"IA_BLE_Tracking": {"first": ['huc8', "Name", "Draft_MIP", "FP_MIP", "Hydraulics MIP",
                                                "FRP_Perc_Complete", "FRP", "BFE_TODO", "PBL_Assign",
-                                                 "Phase_1_Su"],
-                                       "last": ['geometry']}, }
+                                               "Phase_1_Su"],
+                                     "last": ['geometry']}, }
 
 PROD_STATUS_MAPPING = {"DD Submit": "DD Submit",
                        "DD Validation": "DD Internal",
@@ -291,6 +291,7 @@ def summarize_column(gdf, column):
         print(f"Unique {column} values: {[u for u in unique_names]}")
         print(f'   Plus, {None if None in unique_names else "No-NULL"}  values')
 
+
 def reorder_df_columns(df, renamer_dict):
     # Target column order
     target_columns = list(renamer_dict.values())
@@ -313,7 +314,7 @@ def sort_df_by(df, column):
     return df
 
 
-def df_to_excel(df, out_loc, filename=None, sheetname="Sheet1"):
+def df_to_excel(df: pd.DataFrame, out_loc: str, filename=None, sheetname="Sheet1"):
     df = reorder_df_columns(df, EXCEL_RENAMER)
     df = sort_df_by(df, "Name")
     df = sort_df_by(df, "TO Area")
@@ -323,7 +324,7 @@ def df_to_excel(df, out_loc, filename=None, sheetname="Sheet1"):
     print(f"\nExcel Stuff for {filename}")
     if filename is None:
         filename = "output"
-    outpath = os.path.join(out_loc, f"{filename}.xlsx")
+    outpath = os.path.join(out_loc, f"{filename}.xlsx") if ".xlsx" not in filename else os.path.join(out_loc, filename)
     os.makedirs(out_loc, exist_ok=True)
 
     if isinstance(df, gpd.GeoDataFrame) or "geometry" in df.columns:
@@ -430,7 +431,7 @@ def aggregate_buffer_polygons(gdf, buffer_distance, summary_column: T.Union[str,
     return gdf
 
 
-def df_to_json(data, out_loc, filename=None):
+def df_to_json(data, out_loc: str, filename: str = None):
     if isinstance(data, gpd.GeoDataFrame):
         df = pd.DataFrame(data.drop(columns='geometry'))
     elif isinstance(data, pd.DataFrame):
@@ -438,8 +439,14 @@ def df_to_json(data, out_loc, filename=None):
     else:
         raise ValueError("Data must be a GeoDataFrame or DataFrame")
 
-    outpath_table = out_loc + filename + ".json"
-    dicted = df.to_dict(orient='index')
+    if ".json" in out_loc:
+        out_loc, file = os.path.split(out_loc)
+        filename, ext = os.path.splitext(file)
+    outpath_table = os.path.normpath(os.path.join(out_loc, filename + ".json"))
+
+    # Convert Timestamp objects to strings
+    dicted = df.map(lambda x: x.isoformat() if isinstance(x, pd.Timestamp) else x).to_dict(orient='records')
+
     with open(outpath_table, 'w') as f:
         json.dump(dicted, f, indent=2)
 
@@ -578,7 +585,7 @@ class WriteNewGeoJSON:
         # Add percentage complete column
         perc_complete_column = f"{column}_Perc_Complete"
         gdf['temp_split'] = gdf[column].apply(
-            lambda x: [] if x in [None, ""] else [part for part in str(x).split(";") if part not in [None, ""]] )
+            lambda x: [] if x in [None, ""] else [part for part in str(x).split(";") if part not in [None, ""]])
         unique_test = gdf['temp_split'].explode().unique()
         print(f"\n\tColumn: {column}, {unique_test}")
         gdf['num_parts'] = gdf['temp_split'].apply(lambda x: len(x) if x not in [None, ""] else 0.0)
@@ -704,7 +711,6 @@ class WriteNewGeoJSON:
             wa_label_points.append({"MIP_Case": row.MIP_Case, "TO_Area": row.TO_Area, "geometry": point})
         wa_label_gdf = gpd.GeoDataFrame(wa_label_points, geometry='geometry', crs=work_areas_gdf.crs)
         self.gdf_dict["Work_Area_Labels"] = wa_label_gdf
-
 
         self.export_geojsons(*kwd_list)
         self.output_centroids()
