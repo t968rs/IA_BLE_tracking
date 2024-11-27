@@ -240,7 +240,7 @@ th {
     font-size: 0.6em; /* Smaller font size */
     color: #2c2c2c; /* Light gray text color */
     position: absolute;
-    right: 20px; /* Align to the right */
+    right: 10px; /* Align to the right */
     align-self: center; /* Center vertically */
     white-space: normal;
 }
