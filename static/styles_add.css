@@ -62,7 +62,7 @@ iframe {
     top: 0;
     left: 0;
     right: 0;
-    height: 4px; /* Height of the border area */
+    height: 6px; /* Height of the border area */
     cursor: ns-resize; /* Change mouse pointer style when hovering over the border */
 }
 

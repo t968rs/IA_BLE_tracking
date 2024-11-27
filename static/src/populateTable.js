@@ -1,16 +1,16 @@
-export const BORDER_SIZE = 4;
+import {getMap} from "./mapManager.js";
+
 export const panel = document.getElementById("excel-table-container");
 export const toggleButton = document.getElementById("toggle-table-btn");
-export let m_pos;
 
-// Function to resize the panel dynamically
-export function resize(e) {
-    const dy = m_pos - e.y;
-    m_pos = e.y;
-    panel.style.height = (parseInt(getComputedStyle(panel, "").height) + dy) + "px";
-    console.log("Panel resized, height: ", panel.style.height);
-    updateToggleButtonPosition();
-}
+    // Predefined color map for MIP Cases
+const mipCaseColors = {
+    "21-07-0002S": "#c38aff",
+    "22-07-0035S": "#74ff74", // Light green
+    "23-07-0036S": "#ff8bcd", // Light pink
+    "23-07-0037S": "#84b3ff"  // Light yellow
+};
+
 
 // Function to toggle the table visibility
 export function toggleTable() {
@@ -59,19 +59,48 @@ function initializeDataTable() {
     }
 
     // Initialize DataTables
-    $("#excel-data-table").DataTable({
-        paging: true,
+    const dTable = $("#excel-data-table").DataTable({
+        paging: false,
         searching: true,
         ordering: true,
         info: true,
         autoWidth: true,
-        lengthMenu: [25, 50, 100], // Number of rows per page
         resposive: true,
         buttons: [
             'copy', 'excel'
-        ]
+        ],
+        rowCallback: function (row, data) {
+            // Get the MIP Case value from the row data
+            console.log("Row Data:", data);
+            const mipCase = data[17]; // Adjust the index based on your column layout
+            console.log("MIP Case:", mipCase);
+            const color = mipCaseColors[mipCase];
+
+            if (color) {
+                console.log("MIP Case:", mipCase, "Color:", color);
+                $(row).css("background-color", color); // Apply the unique background color
+            }
+        }
     });
+
+        // Add hover event listener
+    $("#excel-data-table tbody").on("mouseenter", "tr", function () {
+        const rowData = dTable.row(this).data(); // Get the data for the hovered row
+        if (rowData && rowData[0]) {
+            console.log("Hovered row data[0]:", rowData[0]);
+            sendDataToMap(rowData[0], getMap()); // Send data[0] to the map/main.js
+        }
+    });
+
     console.log("DataTable initialized!");
+}
+
+function sendDataToMap(dataValue, map) {
+    // Example: Highlight or focus on a map feature based on dataValue
+    console.log("Sending to map:", dataValue);
+
+    // Assuming you have a Mapbox GL JS map instance
+    map.setFilter("areas-highlight", ["==", "HUC8", dataValue]); // Adjust logic as needed
 }
 
 function highlightTableColumn(columnName) {
@@ -114,7 +143,6 @@ function populateTable(data) {
     const table = document.createElement("table");
     table.id = "excel-data-table"; // DataTables targets this ID
     table.classList.add("display"); // DataTables expects the "display" class
-
 
     const thead = document.createElement("thead");
 
@@ -184,8 +212,9 @@ function populateTable(data) {
 
 // Function to update the toggle button's position dynamically
 function updateToggleButtonPosition() {
-    const tableHeight = parseInt(getComputedStyle(panel, "").height);
-    console.log("Table height:", tableHeight);
+    const rect = panel.getBoundingClientRect();
+    const tableHeight = rect.height// parseInt(getComputedStyle(panel, "").height);
+
     toggleButton.style.bottom = (tableHeight + 75) + "px"; // Adjust based on the panel height
 }
 
@@ -195,4 +224,4 @@ function resetToggleButtonPosition() {
 }
 
 export { highlightTableColumn, resetTableColumn, populateTable, updateToggleButtonPosition, resetToggleButtonPosition,
-initializeDataTable}; // Export the functions
+initializeDataTable, sendDataToMap}; // Export the functions
