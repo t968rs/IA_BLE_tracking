@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
              if (lastModified) {
                 const formattedDate = new Date(lastModified).toLocaleDateString();
                 const formattedTime = new Date(lastModified).toLocaleTimeString([], timeOptions);
-                lastUpdated.innerHTML = `<b>statuses</b> last updated:<br><b>${formattedDate} ${formattedTime}</b>`;
+                lastUpdated.innerHTML = `statuses last updated:<br><b>${formattedDate} ${formattedTime}</b>`;
             } else {
                 console.warn('Last-Modified header not found');
                 lastUpdated.innerHTML = `The <b>statuses</b> were last updated: <b>Unknown</b>`;
