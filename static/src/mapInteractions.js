@@ -46,7 +46,6 @@ function containsUnwantedSubstring(property) {
 }
 
 
-
 export function showIt(docElementPassed) {
     // docElementPassed.style.display = 'block';
     docElementPassed.classList.remove("hidden");

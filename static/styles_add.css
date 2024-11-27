@@ -45,10 +45,10 @@ iframe {
     position: absolute;
     bottom: 4%;
     width: 100%;
-    height: 100px; /* Initial height */
+    height: 150px; /* Initial height */
     overflow: auto;
     background-color: #e1e1e1;
-    border-top: 4px solid #8973af;
+    border-top: 4px solid #acacac;
     padding-top: 4px;
     font-family: "Arial", sans-serif;
     font-size: 9px;
@@ -67,8 +67,56 @@ iframe {
 }
 
 #excel-table-container:hover {
-    background-color: #ceb4fb; /* Change mouse pointer style when hovering over the border /*/
+    background-color: #d6fbec; /* Change mouse pointer style when hovering over the border /*/
 }
+
+/* General table styling */
+#excel-data-table {
+  font-family: Arial, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+/* Styling for info cells (Info Row) */
+#excel-data-table .info-row th {
+  background-color: #00424a; /* Light blue background */
+  font-weight: bold;
+  text-align: center;
+  border-collapse: separate;
+  font-size: 13px;
+  font-family: "Century Gothic", sans-serif;
+  padding: 8px;
+  border-bottom: 2px solid #d2f6ff; /* Add a distinct bottom border for separation */
+  color: #f2fffa; /* Ensure text color is not overridden */
+}
+
+/* Header row styling */
+#excel-data-table thead th {
+  background-color: #003f55; /* Darker blue background */
+  color: white; /* White text */
+  padding: 10px;
+  border: 1px solid #ddd;
+  font-family: "Century Gothic", sans-serif;
+  text-align: center;
+  font-size: 11px;
+}
+
+/* Customize specific cells */
+th.overall {
+  background-color: #4caf50; /* Green background for "Overall" */
+  color: white;
+}
+
+th.details {
+  background-color: #ff9800; /* Orange background for "Details" */
+  color: black;
+}
+
+/* General row styling for table body */
+#excel-data-table tbody tr:nth-child(even) {
+  background-color: #f9f9f9; /* Alternate row shading for better readability */
+}
+
 
 .highlight-row {
     background-color: #202020; /* Example: light gray background */
@@ -404,15 +452,15 @@ th {
 
 /* CSS styles (adjust as needed) */
 #popup-welcome {
-  position: fixed;
-    top: 50%;
-    left: 50%;
-  width: 60%;
-  height: 20%;
+  position: absolute;
+    top: 35%;
+    left: 35%;
+  width: 35%;
+  height: 15%;
     z-index: 1000;
     /*border: 1px solid #289fff;*/
     /*border-radius: 5px;*/
-  display: flex;
+  display: grid;
   justify-content: center;
   align-items: center;
 }
