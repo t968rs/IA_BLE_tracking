@@ -8,17 +8,26 @@ import {
 } from './src/mapInteractions.js';
 
 import {precisionRound} from "./src/maths.js";
-import {BORDER_SIZE, fetchAndDisplayExcel, m_pos, panel, resize, toggleButton, toggleTable,} from "./src/populateTable.js";
+import {
+    fetchAndDisplayExcel,
+    panel,
+    toggleButton,
+    toggleTable,
+    updateToggleButtonPosition,
+} from "./src/populateTable.js";
+
+import { initializeMap } from "./src/mapManager.js";
+
 // import MapboxDraw from "@mapbox/mapbox-gl-draw";
 // import { getEditor } from "./src/editor_functionality.js";
 
 
 mapboxgl.accessToken = MAPBOX_TOKEN;
-const map = new mapboxgl.Map({
+const map = initializeMap({
     container: 'map',
     style: 'mapbox://styles/t968rs/clzn9s7ej006e01r31wsob7kj',
     projection: 'albers', // Display the map as a globe, since satellite-v9 defaults to Mercator
-    zoom: 7,
+    zoom: 6,
     minZoom: 0,
     center: [-93.5, 42]
 });
@@ -57,32 +66,26 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-
     const closePopupButton = document.querySelector(
-        '.popup-container .close-btn, .mapboxgl-popup-content .close-btn'
-    );
+        '.popup-container .close-btn, .mapboxgl-popup-content .close-btn');
     const welcomePopup = document.getElementById("popup-welcome");
     const confirmWelcome = document.getElementById("welcome-ok");
 
-    if (closePopupButton) {
-        closePopupButton.addEventListener('click', () => {
-            console.log("Close button clicked");
-            hideIt(welcomePopup);
-        });
-    } else {
-        console.error('Close button not found');
-    }
+    closePopupButton.addEventListener('click', () => {
+        hideIt(welcomePopup);
+    });
+    closePopupButton.addEventListener('touchstart', () => {
+        hideIt(welcomePopup)
+    });
 
     if (welcomePopup && confirmWelcome) {
         confirmWelcome.addEventListener("click", () => {
-            console.log("Confirm button clicked");
-            hideIt(welcomePopup);
+            hideIt(welcomePopup)
         });
-
-        console.log("Calling showIt for welcomePopup");
+        confirmWelcome.addEventListener("touchstart", () => {
+            hideIt(welcomePopup)
+        });
         showIt(welcomePopup);
-    } else {
-        console.error('Popup or confirm button not found');
     }
 });
 
@@ -707,17 +710,55 @@ map.on('load', async () => {
 });
 
 
-// Add event listeners for resizing
-panel.addEventListener("mousedown", function (e) {
-  if (e.offsetY < BORDER_SIZE) {
-    m_pos = e.y;
-    document.addEventListener("mousemove", resize, false);
-  }
-}, false);
+const BORDER_SIZE = 10; // Resize boundary size
+let isResizing = false;
+let m_pos = 0;
 
-document.addEventListener("mouseup", function () {
-  document.removeEventListener("mousemove", resize, false);
-}, false);
+// Start resizing
+panel.addEventListener("pointerdown", function (e) {
+  const rect = panel.getBoundingClientRect();
+  const pointerY = e.clientY - rect.top;
+
+  // Check if the pointer is near the top border
+  if (pointerY < BORDER_SIZE) {
+    isResizing = true;
+    m_pos = e.clientY; // Set initial pointer position
+    document.body.style.cursor = "ns-resize"; // Change cursor to resize style
+  }
+});
+
+// Perform resizing with max height constraint
+document.addEventListener("pointermove", function (e) {
+  if (isResizing) {
+    const rect = panel.getBoundingClientRect();
+    const deltaY = e.clientY - m_pos; // Movement difference
+    const newHeight = rect.height - deltaY; // Adjust height based on upward/downward drag
+
+    const maxHeight = window.innerHeight * 0.95; // Maximum height as 95% of the frame
+    const minHeight = 50; // Minimum height to prevent collapsing
+
+    if (newHeight >= minHeight && newHeight <= maxHeight) {
+        // panel.style.height = `${newHeight}px`;
+        panel.style.height = `calc(100% - ${e.clientY}px)`; // Resize based on the pointer position
+        // panel.style.top = `${rect.top}px`; // Adjust the top position to maintain alignment
+        m_pos = e.clientY; // Update reference position
+    } else if (newHeight > maxHeight) {
+        panel.style.height = `${maxHeight}px`; // Snap to max height
+    } else if (newHeight < minHeight) {
+        panel.style.height = `${minHeight}px`; // Snap to min height
+    }
+    updateToggleButtonPosition(); // Update the toggle button position
+  }
+});
+
+// Stop resizing
+document.addEventListener("pointerup", function () {
+  if (isResizing) {
+    console.log("Pointer up detected. Resizing stopped.");
+  }
+  isResizing = false; // Reset state
+  document.body.style.cursor = ""; // Reset cursor style
+});
 
 // Attach the toggle functionality to the button
 toggleButton.addEventListener("click", toggleTable);
