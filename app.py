@@ -1,31 +1,55 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, send_file
 import os
+import shutil
 from dotenv import load_dotenv
+from py.excel_convert_vlookups import convert_vlookups_to_values
+from py.files_watcher import start_file_observer, check_and_process_on_start
+
 
 
 load_dotenv()  # Load environment variables from .env file
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
 
+
+EXCEL_DIR = os.path.join(app.root_path, "data", "tables")
+EXCEL_FILE = os.path.join(EXCEL_DIR, "IA_BLE_Tracking.xlsx")
+SHEET_NAME = "Tracking_VLOOKUP"
+YAML_FILE = os.path.join(EXCEL_DIR, "last_modified.yaml")
+
+# Start the file observer when the app starts
+# check_and_process_on_start(EXCEL_FILE, SHEET_NAME, YAML_FILE)
+# observer = start_file_observer(EXCEL_FILE, SHEET_NAME, YAML_FILE)
+
+
 # Homepage route
 @app.route("/")
 def home():
     mapbox_token = os.getenv("MAPBOX_TOKEN")
     return render_template("index.html",
-                           mapbox_token=mapbox_token)  # Dynamic reference to your HTML
+                           mapbox_token=mapbox_token)  # Dynamic reference to HTML
 
 
-# Example dynamic route
-@app.route("/process", methods=["POST"])
-def process():
-    data = request.json  # Handle JSON sent from the client
-    if not data:
-        return jsonify({"error": "No data provided"}), 400
+@app.route("/excel")
+def serve_excel():
+    file_path = os.path.join(EXCEL_DIR, "IA_BLE_Tracking.xlsx")
+    sheet_name = "Tracking_Main_values"
 
-    # Example dynamic processing
-    name = data.get("name", "Guest")
-    response = {"message": f"Hello, {name}!"}
-    return jsonify(response)
+    if not os.path.exists(file_path):
+        return jsonify({"error": "File not found"}), 404
+
+    # Create a custom response
+    response = send_from_directory(
+        directory=EXCEL_DIR,
+        path="IA_BLE_Tracking.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        as_attachment=True,
+    )
+
+    # Add the sheet name as a custom header
+    target_sheet = sheet_name
+    response.headers["Sheet-Name"] = target_sheet
+    return response
 
 @app.route("/data/<path:filename>")
 def serve_data(filename):
@@ -37,11 +61,10 @@ def serve_data(filename):
     return send_from_directory(data_dir, filename)
 
 
-# Another example dynamic route
-@app.route("/greet/<username>")
-def greet(username):
-    return render_template("result.html", username=username)
-
+# @app.teardown_appcontext
+# def shutdown_observer(exception=None):
+#     observer.stop()
+#     observer.join()
 
 if __name__ == "__main__":
     app.run(debug=True)
