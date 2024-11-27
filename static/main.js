@@ -35,12 +35,6 @@ const map = initializeMap({
 // Add user control
 map.addControl(new mapboxgl.NavigationControl({showCompass: true, showZoom: true}));
 
-const interactLookup = {
-    "leave": ["pointerleave", "mouseleave"],
-    "enter": ["pointerenter", "mouseenter"],
-    "click": ["pointerdown", "mousedown", "click"], "up": ["pointerup", "mouseup"],
-    "move": ["pointermove", "mousemove"]};
-
 let loc_popup;
 // Add event listeners to the close buttons
 document.addEventListener('DOMContentLoaded', () => {
@@ -61,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
              if (lastModified) {
                 const formattedDate = new Date(lastModified).toLocaleDateString();
                 const formattedTime = new Date(lastModified).toLocaleTimeString([], timeOptions);
-                lastUpdated.innerHTML = `The <b>statuses</b> were last updated: <b>${formattedDate} ${formattedTime}</b>`;
+                lastUpdated.innerHTML = `<b>statuses</b> last updated:<br><b>${formattedDate} ${formattedTime}</b>`;
             } else {
                 console.warn('Last-Modified header not found');
                 lastUpdated.innerHTML = `The <b>statuses</b> were last updated: <b>Unknown</b>`;
