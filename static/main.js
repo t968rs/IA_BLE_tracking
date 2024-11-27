@@ -1,5 +1,5 @@
 import {
-    areaPopupContent,
+    areaPopupContent, closePopup,
     createLayerControls,
     hideIt,
     populateLegend,
@@ -35,14 +35,20 @@ const map = initializeMap({
 // Add user control
 map.addControl(new mapboxgl.NavigationControl({showCompass: true, showZoom: true}));
 
+const interactLookup = {
+    "leave": ["pointerleave", "mouseleave"],
+    "enter": ["pointerenter", "mouseenter"],
+    "click": ["pointerdown", "mousedown", "click"], "up": ["pointerup", "mouseup"],
+    "move": ["pointermove", "mousemove"]};
+
 let loc_popup;
 // Add event listeners to the close buttons
 document.addEventListener('DOMContentLoaded', () => {
     const geojsonFileUrl = './data/spatial/IA_BLE_Tracking.geojson';
-    const statusElement = document.querySelector('#popup-welcome p');
+    const lastUpdated = document.getElementById("timestamp-text");
     fetchAndDisplayExcel();
 
-    if (statusElement) {
+    if (lastUpdated) {
     fetch(geojsonFileUrl, { method: 'HEAD' }) // HEAD request fetches only headers
         .then(response => {
             if (!response.ok) {
@@ -52,41 +58,29 @@ document.addEventListener('DOMContentLoaded', () => {
             const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
             // Dont show seconds in the time
             const timeOptions = { hour: 'numeric', minute: 'numeric', timeZoneName: 'short' };
-            if (lastModified) {
+             if (lastModified) {
                 const formattedDate = new Date(lastModified).toLocaleDateString();
                 const formattedTime = new Date(lastModified).toLocaleTimeString([], timeOptions);
-                statusElement.innerHTML += `<b>${formattedDate} ${formattedTime}</b>`;
+                lastUpdated.innerHTML = `The <b>statuses</b> were last updated: <b>${formattedDate} ${formattedTime}</b>`;
             } else {
                 console.warn('Last-Modified header not found');
+                lastUpdated.innerHTML = `The <b>statuses</b> were last updated: <b>Unknown</b>`;
             }
         })
         .catch(error => {
             console.error('Error fetching the geojson file:', error);
-            statusElement.innerHTML += `<b>Unknown</b>`;
+            lastUpdated.innerHTML = `The <b>statuses</b> were last updated: <b>Unknown</b>`;
         });
     }
 
-    const closePopupButton = document.querySelector(
-        '.popup-container .close-btn, .mapboxgl-popup-content .close-btn');
-    const welcomePopup = document.getElementById("popup-welcome");
-    const confirmWelcome = document.getElementById("welcome-ok");
-
-    closePopupButton.addEventListener('click', () => {
-        hideIt(welcomePopup);
-    });
-    closePopupButton.addEventListener('touchstart', () => {
-        hideIt(welcomePopup)
-    });
-
-    if (welcomePopup && confirmWelcome) {
-        confirmWelcome.addEventListener("click", () => {
-            hideIt(welcomePopup)
+    // Add event listeners to area popup close buttons
+    document.addEventListener('pointerdown', (e) => {
+        [".popup-container", ".close-btn", ".mapboxgl-popup-content", ".close-btn"].forEach(selector => {
+            if (e.target.classList.contains(selector)) {
+                closePopup(loc_popup);
+            }
         });
-        confirmWelcome.addEventListener("touchstart", () => {
-            hideIt(welcomePopup)
-        });
-        showIt(welcomePopup);
-    }
+    });
 });
 
 const response = await fetch("/data/spatial/Centroids.json");
@@ -567,7 +561,7 @@ map.on('load', async () => {
 
 
     // Click actions
-    map.on('click', async (e) => {
+    map.on("click", async (e) => {
         const features = map.queryRenderedFeatures(e.point, {
             layers: ['areas-interaction', 'model-outlines-mod'],  // replace 'your-interaction-layer' with the id of your layer
         });
@@ -605,6 +599,11 @@ map.on('load', async () => {
 
         // Handle the features found
         for (const clickedfeature of features) {
+            let fid = feature.properties.HUC8;
+            console.log('Feature ID:', fid);
+            if (fid !== undefined) {
+                map.setFilter('areas-highlight', ['==', 'HUC8', fid]);
+            }
             // Calculate the centroid of the polygon
             const centroid = turf.centroid(clickedfeature);
             const coordinates = centroid.geometry.coordinates;
@@ -674,39 +673,51 @@ map.on('load', async () => {
         }
     });
 
-    // Add event listeners for mouse enter and leave
-    map.on('mousemove', 'areas-interaction', (e) => {
-        if (e.features.length > 0) {
-            const feature = e.features[0];
-            const fid = feature.properties.HUC8;
-            if (fid !== undefined) {
-                map.setFilter('areas-highlight', ['==', 'HUC8', fid]);
+    // Add event listeners for mouse enter and leave -- NON CLICKs
+    function addInteractionEvents(map, layer) {
+        // Primary event handlers using pointer events
+        map.on('pointerenter', layer, (e) => {
+            console.log('Pointer enter event detected');
+            map.getCanvas().style.cursor = 'pointer';
+            if (e.features.length > 0) {
+                const feature = e.features[0];
+                const fid = feature.properties.HUC8;
+                console.log('Feature ID:', fid);
+                if (fid !== undefined) {
+                    map.setFilter('areas-highlight', ['==', 'HUC8', fid]);
+                }
             }
-        }
-    });
+        });
 
-    map.on('mouseleave', 'areas-interaction', () => {
-        map.setFilter('areas-highlight', ['==', 'HUC8', '']);
-    });
+        map.on('pointerleave', layer, () => {
+            console.log('Pointer leave event detected');
+            map.setFilter('areas-highlight', ['==', 'HUC8', '']);
+            map.getCanvas().style.cursor = '';
+        });
 
-    // Add event listeners for mouse enter and leave
-    map.on('mouseenter', 'areas-interaction', () => {
-        map.getCanvas().style.cursor = 'pointer';
-    });
+        // Fallback event handlers using mouse events
+        map.on('mouseenter', layer, (e) => {
+            console.log('Mouse enter event detected');
+            map.getCanvas().style.cursor = 'pointer';
+            if (e.features.length > 0) {
+                const feature = e.features[0];
+                const fid = feature.properties.HUC8;
+                console.log('Feature ID:', fid);
+                if (fid !== undefined) {
+                    map.setFilter('areas-highlight', ['==', 'HUC8', fid]);
+                }
+            }
+        });
 
-    map.on('mouseleave', 'areas-interaction', () => {
-        map.getCanvas().style.cursor = '';
-    });
+        map.on('mouseleave', layer, () => {
+            console.log('Mouse leave event detected');
+            map.setFilter('areas-highlight', ['==', 'HUC8', '']);
+            map.getCanvas().style.cursor = '';
+        });
+    }
 
-    // Add event listener for the moveend event
-    map.on('moveend', () => {
-        // Get the current map bounds
-        const bounds = map.getZoom();
-
-        // Log the bounds to the console
-        // console.log('Current Map Bounds:', bounds);
-    });
-
+    // Call the function to add event listeners
+    addInteractionEvents(map, 'areas-interaction');
 });
 
 

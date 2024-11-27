@@ -231,6 +231,17 @@ th {
     font-size: 18px; /* Font size */
     font-weight: bold; /* Bold text */
     box-shadow: 0 2px 10px rgba(0,0,0,0.3); /* Shadow for a nice effect */
+    justify-content: space-between;
+    align-items: center;
+    display: flex;
+
+#timestamp-text {
+    font-size: 0.8em; /* Smaller font size */
+    margin-left: auto; /* Push the text to the right */
+    padding-left: 20px; /* Add some padding for separation */
+}
+
+
 }
 /* Media query for small screens */
 @media (max-width: 600px) {
