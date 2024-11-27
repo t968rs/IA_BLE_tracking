@@ -9,14 +9,18 @@
     <link rel="apple-icon" sizes="180x180" href="/static/icons/apple-icon.png">
     <link rel="manifest" href="/static/icons/manifest.json">
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css' type='text/css' />
     <link href="/static/styles_add.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.dataTables.css" />
+    <script src="https://cdn.datatables.net/2.1.8/js/dataTables.js"></script>
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
     <script src="/static/src/turf.min.js" charset="utf-8"></script>
     <script src="/static/src/mapInteractions.js" type="module"></script>
     <script src="/static/src/editor_functionality.js" type="module"></script>
     <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
 </head>
 <body>
     <div id="title-box">Iowa BLE Project Tracking Map</div>
@@ -43,13 +47,12 @@
         const MAPBOX_TOKEN = "{{ mapbox_token }}";
     </script>
     <script src="../static/main.js" type="module"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
 
     <button id="toggle-table-btn">Show/Hide Table</button>
-    <div id="excel-table-container">
-
-        <iframe height="717" allowfullscreen src="https://atkins.sharepoint.com/:x:/r/sites/Iowa2DBLE/Shared%20Documents/General/Iowa_BLE_Tracking.xlsx?d=w7938001173e04905a915a56203e0b35d&csf=1&web=1&e=gzAfvD&nav=MTVfezAwMDAwMDAwLTAwMDEtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMH0"></iframe>
-
+    <div id="excel-table-container" style="display: none;">
+        <table id="excel-data-table" border="1">
+            <!-- Table content will be dynamically added here -->
+        </table>
     </div>
 </body>
 </html>

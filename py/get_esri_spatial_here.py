@@ -7,8 +7,8 @@ import typing as T
 from shapely.geometry import Polygon, Point
 from shapely.lib import unary_union
 from shapely.ops import nearest_points
-
 import pyproj
+import pyproj.aoi
 
 
 def get_utm_zone(gdf):
@@ -240,6 +240,27 @@ SPECIAL_COLUMNS = {"FRP": 4}
 
 STATIC_DATA = ["Iowa_WhereISmodel", "US_states"]
 
+EXCEL_RENAMER = {
+    "HUC8": "HUC8",
+    "Name": "Name",
+    "TO_Area": "TO Area",
+    "Draft_MIP": "Draft",
+    "FP_MIP": "Floodplain",
+    "Hydra_MIP": "Hydraulics",
+    "P01_MM": "P01 GDB",
+    "RAW_Grd_MM": "RAW Grids",
+    "DFIRM_Grd_MM": "DFIRM Grids",
+    "Addl_Grd_MM": "Additional Grids",
+    "which_grid": "Missing Grids",
+    "Prod Stage": "Prod Stage",
+    "FRP_Perc_Complete": "FRP %",
+    "Model Complete": "Model Complete",
+    "P01 Analyst": "P01 Analyst",
+    "Notes": "Notes",
+    "Has AECOM Tie": "Has AECOM Tie",
+    "MIP_Case": "MIP_Case"
+}
+
 
 def format_dates(gdf):
     """
@@ -270,8 +291,35 @@ def summarize_column(gdf, column):
         print(f"Unique {column} values: {[u for u in unique_names]}")
         print(f'   Plus, {None if None in unique_names else "No-NULL"}  values')
 
+def reorder_df_columns(df, renamer_dict):
+    # Target column order
+    target_columns = list(renamer_dict.values())
+
+    # Drop columns not in the renamer_dict
+    df = df[[col for col in df.columns if col in renamer_dict]]
+
+    # Rename columns
+    df = df.rename(columns=renamer_dict)
+
+    # Reorder columns based on the target order
+    df = df[target_columns]
+
+    return df
+
+
+def sort_df_by(df, column):
+    if column in df.columns:
+        df = df.sort_values(by=column)
+    return df
+
 
 def df_to_excel(df, out_loc, filename=None, sheetname="Sheet1"):
+    df = reorder_df_columns(df, EXCEL_RENAMER)
+    df = sort_df_by(df, "Name")
+    df = sort_df_by(df, "TO Area")
+
+    value_sheetname = sheetname + "_values"
+
     print(f"\nExcel Stuff for {filename}")
     if filename is None:
         filename = "output"
@@ -287,75 +335,32 @@ def df_to_excel(df, out_loc, filename=None, sheetname="Sheet1"):
 
     # Check existing sheets for target and value sheets
     if os.path.exists(outpath):
-        situations = {"Target Sheet Exists": False, "Value Sheet Exists": False}
-        with pd.ExcelFile(outpath) as reader:
-            pd.read_excel(reader, sheet_name=None)
-            sheets = reader.sheet_names
-            print(f" Sheet Names: {sheets}")
-            if sheetname in sheets:
-                situations["Target Sheet Exists"] = True
-            if sheetname + "_values" in sheets:
-                situations["Value Sheet Exists"] = True
-
-        # Get existing header
         try:
-            existing_df = pd.read_excel(outpath, sheet_name=sheetname, header=0)
-            print(f" Existing: {existing_df.head()}")
-            existing_columns = existing_df.columns.to_list()
-            print(f"Existing Columns: {existing_columns}")
-            # df.drop(columns=[c for c in df.columns if c not in existing_columns], inplace=True)
-            # print(f"Unique Names: {df['Name'].unique()}")
-        except Exception as e:
-            print(f"Error reading existing file: {e}")
+            with pd.ExcelFile(outpath, engine="openpyxl") as reader:
+                sheets = reader.sheet_names
+                print(f" Sheet Names: {sheets}")
+        except KeyError:
             os.remove(outpath)
-            df.to_excel(outpath, index=False, sheet_name=sheetname)
-            return
 
-        # Append to the existing Excel file
-        # Mod write kwargs based on situations
-        write_kwargs = {"sheet_name": sheetname, "header": True, "startrow": 1}
-        if situations["Target Sheet Exists"]:
-            write_kwargs["sheet_name"] = sheetname + "_values"
-        else:
-            write_kwargs["sheet_name"] = sheetname
+    # Open the Excel file in append mode or create a new one
+    with pd.ExcelWriter(outpath, engine="openpyxl", mode="w") as writer:
+        if value_sheetname:
+            # Ensure the target sheet exists and delete it safely
+            if value_sheetname in writer.book.sheetnames:
+                if len(writer.book.sheetnames) > 1:
+                    writer.book.remove(writer.book[value_sheetname])
+                else:
+                    raise ValueError("Cannot delete the only visible sheet in the workbook.")
+            df.to_excel(writer, index=False, sheet_name=value_sheetname)
 
-        # Do the write operation
-        with pd.ExcelWriter(outpath, engine='openpyxl', mode="a", if_sheet_exists="overlay") as writer:
-            # Clear the existing data in the sheet
-            print(f" Sheets: {writer.sheets}")
-            if situations["Target Sheet Exists"]:
-                sheet = writer.sheets[sheetname + "_values"]
-            if situations["Value Sheet Exists"]:
-                sheet = writer.sheets[sheetname + "_values"]
+        # Ensure at least one sheet is active and visible
+        if writer.book.sheetnames:
+            writer.book.active = 0  # Set the first sheet as active
+            writer.book[writer.book.sheetnames[0]].sheet_state = "visible"
 
-            first_df_col = df.columns[0]
-            print(f"  First Column: {first_df_col}")
-            if "_Perc" in first_df_col:
-                min_out_column = first_df_col.split("_")[0] + " %"
-            elif first_df_col in existing_columns:
-                min_out_column = first_df_col
-            else:
-                min_out_column = sheet.min_column
-            sheet_column_index = existing_df.columns.get_loc(min_out_column)
-            write_kwargs["startcol"] = sheet_column_index
-            print(f"  Min Row: {sheet.min_row}")
-            print(f"  Min Row Value: {sheet.cell(row=sheet.min_row, column=1).value}")
-            print(f"  Max Row Value: {sheet.cell(row=sheet.max_row, column=1).value}")
-
-            # Clear values sheet if exists
-            if situations["Value Sheet Exists"]:
-                print(f"  Clearing {sheetname}_values")
-                values_sheet = writer.sheets[sheetname + "_values"]
-                for row in values_sheet.iter_rows():
-                    for cell in row:
-                        cell.value = None
-
-            # Write the new data to the sheet
-            df.to_excel(writer, index=False, **write_kwargs)
-
-    else:
-        # Create a new Excel file
-        df.to_excel(outpath, index=False, sheet_name=sheetname)
+        if sheetname in writer.book.sheetnames:
+            writer.book.remove(writer.book[sheetname])
+        df.to_excel(writer, index=False, sheet_name=sheetname)
 
 
 def reorder_gdf_columns(gdf, first_columns, last_columns=None):

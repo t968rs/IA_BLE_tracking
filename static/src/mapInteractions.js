@@ -45,6 +45,8 @@ function containsUnwantedSubstring(property) {
     return unwantedSubstrings.some(substring => property.toLowerCase().includes(substring));
 }
 
+
+
 export function showIt(docElementPassed) {
     // docElementPassed.style.display = 'block';
     docElementPassed.classList.remove("hidden");
