@@ -118,6 +118,7 @@ export function closePopup() {
     if (popup) {
         console.log("Popup element found:", popup);
         popup.style.display = 'none';
+        hideIt(popup);
         console.log("Popup close clicked");
     } else {
         console.error('Popup element not found');
