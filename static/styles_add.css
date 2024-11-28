@@ -373,7 +373,7 @@ th {
     padding: 5px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.3);
     z-index: 1000; /* Ensure it appears above the map */
-    /* width: auto; Adjust as needed */
+    width: fit-content;
     /* height: auto; */
     max-height: 200px;
     overflow-y: auto;
@@ -390,7 +390,7 @@ th {
     z-index: 1000; /* Ensure it appears above the map */
     width: fit-content; /* Adjust as needed */
     max-height: 310px; /* Ensure the popup does not exceed 75px in height */
-    overflow-y: hidden; /* Add scroll if content exceeds max-height */
+    overflow-y: scroll; /* Add scroll if content exceeds max-height */
     font-family: 'Arial Narrow', sans-serif; /* Set font to Helvetica */
     font-kerning: auto; /* Enable font kerning */
     font-size: 11px; /* Change font size  */
