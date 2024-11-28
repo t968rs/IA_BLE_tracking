@@ -10,6 +10,9 @@ from shapely.ops import nearest_points
 import pyproj
 import pyproj.aoi
 
+from read_write_df import df_to_excel, df_to_json, gdf_to_geojson
+from filter_sort_select import look_for_duplicates, filter_gdf_by_column, format_dates, reorder_gdf_columns
+
 
 def get_utm_zone(gdf):
     # Get UTM area
@@ -130,24 +133,6 @@ def get_label_point(gdf, position=None, buffer_distance=None):
     return nearest_point
 
 
-def process_date(x):
-    from datetime import datetime
-    try:
-        # Try to parse the date to check if it's a valid datetime
-        dt = datetime.fromisoformat(str(x))
-        new_date = dt.strftime('%Y/%m/%d')
-
-        # Check for 0s
-        number_contents = [c for c in new_date if c.isnumeric()]
-        number_contents = list(set(number_contents))
-        if len(number_contents) == 1 and number_contents[0] == "0":
-            return ""
-
-        return new_date
-    except ValueError:
-        return x
-
-
 def read_json_to_dict(file: str) -> dict:
     with open(file, 'r') as f:
         return json.load(f)
@@ -167,16 +152,6 @@ def get_centroids(gdf):
     new_gdf['geometry'] = points
     new_gdf = gpd.GeoDataFrame(new_gdf, geometry='geometry', crs=gdf.crs)
     return new_gdf
-
-
-def look_for_duplicates(gdf, column):
-    duplicates = gdf[gdf.duplicated(subset=column, keep=False)]
-    # print(f" \nDuplicates in {column}: \n  {duplicates}\n")
-    return duplicates
-
-
-def filter_gdf_by_column(gdf, column, value):
-    return gdf[gdf[column].fillna("").str.contains(value, case=False)]
 
 
 def add_numbered_primary_key(gdf, col_name):
@@ -240,147 +215,6 @@ SPECIAL_COLUMNS = {"FRP": 4}
 
 STATIC_DATA = ["Iowa_WhereISmodel", "US_states"]
 
-EXCEL_RENAMER = {
-    "HUC8": "HUC8",
-    "Name": "Name",
-    "TO_Area": "TO Area",
-    "Draft_MIP": "Draft",
-    "FP_MIP": "Floodplain",
-    "Hydra_MIP": "Hydraulics",
-    "P01_MM": "P01 GDB",
-    "RAW_Grd_MM": "RAW Grids",
-    "DFIRM_Grd_MM": "DFIRM Grids",
-    "Addl_Grd_MM": "Additional Grids",
-    "which_grid": "Missing Grids",
-    "Prod Stage": "Prod Stage",
-    "FRP_Perc_Complete": "FRP %",
-    "Model Complete": "Model Complete",
-    "P01 Analyst": "P01 Analyst",
-    "Notes": "Notes",
-    "Has AECOM Tie": "Has AECOM Tie",
-    "MIP_Case": "MIP_Case"
-}
-
-
-def format_dates(gdf):
-    """
-    Remove the time part from date columns in a GeoDataFrame.
-
-    Parameters:
-    gdf (GeoDataFrame): The GeoDataFrame whose date columns need to be processed.
-    date_columns (list): A list of column names that contain date strings with a "T".
-
-    Returns:
-    GeoDataFrame: The GeoDataFrame with modified date columns.
-    """
-    # Convert Timestamp objects to strings
-    for col in gdf.columns:
-        if pd.api.types.is_datetime64_any_dtype(gdf[col]):
-            print(f"\t\tConverting {col} to string")
-            gdf[col] = gdf[col].astype(str)
-            gdf[col] = gdf[col].apply(process_date)
-            gdf[col] = gdf[col].str.replace("0000/00/00", "")
-    gdf = gdf.replace("0000/00/00", "")
-
-    return gdf
-
-
-def summarize_column(gdf, column):
-    if column in gdf.columns:
-        unique_names = gdf[column].unique()
-        print(f"Unique {column} values: {[u for u in unique_names]}")
-        print(f'   Plus, {None if None in unique_names else "No-NULL"}  values')
-
-
-def reorder_df_columns(df, renamer_dict):
-    # Target column order
-    target_columns = list(renamer_dict.values())
-
-    # Drop columns not in the renamer_dict
-    df = df[[col for col in df.columns if col in renamer_dict]]
-
-    # Rename columns
-    df = df.rename(columns=renamer_dict)
-
-    # Reorder columns based on the target order
-    df = df[target_columns]
-
-    return df
-
-
-def sort_df_by(df, column):
-    if column in df.columns:
-        df = df.sort_values(by=column)
-    return df
-
-
-def df_to_excel(df: pd.DataFrame, out_loc: str, filename=None, sheetname="Sheet1"):
-    df = reorder_df_columns(df, EXCEL_RENAMER)
-    df = sort_df_by(df, "Name")
-    df = sort_df_by(df, "TO Area")
-
-    value_sheetname = sheetname + "_values"
-
-    print(f"\nExcel Stuff for {filename}")
-    if filename is None:
-        filename = "output"
-    outpath = os.path.join(out_loc, f"{filename}.xlsx") if ".xlsx" not in filename else os.path.join(out_loc, filename)
-    os.makedirs(out_loc, exist_ok=True)
-
-    if isinstance(df, gpd.GeoDataFrame) or "geometry" in df.columns:
-        df = pd.DataFrame(df.drop(columns=['geometry']))
-
-    for c in df.columns:
-        if "legend" in c.lower():
-            df.drop(columns=c, inplace=True)
-
-    # Check existing sheets for target and value sheets
-    if os.path.exists(outpath):
-        try:
-            with pd.ExcelFile(outpath, engine="openpyxl") as reader:
-                sheets = reader.sheet_names
-                print(f" Sheet Names: {sheets}")
-        except KeyError:
-            os.remove(outpath)
-
-    # Open the Excel file in append mode or create a new one
-    with pd.ExcelWriter(outpath, engine="openpyxl", mode="w") as writer:
-        if value_sheetname:
-            # Ensure the target sheet exists and delete it safely
-            if value_sheetname in writer.book.sheetnames:
-                if len(writer.book.sheetnames) > 1:
-                    writer.book.remove(writer.book[value_sheetname])
-                else:
-                    raise ValueError("Cannot delete the only visible sheet in the workbook.")
-            df.to_excel(writer, index=False, sheet_name=value_sheetname)
-
-        # Ensure at least one sheet is active and visible
-        if writer.book.sheetnames:
-            writer.book.active = 0  # Set the first sheet as active
-            writer.book[writer.book.sheetnames[0]].sheet_state = "visible"
-
-        if sheetname in writer.book.sheetnames:
-            writer.book.remove(writer.book[sheetname])
-        df.to_excel(writer, index=False, sheet_name=sheetname)
-
-
-def reorder_gdf_columns(gdf, first_columns, last_columns=None):
-    if last_columns is None:
-        last_columns = []
-
-    # Columns that are not in first_columns or last_columns
-    middle_columns = [col for col in gdf.columns if col not in first_columns and col not in last_columns]
-
-    # New column order
-    first_columns = [col for col in first_columns if col in gdf.columns]
-    last_columns = [col for col in last_columns if col in gdf.columns]
-    new_column_order = first_columns + middle_columns + last_columns
-
-    # Reorder the columns in the GeoDataFrame
-    gdf = gdf[new_column_order]
-
-    return gdf
-
 
 def aggregate_buffer_polygons(gdf, buffer_distance, summary_column: T.Union[str, list, None] = None):
     """
@@ -431,42 +265,7 @@ def aggregate_buffer_polygons(gdf, buffer_distance, summary_column: T.Union[str,
     return gdf
 
 
-def df_to_json(data, out_loc: str, filename: str = None):
-    if isinstance(data, gpd.GeoDataFrame):
-        df = pd.DataFrame(data.drop(columns='geometry'))
-    elif isinstance(data, pd.DataFrame):
-        df = data
-    else:
-        raise ValueError("Data must be a GeoDataFrame or DataFrame")
-
-    if ".json" in out_loc:
-        out_loc, file = os.path.split(out_loc)
-        filename, ext = os.path.splitext(file)
-    outpath_table = os.path.normpath(os.path.join(out_loc, filename + ".json"))
-
-    # Convert Timestamp objects to strings
-    dicted = df.map(lambda x: x.isoformat() if isinstance(x, pd.Timestamp) else x).to_dict(orient='records')
-
-    with open(outpath_table, 'w') as f:
-        json.dump(dicted, f, indent=2)
-
-
-def gdf_to_geojson(gdf: gpd.GeoDataFrame, out_loc, filename=None):
-    if not isinstance(gdf, gpd.GeoDataFrame):
-        if isinstance(gdf, gpd.GeoSeries):
-            gdf = gpd.GeoDataFrame(geometry=gdf)
-        print(f"Data type: {type(gdf)}")
-        raise ValueError("Data must be a GeoDataFrame")
-    driver = "GeoJSON"
-    outpath = out_loc + f"{filename}.geojson"
-    os.makedirs(out_loc, exist_ok=True)
-    gdf.to_file(filename=outpath, driver=driver)
-
-    print(f"Saved {filename} to {outpath}")
-    print(f"Columns: {gdf.columns.to_list()}")
-
-
-class WriteNewGeoJSON:
+class esri2geoJSON:
     def __init__(self):
         self.server_path = os.path.split(__file__)[0]
         self.esri_folder = "../data/esri_exports/"
@@ -719,6 +518,6 @@ class WriteNewGeoJSON:
 if __name__ == "__main__":
     cname = "Production"
     keywords = ["TODO", "UPDATE"]
-    to_gdf = WriteNewGeoJSON()
+    to_gdf = esri2geoJSON()
     to_gdf.update_iowa_status_map(cname, keywords)
     print("Done")

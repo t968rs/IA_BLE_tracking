@@ -11,13 +11,12 @@ app.secret_key = os.getenv("SECRET_KEY")
 
 EXCEL_DIR = os.path.join(app.root_path, "data", "tables")
 EXCEL_FILE = os.path.join(EXCEL_DIR, "IA_BLE_Tracking.xlsx")
-SHEET_NAME = "Tracking_VLOOKUP"
+SHEET_NAME = "Tracking_Main"
 YAML_FILE = os.path.join(EXCEL_DIR, "last_modified.yaml")
 
 # Start the file observer when the app starts
 # check_and_process_on_start(EXCEL_FILE, SHEET_NAME, YAML_FILE)
 # observer = start_file_observer(EXCEL_FILE, SHEET_NAME, YAML_FILE)
-
 
 # Homepage route
 @app.route("/")

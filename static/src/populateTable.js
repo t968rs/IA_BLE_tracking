@@ -40,9 +40,49 @@ export async function fetchAndDisplayExcel() {
         const workbook = XLSX.read(data, {type: "array"});
 
         const worksheet = workbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
 
-        populateTable(json);
+        // Parsing Excel sheet with date handling
+        const json = XLSX.utils.sheet_to_json(worksheet, {
+            header: 1,        // Keep rows as arrays
+            cellDates: true,
+            defval: "", // Treat Excel dates as JS Date objects where possible
+        });
+
+        // Map rows and format dates
+        const formattedJson = json.map(row => row.map(cell => {
+            if (cell instanceof Date) {
+                // Format Date object to YYYY-MM-DD
+                return cell.toISOString().split('T')[0];
+            }
+            if (typeof cell === "number" && cell > 40000) {
+                // Likely an Excel serial number (valid serial numbers start from ~1900)
+                const date = new Date((cell - 25569) * 86400 * 1000); // Convert to JS Date
+                return date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+            }
+            return cell; // Return unchanged for other types
+        }));
+
+        console.log("Formatted Data with Dates:", formattedJson);
+
+        // Find the max number of columns
+        const maxColumns = formattedJson.reduce((max, row) => Math.max(max, row.length), 0);
+        console.log("Max Columns:", maxColumns);
+
+        // Pad rows to ensure uniform column length
+        const paddedData = formattedJson.map(row => {
+            while (row.length < maxColumns) {
+                row.push(""); // Add empty cells
+            }
+            return row;
+        });
+
+        console.log("Padded Data:", paddedData);
+
+        // Debug specific row and column
+        console.log("Row 9, Column 16:", paddedData[8][15]); // Adjusted for zero-based indexing
+
+
+        populateTable(paddedData);
 
         // Initialize DataTables on the dynamically created table
         initializeDataTable();
@@ -71,13 +111,13 @@ function initializeDataTable() {
         ],
         rowCallback: function (row, data) {
             // Get the MIP Case value from the row data
-            console.log("Row Data:", data);
+            // console.log("Row Data:", data);
             const mipCase = data[17]; // Adjust the index based on your column layout
-            console.log("MIP Case:", mipCase);
+            // console.log("MIP Case:", mipCase);
             const color = mipCaseColors[mipCase];
 
             if (color) {
-                console.log("MIP Case:", mipCase, "Color:", color);
+                // console.log("MIP Case:", mipCase, "Color:", color);
                 $(row).css("background-color", color); // Apply the unique background color
             }
         }

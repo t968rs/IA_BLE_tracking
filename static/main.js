@@ -257,7 +257,7 @@ map.on('load', async () => {
         paint: {
             'fill-color': [
                 'match',
-                ['get', 'Prod Stage'],
+                ['get', 'Prod_Stage'],
 
                 "Pass 2/2",
                 'rgba(5,48,37,0.75)', // 50% transparency
@@ -594,14 +594,14 @@ map.on('load', async () => {
         // Handle the features found
         for (const clickedfeature of features) {
             let fid = feature.properties.HUC8;
-            console.log('Feature ID:', fid);
+            // console.log('Feature ID:', fid);
             if (fid !== undefined) {
                 map.setFilter('areas-highlight', ['==', 'HUC8', fid]);
             }
             // Calculate the centroid of the polygon
             const centroid = turf.centroid(clickedfeature);
             const coordinates = centroid.geometry.coordinates;
-            console.log('Clicked feature:', clickedfeature.layer.id);
+            // console.log('Clicked feature:', clickedfeature.layer.id);
 
             // Ensure coordinates are in the correct format
             if (!Array.isArray(coordinates) || coordinates.length !== 2) {
@@ -640,18 +640,18 @@ map.on('load', async () => {
                 let centerArray = featureCenter.toArray();
                 centerArray[1] = centerArray[1] + featureHeight * 0.3;
                 let cameraCenter = new mapboxgl.LngLat(centerArray[0], centerArray[1]);
-                console.log('Camera Center: ', cameraCenter);
-                console.log('Feature Center: ', featureCenter);
+                // console.log('Camera Center: ', cameraCenter);
+                // console.log('Feature Center: ', featureCenter);
                 if (mapZoom > camZoom) {
-                    console.log('Map Zoom is greater than calculated zoom', mapZoom, camZoom);
+                    // console.log('Map Zoom is greater than calculated zoom', mapZoom, camZoom);
                     calcZoom = camZoom;
                 } else if (mapZoom < camZoom) {
-                    console.log('Map Zoom is less than calculated zoom', mapZoom, camZoom);
+                    // console.warn('Map Zoom is less than calculated zoom', mapZoom, camZoom);
                     calcZoom = camZoom;
                 }
                 // console.log('Feature Bounds:', featureBounds);
-                console.log('Calc Zoom:', calcZoom);
-                console.log('Map Zoom:', mapZoom);
+                // console.log('Calc Zoom:', calcZoom);
+                // console.log('Map Zoom:', mapZoom);
                 console.log('Feature Height:', featureHeight);
                 // console.log('Center of bounds:', featureCenter);
                 map.jumpTo({
@@ -669,29 +669,37 @@ map.on('load', async () => {
 
     // Add event listeners for mouse enter and leave -- NON CLICKs
     function addInteractionEvents(map, layer) {
-        // Primary event handlers using pointer events
-        map.on('pointerenter', layer, (e) => {
-            console.log('Pointer enter event detected');
-            map.getCanvas().style.cursor = 'pointer';
+        function highlightFeature(e) {
             if (e.features.length > 0) {
                 const feature = e.features[0];
                 const fid = feature.properties.HUC8;
-                console.log('Feature ID:', fid);
+                // console.log('Feature ID:', fid);
                 if (fid !== undefined) {
                     map.setFilter('areas-highlight', ['==', 'HUC8', fid]);
                 }
             }
+        }
+        map.on("hover", layer, (e) => {
+            map.getCanvas().style.cursor = 'pointer';
+            highlightFeature(e);
+        });
+
+        // Primary event handlers using pointer events
+        map.on('pointerenter', layer, (e) => {
+            // console.log('Pointer enter event detected');
+            map.getCanvas().style.cursor = 'pointer';
+            highlightFeature(e);
         });
 
         map.on('pointerleave', layer, () => {
-            console.log('Pointer leave event detected');
+            // console.log('Pointer leave event detected');
             map.setFilter('areas-highlight', ['==', 'HUC8', '']);
             map.getCanvas().style.cursor = '';
         });
 
         // Fallback event handlers using mouse events
         map.on('mouseenter', layer, (e) => {
-            console.log('Mouse enter event detected');
+            // console.log('Mouse enter event detected');
             map.getCanvas().style.cursor = 'pointer';
             if (e.features.length > 0) {
                 const feature = e.features[0];
