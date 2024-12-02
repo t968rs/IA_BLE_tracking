@@ -9,7 +9,7 @@ import {
 
 import {precisionRound} from "./src/maths.js";
 import {
-    fetchAndDisplayExcel,
+    fetchAndDisplayData,
     panel,
     toggleButton,
     toggleTable,
@@ -40,7 +40,7 @@ let loc_popup;
 document.addEventListener('DOMContentLoaded', () => {
     const geojsonFileUrl = './data/spatial/IA_BLE_Tracking.geojson';
     const lastUpdated = document.getElementById("timestamp-text");
-    fetchAndDisplayExcel();
+    fetchAndDisplayData();
 
     if (lastUpdated) {
     fetch(geojsonFileUrl, { method: 'HEAD' }) // HEAD request fetches only headers
