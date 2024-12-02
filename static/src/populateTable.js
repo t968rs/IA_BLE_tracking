@@ -3,7 +3,7 @@ import {getMap} from "./mapManager.js";
 export const panel = document.getElementById("excel-table-container");
 export const toggleButton = document.getElementById("toggle-table-btn");
 
-    // Predefined color map for MIP Cases
+// Predefined color map for MIP Cases
 const mipCaseColors = {
     "21-07-0002S": "#c38aff",
     "22-07-0035S": "#74ff74", // Light green
@@ -11,12 +11,11 @@ const mipCaseColors = {
     "23-07-0037S": "#84b3ff"  // Light yellow
 };
 
-
 // Function to toggle the table visibility
 export function toggleTable() {
     if (panel.style.display === "none" || panel.style.display === "") {
         panel.style.display = "block";
-        fetchAndDisplayExcel(); // Fetch and populate the table if not already loaded
+        fetchAndDisplayData(); // Fetch and populate the table if not already loaded
         updateToggleButtonPosition();
     } else {
         panel.style.display = "none";
@@ -26,69 +25,97 @@ export function toggleTable() {
 }
 
 // Function to fetch and display the Excel data
-export async function fetchAndDisplayExcel() {
+export async function fetchAndDisplayData() {
     try {
-        const response = await fetch("/excel");
-        if (!response.ok) throw new Error("Failed to fetch Excel file");
+        const response = await fetch('/data-table.json');
+        if (!response.ok) {
+            throw new Error(`Failed to fetch data: ${response.statusText}`);
+        }
 
-        const sheetName = response.headers.get("Sheet-Name") || "Sheet1";
+        const tableData = await response.json();
 
-        const arrayBuffer = await response.arrayBuffer();
-        const data = new Uint8Array(arrayBuffer);
+        // Define editable and locked columns
+        const editableColumns = ['Draft_MIP', 'FP_MIP',
+        "Hydra_MIP", "DFIRM_Grd_MM", "Prod Stage", "FRP_Perc_Complete",
+        "Notes"]; // Define columns you want editable
 
-        // Parse the workbook
-        const workbook = XLSX.read(data, {type: "array"});
-
-        const worksheet = workbook.Sheets[sheetName];
-
-        // Parsing Excel sheet with date handling
-        const json = XLSX.utils.sheet_to_json(worksheet, {
-            header: 1,        // Keep rows as arrays
-            cellDates: true,
-            defval: "", // Treat Excel dates as JS Date objects where possible
-        });
-
-        // Map rows and format dates
-        const formattedJson = json.map(row => row.map(cell => {
-            if (cell instanceof Date) {
-                // Format Date object to YYYY-MM-DD
-                return cell.toISOString().split('T')[0];
+        const columns = Object.keys(tableData[0]).map(key => ({
+            data: key,
+            title: key,
+            render: function (data, type, row, meta) {
+                // Render editable cells as spans; locked cells as plain text
+                if (editableColumns.includes(key)) {
+                    return `<span class="editable" data-column="${key}">${data}</span>`;
+                }
+                return data; // Locked cells are plain text
             }
-            if (typeof cell === "number" && cell > 40000) {
-                // Likely an Excel serial number (valid serial numbers start from ~1900)
-                const date = new Date((cell - 25569) * 86400 * 1000); // Convert to JS Date
-                return date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
-            }
-            return cell; // Return unchanged for other types
         }));
 
-        console.log("Formatted Data with Dates:", formattedJson);
-
-        // Find the max number of columns
-        const maxColumns = formattedJson.reduce((max, row) => Math.max(max, row.length), 0);
-        console.log("Max Columns:", maxColumns);
-
-        // Pad rows to ensure uniform column length
-        const paddedData = formattedJson.map(row => {
-            while (row.length < maxColumns) {
-                row.push(""); // Add empty cells
-            }
-            return row;
+        const table = $('#status-table').DataTable({
+            data: tableData,
+            columns: columns,
+            destroy: true
         });
 
-        console.log("Padded Data:", paddedData);
+        // Add in-line editing event listener for editable cells
+        $('#status-table').on('click', '.editable', function () {
+            const cell = $(this);
+            const currentValue = cell.text();
+            const column = cell.data('column');
 
-        // Debug specific row and column
-        console.log("Row 9, Column 16:", paddedData[8][15]); // Adjusted for zero-based indexing
+            // Create an input field for editing
+            const input = $(`<input type="text" value="${currentValue}">`);
+            cell.empty().append(input);
 
+            // Handle save on blur
+            input.on('blur', function () {
+                const newValue = input.val();
+                cell.text(newValue);
 
-        populateTable(paddedData);
+                // Update the DataTable cell value
+                const rowIdx = table.row(cell.closest('tr')).index();
+                const rowData = table.row(rowIdx).data();
+                rowData[column] = newValue;
+                table.row(rowIdx).data(rowData);
+            });
 
-        // Initialize DataTables on the dynamically created table
-        initializeDataTable();
+            // Automatically focus the input
+            input.focus();
+        });
 
     } catch (error) {
-        console.error("Error fetching and displaying Excel file:", error);
+        console.error("Error fetching and displaying data:", error);
+    }
+}
+
+
+// Add Save Table functionality
+document.getElementById("saveTableButton").addEventListener("click", saveTableUpdates);
+
+async function saveTableUpdates() {
+    // Access the DataTable instance
+    const table = $('#status-table').DataTable();
+
+    // Get all table rows as an array
+    const updatedData = table.rows().data().toArray();
+    console.log("Updated Data to Save:", updatedData);
+
+    try {
+        // Send updated data to the backend
+        const response = await fetch('/update-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedData)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            alert("Changes saved successfully!");
+        } else {
+            alert("Error saving changes: " + result.error);
+        }
+    } catch (error) {
+        console.error("Error saving table data:", error);
     }
 }
 
@@ -136,9 +163,6 @@ function initializeDataTable() {
 }
 
 function sendDataToMap(dataValue, map) {
-    // Example: Highlight or focus on a map feature based on dataValue
-    console.log("Sending to map:", dataValue);
-
     // Assuming you have a Mapbox GL JS map instance
     map.setFilter("areas-highlight", ["==", "HUC8", dataValue]); // Adjust logic as needed
 }
