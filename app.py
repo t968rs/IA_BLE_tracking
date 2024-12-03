@@ -1,10 +1,11 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory, send_file
+from flask import Flask, render_template, request, jsonify, send_from_directory
 import os
 import geopandas as gpd
 import pandas as pd
 from py.read_write_df import StatusTableManager, df_to_excel, gdf_to_shapefile
 from dotenv import load_dotenv
 import logging
+import json
 
 logging.basicConfig(level=logging.DEBUG)
 load_dotenv()  # Load environment variables from .env file
@@ -16,6 +17,7 @@ EXCEL_FILE = os.path.join(EXCEL_DIR, "IA_BLE_Tracking.xlsx")
 TRACKING_FILE = "data/spatial/IA_BLE_Tracking.geojson"
 SHEET_NAME = "Tracking_Main"
 YAML_FILE = os.path.join(EXCEL_DIR, "last_modified.yaml")
+TABLE_METADATA = "data/IA_BLE_Tracking_metadata.json"
 
 
 # Start the file observer when the app starts
@@ -29,15 +31,28 @@ def home():
     return render_template("index.html",
                            mapbox_token=mapbox_token)  # Dynamic reference to HTML
 
+@app.route('/metadata-columns')
+def metadata_columns():
+    with open(TABLE_METADATA) as f:
+        metadata = json.load(f)
+
+    columns_metadata = {k: v for k, v in metadata["columns"].items()}
+    print(f"Column Order Before jsonify: {list(columns_metadata.keys())}")
+    return jsonify({
+        "meta": columns_metadata,
+        "order": list(columns_metadata.keys())  # Include the key order explicitly
+    })
+
 
 @app.route('/data-table.json', methods=['GET'])
 def get_table_data():
     try:
-        gdf = gpd.read_file(TRACKING_FILE).drop(columns='geometry')
-        if 'geometry' in gdf.columns:
-            gdf = gdf.drop(columns='geometry')
+        with open(TRACKING_FILE.replace(".geojson", ".json"), "r") as data:
+            df = pd.DataFrame.from_dict(json.load(data), orient="columns")
+        if 'geometry' in df.columns:
+            df = df.drop(columns='geometry')
 
-        table_data = gdf.to_dict(orient='records')
+        table_data = df.to_dict(orient='records')
 
         # Return as JSON
         return jsonify(table_data)
@@ -75,7 +90,7 @@ def update_data():
         return jsonify({'error': str(e)}), 500
 
     try:
-        with StatusTableManager("data/IA_BLE_Tracking_metadata.json") as manager:
+        with StatusTableManager(TABLE_METADATA) as manager:
             manager.enforce_types(gdf)
             manager.sort_rows(gdf)
     except Exception as e:
@@ -106,7 +121,7 @@ def export_excel(gdf):  # TODO Add functions to read GeoJSON and export Excel fi
             df = gdf
 
         logging.debug(f"DF columns: {df.columns}")
-        with StatusTableManager("data/IA_BLE_Tracking_metadata.json") as manager:
+        with StatusTableManager(TABLE_METADATA) as manager:
             manager.rename_columns(df, "excel", "geojson")
             manager.enforce_types(df, "excel")
             manager.sort_rows(df)
@@ -117,29 +132,6 @@ def export_excel(gdf):  # TODO Add functions to read GeoJSON and export Excel fi
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-
-@app.route("/excel")
-def serve_excel():
-    file_path = os.path.join(EXCEL_DIR, "IA_BLE_Tracking.xlsx")
-    sheet_name = "Tracking_Main_values"
-
-    if not os.path.exists(file_path):
-        return jsonify({"error": "File not found"}), 404
-
-    # Create a custom response
-    response = send_from_directory(
-        directory=EXCEL_DIR,
-        path="IA_BLE_Tracking.xlsx",
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        as_attachment=True,
-    )
-
-    # Add the sheet name as a custom header
-    target_sheet = sheet_name
-    response.headers["Sheet-Name"] = target_sheet
-    return response  # TODO #
-
 
 @app.route("/data/<path:filename>")
 def serve_data(filename):

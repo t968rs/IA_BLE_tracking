@@ -108,6 +108,11 @@ excel = "MIP Case"
 shapefile = "MIP_CASE"
 dtype = "string"
 
+[columns.last_updated]
+geojson = "last_updated"
+shapefile = "LST_UPDATE"
+dtype = "date"
+
 [columns.geometry]
 geojson = "geometry"
 shapefile = "geometry"

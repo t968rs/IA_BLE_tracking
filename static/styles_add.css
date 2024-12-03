@@ -41,13 +41,13 @@ iframe {
     background: #ee8a65;
 }
 
-#excel-table-container {
+#status-table-container {
     position: absolute;
     bottom: 4%;
     width: 100%;
     height: 150px; /* Initial height */
     overflow: auto;
-    background-color: #e1e1e1;
+    background-color: #72e4ff;
     border-top: 4px solid #acacac;
     padding-top: 4px;
     font-family: "Arial", sans-serif;
@@ -56,7 +56,7 @@ iframe {
     display: none; /* Initially hidden */
 }
 
-#excel-table-container::before {
+#status-table-container::before {
     content: '';
     position: absolute;
     top: 0;
@@ -66,19 +66,21 @@ iframe {
     cursor: ns-resize; /* Change mouse pointer style when hovering over the border */
 }
 
-#excel-table-container:hover {
-    background-color: #d6fbec; /* Change mouse pointer style when hovering over the border /*/
+#status-table tbody tr:hover {
+    background-color: #d6fbec; /* Change the background color */
+    cursor: pointer; /* Change the cursor to pointer */
 }
 
+
 /* General table styling */
-#excel-data-table {
+#status-table {
   font-family: Arial, sans-serif;
   border-collapse: collapse;
   width: 100%;
 }
 
 /* Styling for info cells (Info Row) */
-#excel-data-table .info-row th {
+#status-table .info-row th {
   background-color: #00424a; /* Light blue background */
   font-weight: bold;
   text-align: center;
@@ -91,7 +93,7 @@ iframe {
 }
 
 /* Header row styling */
-#excel-data-table thead th {
+#status-table thead th {
   background-color: #003f55; /* Darker blue background */
   color: white; /* White text */
   padding: 10px;
@@ -113,7 +115,7 @@ th.details {
 }
 
 /* General row styling for table body */
-#excel-data-table tbody tr:nth-child(even) {
+#status-table tbody tr:nth-child(even) {
   background-color: #f9f9f9; /* Alternate row shading for better readability */
 }
 
@@ -131,7 +133,7 @@ th.details {
     font-style: italic; /* Example: italic text */
 }
 
-#excel-table-container::after {
+#status-table-container::after {
     content: '';
     background-color: #ccc;
     position: absolute;
