@@ -149,6 +149,8 @@ class ProjectStatusUpdater:
             self.tracking_gdf = define_one_by_another(self.tracking_gdf, self.column_name, self.other_column,
                                                       self.other_status, self.new_status)
         self._format_for_geojson(sort=True)
+        self.tracking_gdf["FRP_Perc_Complete"] = pd.to_numeric(self.tracking_gdf["FRP_Perc_Complete"],
+                                                               errors='coerce').fillna(0)
         self.tracking_gdf["FRP_Perc_Complete_Legend"] = self.tracking_gdf.loc[
             :, "FRP_Perc_Complete"].apply(lambda x: f"{int(float(x))}%" if x not in [None, ""] else "")
 

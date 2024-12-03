@@ -1,7 +1,9 @@
 import {getMap} from "./mapManager.js";
 
-export const panel = document.getElementById("excel-table-container");
+export const panel = document.getElementById("status-table-container");
 export const toggleButton = document.getElementById("toggle-table-btn");
+
+const unwantedColumns = ["geometry"]
 
 // Predefined color map for MIP Cases
 const mipCaseColors = {
@@ -24,6 +26,54 @@ export function toggleTable() {
     console.log("Table toggled");
 }
 
+
+async function fetchMetadata(servePath) {
+  try {
+    const columnsMetaResponse = await fetch(servePath);
+    if (!columnsMetaResponse.ok) {
+      throw new Error(`Failed to fetch columns: ${columnsMetaResponse.statusText}`);
+    }
+
+    const metadata = await columnsMetaResponse.json();
+
+    const columnsMetadata = metadata?.meta ?? {};
+    const columnOrder = metadata?.order ?? [];
+
+    if (!columnsMetadata) {
+      console.error("meta not found in json:", metadata);
+    }
+
+    console.log("Col Metadata:", columnsMetadata);
+    console.log("Column Order:", columnOrder);
+
+    return { columnsMetadata, columnOrder };
+  } catch (error) {
+    console.error("Error fetching metadata:", error);
+    throw error; // Re-throw the error to propagate it to the caller
+  }
+}
+
+function filterColumns(tableData, columnList = null) {
+
+    // Filter out unwanted columns while maintaining original order
+    let columnsFiltered = columnList.filter(column => {
+        const isUnwanted = unwantedColumns.includes(column);
+        if (isUnwanted === true) {
+            console.debug(column, isUnwanted)
+        }
+        const isInTableData = Object.keys(tableData[0]).includes(column);
+        if (isInTableData === false) {
+            console.debug(column, "In table data", isInTableData)
+        }
+        if (!isUnwanted && isInTableData) {
+            console.debug(column, "both")
+        }
+        return !isUnwanted && isInTableData;
+    });
+    console.debug("Filtered Columns:", columnsFiltered)
+    return columnsFiltered;
+}
+
 // Function to fetch and display the Excel data
 export async function fetchAndDisplayData() {
     try {
@@ -32,30 +82,52 @@ export async function fetchAndDisplayData() {
             throw new Error(`Failed to fetch data: ${response.statusText}`);
         }
 
-        const tableData = await response.json();
+        let tableData = await response.json();
+        console.debug('Table Data json:\n', tableData)
+
+        // Fetch column metadata
+        const { columnsMetadata, columnOrder } = await fetchMetadata('/metadata-columns')
+        console.debug("Column Meta: ", columnsMetadata)
+
+        const filteredCols = filterColumns(tableData, columnOrder);
+
+        tableData = tableData.map(row => {
+            const orderedRow = {};
+            filteredCols.forEach(key => {
+                orderedRow[key] = row[key] || null; // Add all keys in the correct order
+            });
+            return orderedRow;
+        });
 
         // Define editable and locked columns
-        const editableColumns = ['Draft_MIP', 'FP_MIP',
-        "Hydra_MIP", "DFIRM_Grd_MM", "Prod Stage", "FRP_Perc_Complete",
-        "Notes"]; // Define columns you want editable
+        const editableColumns = ['Draft_MIP', 'FP_MIP', "Hydra_MIP", "DFIRM_Grd_MM", "Prod Stage", "FRP_Perc_Complete", "Notes"]; // Define columns you want editable
+        const invisibleColumns = ["geometry"]
 
-        const columns = Object.keys(tableData[0]).map(key => ({
+        const columns = filteredCols.map(key => ({
             data: key,
-            title: key,
-            render: function (data, type, row, meta) {
-                // Render editable cells as spans; locked cells as plain text
+            title: columnsMetadata[key]['excel'], // Use the dictionary value for title
+            visible: !invisibleColumns.includes(key),
+            render: function (data) {
                 if (editableColumns.includes(key)) {
                     return `<span class="editable" data-column="${key}">${data}</span>`;
                 }
-                return data; // Locked cells are plain text
+                return data || ""; // Locked cells are plain text
             }
         }));
 
-        const table = $('#status-table').DataTable({
-            data: tableData,
-            columns: columns,
-            destroy: true
-        });
+        // Append the info header
+        console.log("Column Length:", columns.length)
+        await initDataTable(columns.length, columns)
+        const dataTable = $('#status-table').DataTable({
+                    data: tableData,
+                    paging: false,
+                    columns: columns,
+                    destroy: true,
+                    autoWidth: true,
+                    responsive: true,
+                    });
+
+        console.debug('thead\n', dataTable)
 
         // Add in-line editing event listener for editable cells
         $('#status-table').on('click', '.editable', function () {
@@ -83,9 +155,92 @@ export async function fetchAndDisplayData() {
             input.focus();
         });
 
+        // Add hover event listener
+        $("#status-table tbody").on("mouseenter", "tr", function () {
+            const rowData = dataTable.row(this).data(); // Get the data for the hovered row
+            $(this).addClass('row-hover'); // Add a hover class for custom styling
+            console.log("Entered row");
+
+            if (rowData) {
+                sendDataToMap(rowData["HUC8"], getMap()); // Send data to the map
+            }
+        });
+
+        // Remove hover effect when mouse leaves the row
+        $("#status-table tbody").on("mouseleave", "tr", function () {
+            $(this).removeClass('row-hover'); // Remove hover class
+        });
+
     } catch (error) {
         console.error("Error fetching and displaying data:", error);
     }
+}
+
+async function initDataTable(columnLength, columns) {
+    const table = document.getElementById("status-table");
+    if (!table || table.tagName !== "TABLE") {
+        throw new Error("Table element is missing or invalid.");
+    }
+
+    // Clear existing content
+    table.innerHTML = "";
+
+    // Ensure <thead> exists
+    let thead = table.querySelector("thead");
+    if (!thead) {
+        thead = document.createElement("thead");
+        table.appendChild(thead);
+    }
+    thead.innerHTML = ""; // Clear existing content in thead
+
+    // Add the infoRow
+    const infoRow = await prepInfoRows(columnLength);
+    thead.appendChild(infoRow);
+
+    // Add column headers
+    const headerRow = document.createElement("tr");
+    columns.forEach(column => {
+        const th = document.createElement("th");
+        th.textContent = column.title; // Use the title from DataTables columns array
+        headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+
+    // Ensure <tbody> exists
+    let tbody = table.querySelector("tbody");
+    if (!tbody) {
+        tbody = document.createElement("tbody");
+        table.appendChild(tbody);
+    }
+
+    console.debug("thead:\n", thead)
+    return thead;
+}
+
+
+async function prepInfoRows(actualLength) {
+    const firstThreeLength = 11; // Adjust total columns if necessary
+    const lengthDiff = actualLength - firstThreeLength;
+
+    const infoRow = document.createElement("tr");
+    infoRow.classList.add("info-row");
+
+    const infoCells = [
+        { text: "Delivery Area Info", colspan: 3 },
+        { text: "MIP Task Status", colspan: 3 },
+        { text: "Model Manager Uploads", colspan: 5 },
+        { text: "Details", colspan: lengthDiff },
+    ];
+
+    infoCells.forEach(cell => {
+        const th = document.createElement("th");
+        th.colSpan = cell.colspan;
+        th.textContent = cell.text;
+        th.classList.add("info-header");
+        infoRow.appendChild(th);
+    });
+
+    return infoRow;
 }
 
 
@@ -117,49 +272,6 @@ async function saveTableUpdates() {
     } catch (error) {
         console.error("Error saving table data:", error);
     }
-}
-
-function initializeDataTable() {
-    // Check if DataTable is already initialized
-    if ($.fn.DataTable.isDataTable("#excel-data-table")) {
-        $("#excel-data-table").DataTable().destroy(); // Destroy the existing instance
-    }
-
-    // Initialize DataTables
-    const dTable = $("#excel-data-table").DataTable({
-        paging: false,
-        searching: true,
-        ordering: true,
-        info: true,
-        autoWidth: true,
-        resposive: true,
-        buttons: [
-            'copy', 'excel'
-        ],
-        rowCallback: function (row, data) {
-            // Get the MIP Case value from the row data
-            // console.log("Row Data:", data);
-            const mipCase = data[17]; // Adjust the index based on your column layout
-            // console.log("MIP Case:", mipCase);
-            const color = mipCaseColors[mipCase];
-
-            if (color) {
-                // console.log("MIP Case:", mipCase, "Color:", color);
-                $(row).css("background-color", color); // Apply the unique background color
-            }
-        }
-    });
-
-        // Add hover event listener
-    $("#excel-data-table tbody").on("mouseenter", "tr", function () {
-        const rowData = dTable.row(this).data(); // Get the data for the hovered row
-        if (rowData && rowData[0]) {
-            console.log("Hovered row data[0]:", rowData[0]);
-            sendDataToMap(rowData[0], getMap()); // Send data[0] to the map/main.js
-        }
-    });
-
-    console.log("DataTable initialized!");
 }
 
 function sendDataToMap(dataValue, map) {
@@ -195,84 +307,6 @@ function resetTableColumn(columnName) {
         .removeClass("highlight-column");
 }
 
-// Function to populate the table with Excel data
-function populateTable(data) {
-    if (!data || data.length === 0) {
-        console.error("No data available to populate the table.");
-        return;
-    }
-
-    // Create the table element
-    const tableContainer = document.getElementById("excel-table-container");
-    const table = document.createElement("table");
-    table.id = "excel-data-table"; // DataTables targets this ID
-    table.classList.add("display"); // DataTables expects the "display" class
-
-    const thead = document.createElement("thead");
-
-    // Add the "info cells" row
-    const infoRow = document.createElement("tr");
-
-    const infoCell1 = document.createElement("th");
-    infoCell1.colSpan = 3;
-    infoCell1.textContent = "Delivery Area Info";
-    infoRow.appendChild(infoCell1);
-
-    const infoCell2 = document.createElement("th");
-    infoCell2.colSpan = 3;
-    infoCell2.textContent = "MIP Task Status";
-    infoRow.appendChild(infoCell2);
-
-    const infoCell3 = document.createElement("th");
-    infoCell3.colSpan = 5;
-    infoCell3.textContent = "Model Manager Uploads";
-    infoRow.appendChild(infoCell3);
-
-    const infoCell4 = document.createElement("th");
-    infoCell4.colSpan = 1;
-    infoCell4.textContent = "Overall";
-    infoRow.appendChild(infoCell4);
-
-    const infoCell5 = document.createElement("th");
-    infoCell5.colSpan = 4;
-    infoCell5.textContent = "Details";
-    infoRow.appendChild(infoCell5);
-
-    const infoCell6 = document.createElement("th");
-    infoCell6.colSpan = 2;
-    infoCell6.textContent = "Other";
-    infoRow.appendChild(infoCell6);
-
-    thead.appendChild(infoRow);
-    infoRow.classList.add("info-row");
-
-    // Create table header from the first row
-    const headerRow = document.createElement("tr");
-    data[0].forEach((header) => {
-        const th = document.createElement("th");
-        th.textContent = header || ""; // Use the header values from the first row
-        headerRow.appendChild(th);
-    });
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-
-    // Create table body from the remaining rows
-    const tbody = document.createElement("tbody");
-    data.slice(1).forEach((row) => {
-        const tr = document.createElement("tr");
-        row.forEach((cell) => {
-            const td = document.createElement("td");
-            td.textContent = cell || ""; // Avoid undefined cells
-            tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
-    });
-    table.appendChild(tbody);
-
-    // Clear previous content and append the new table
-    tableContainer.innerHTML = "";
-    tableContainer.appendChild(table);
-}
 
 // Function to update the toggle button's position dynamically
 function updateToggleButtonPosition() {
@@ -287,5 +321,4 @@ function resetToggleButtonPosition() {
     toggleButton.style.bottom = "50px"; // Reset to the original position
 }
 
-export { highlightTableColumn, resetTableColumn, populateTable, updateToggleButtonPosition, resetToggleButtonPosition,
-initializeDataTable, sendDataToMap}; // Export the functions
+export { highlightTableColumn, resetTableColumn, updateToggleButtonPosition, resetToggleButtonPosition, sendDataToMap}; // Export the functions

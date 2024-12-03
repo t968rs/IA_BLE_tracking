@@ -80,7 +80,8 @@ def define_one_by_another(df: pd.DataFrame,
                           column1, column2,
                           condition,
                           new_value):
-    df[column1] = np.where(df[column2] == condition, new_value, df[column1])
+    if column1 in df.columns and column2 in df.columns:
+        df[column1] = np.where(df[column2] == condition, new_value, df[column1])
     return df
 
 

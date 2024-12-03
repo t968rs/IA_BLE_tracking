@@ -16,9 +16,12 @@
       "excel": "P01 GDB", "shapefile": "P01_MM", "dtype": "date"},
     "RAW_Grd_MM": {"geojson": "RAW_Grd_MM",
       "excel": "RAW Grids", "shapefile": "RAW_GRD", "dtype": "date"},
-    "DFIRM_Grd_MM": {"geojson": "DFIRM_Grd_MM", "excel": "DFIRM Grids", "shapefile": "DFIRM_GRD", "dtype": "date"},
-    "Addl_Grd_MM": {"geojson": "Addl_Grd_MM", "excel": "Additional Grids", "shapefile": "ADDL_GRD", "dtype": "date"},
-    "which_grid": {"geojson": "which_grid", "excel": "Missing Grids", "shapefile": "WHICH_GRD", "dtype": "string"},
+    "DFIRM_Grd_MM": {"geojson": "DFIRM_Grd_MM",
+      "excel": "DFIRM Grids", "shapefile": "DFIRM_GRD", "dtype": "date"},
+    "Addl_Grd_MM": {"geojson": "Addl_Grd_MM",
+      "excel": "Additional Grids", "shapefile": "ADDL_GRD", "dtype": "date"},
+    "which_grid": {"geojson": "which_grid",
+      "excel": "Missing Grids", "shapefile": "WHICH_GRD", "dtype": "string"},
     "Prod Stage": {"geojson": "Prod_Stage", "excel": "Prod Stage", "shapefile": "PROD_STG", "dtype": "string"},
     "P01 Analyst": {"geojson": "P01_Analyst", "excel": "P01 Analyst", "shapefile": "P01_ANLYST", "dtype": "string"},
     "Model Complete": {"geojson": "Model_Complete", "excel": "Model Complete", "shapefile": "MODEL_CMPL", "dtype": "date"},
@@ -26,6 +29,7 @@
     "Notes": {"geojson": "Notes", "excel": "Notes", "shapefile": "NOTES", "dtype": "string"},
     "Has AECOM Tie": {"geojson": "Has_AECOM_Tie", "excel": "Has AECOM Tie", "shapefile": "AECOM_TIE", "dtype": "string"},
     "MIP_Case": {"geojson": "MIP_Case", "excel": "MIP Case", "shapefile": "MIP_CASE", "dtype": "string"},
+    "last_updated": {"geojson":  "last_updated", "excel":  null, "shapefile":  "LST_UPDATE", "dtype":  "date"},
     "geometry": {"geojson": "geometry", "excel": null, "shapefile": "geometry", "dtype": "geometry"}
   },
   "sort_order": ["TO_Area", "Name"]

@@ -85,13 +85,19 @@ class StatusTableManager:
         column_map = {v[current_format]: k for k, v in self.metadata["columns"].items()}
         for current_col, metadata_col in column_map.items():
             if current_col in df.columns:  # Check if the column exists in the DataFrame
-                dtype = self.metadata["columns"][metadata_col].get("dtype")
-                if dtype == "date":
+                tgt_dtype = self.metadata["columns"][metadata_col].get("dtype")
+                if tgt_dtype == "date":
                     # Convert to date format without times
-                    df[current_col] = pd.to_datetime(df[current_col], errors="coerce").dt.date
-                elif dtype == "string":
+                    try:
+                        df[current_col] = pd.to_datetime(df[current_col], errors="coerce").dt.date
+                    except Exception as e:
+                        print(f"Error processing column {current_col}: {e}")
+                elif tgt_dtype == "string":
+                    # Convert to string
                     df[current_col] = df[current_col].astype(str)
-                # Add other type conversions as needed
+                # Add other type conversions as needed (e.g., numeric)
+                elif tgt_dtype == "numeric":
+                    df[current_col] = pd.to_numeric(df[current_col], errors="coerce").fillna(0)
         return df
 
 
