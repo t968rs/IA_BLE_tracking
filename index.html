@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="utf-8">
+    <title>Iowa BLE Project Tracking Map</title>
+    <meta name="viewport" content="initial-scale=1,width=device-width">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet">
+    <link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css' type='text/css' />
+    <link href="styles_add.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
+    <script src="./src/turf.min.js" charset="utf-8"></script>
+    <script src="./src/mapInteractions.js" type="module"></script>
+    <script src="./src/editor_functionality.js" type="module"></script>
+    <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js'></script>
+</head>
+<body>
+    <div id="title-box">Iowa BLE Project Tracking Map</div>
+    <div id="popup-welcome" class="hidden">
+        <div class="popup-content">
+            <h1>Welcome to the Iowa BLE Project Tracking Map</h1>
+            <p>The <b>statuses</b> were last updated: </p>
+            <button id="welcome-ok">Confirm</button>
+      </div>
+    </div>
+    <div id="map"></div>
+    <div id="controls-container">
+        <div id="layer-controls">
+            <table id="layer-controls-table"></table>
+
+        </div>
+        <div id="legend" class="map-legend"></div>
+    </div>
+    <div class="popup-container" style="display: none;">
+        <button class="close-btn" onclick="closePopup()" type="button" aria-label="Close popup">×</button>
+        <ul id="mapboxgl-popup-content"></ul>
+    </div>
+    <script src="main.js" type="module"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+
+    <button id="toggle-table-btn">Show/Hide Table</button>
+    <div id="excel-table-container">
+
+        <iframe height="717" allowfullscreen src="https://atkins.sharepoint.com/:x:/r/sites/Iowa2DBLE/Shared%20Documents/General/Iowa_BLE_Tracking.xlsx?d=w7938001173e04905a915a56203e0b35d&csf=1&web=1&e=gzAfvD&nav=MTVfezAwMDAwMDAwLTAwMDEtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMH0"></iframe>
+
+    </div>
+</body>
+</html>

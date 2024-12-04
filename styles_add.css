@@ -1,0 +1,443 @@
+
+body {
+    margin: 0;
+    padding: 1px;
+    font-family: 'Century Gothic', sans-serif;
+}
+
+iframe {
+    width: 100%;
+    border: none;
+}
+
+#outer-div {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+#edit-form {
+    position: absolute;
+    top: 75px;
+    left: 10px;
+    background: white;
+    padding: 10px;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+#fit {
+    display: block;
+    position: relative;
+    margin: 0 auto;
+    width: 50%;
+    height: 40px;
+    padding: 10px;
+    border: none;
+    border-radius: 3px;
+    font-size: 12px;
+    text-align: center;
+    color: #fff;
+    background: #ee8a65;
+}
+
+#excel-table-container {
+    position: absolute;
+    bottom: 4%;
+    width: 100%;
+    height: 100px; /* Initial height */
+    overflow: auto;
+    background-color: #e1e1e1;
+    border-top: 4px solid #8973af;
+    padding-top: 4px;
+    font-family: "Arial", sans-serif;
+    font-size: 9px;
+    resize: vertical; /* Allow vertical resizing */
+    display: none; /* Initially hidden */
+}
+
+#excel-table-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px; /* Height of the border area */
+    cursor: ns-resize; /* Change mouse pointer style when hovering over the border */
+}
+
+#excel-table-container:hover {
+    background-color: #ceb4fb; /* Change mouse pointer style when hovering over the border /*/
+}
+
+.highlight-row {
+    background-color: #202020; /* Example: light gray background */
+    font-weight: bold; /* Example: bold text */
+    font-size: 12px; /* Example: larger font size */
+    font-family: "Century Gothic", sans-serif;
+    color: #dcdcdc; /* Example: red text */
+}
+
+.highlight-column {
+    color: #ff0000; /* Example: red text */
+    font-style: italic; /* Example: italic text */
+}
+
+#excel-table-container::after {
+    content: '';
+    background-color: #ccc;
+    position: absolute;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    cursor: e-resize;
+}
+
+table {
+    table-layout: auto;
+    border-collapse: collapse;
+}
+th, td {
+    border: 1px solid #ddd;
+    max-height: 25px;
+    width: auto;
+    padding: 4px;
+    white-space: nowrap;
+}
+th {
+    background-color: #f2f2f2;
+}
+
+#toggle-table-btn {
+    position: fixed;
+    bottom: 50px; /* Adjust based on the initial height of the table container */
+    right: 10px;
+    padding: 5px;
+    background-color: #255897;
+    border-radius: 5px;
+    color: white;
+    font-family: "Century Gothic", sans-serif;
+    border: solid 1px #4c91af;
+    cursor: pointer;
+}
+
+#toggle-table-btn:hover {
+    background-color: #4c91af;
+}
+
+#zoom-to-button {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    padding: 3px;
+    z-index: 1000;
+    background-color: #255897;
+    border-radius: 5px;
+    color: white;
+    font-family: "Century Gothic", sans-serif;
+    border: solid 1px #4c91af;
+    cursor: pointer;
+}
+
+/* Ensure the button is visible */
+#edit-mode-btn {
+    position: absolute;
+    top: 50px; /* Adjust as needed */
+    left: 10px; /* Adjust as needed */
+    z-index: 10; /* Ensure it is above other elements */
+    background-color: #4c91af; /* Button background color */
+    color: white; /* Button text color */
+    border: none; /* Remove default border */
+    padding: 10px 20px; /* Add padding */
+    cursor: pointer; /* Pointer cursor on hover */
+}
+
+.hidden {
+  display: none;
+}
+
+#save-btn #exit-edit-mode-btn{
+    position: absolute;
+    top: 50px; /* Adjust as needed */
+    left: 10px; /* Adjust as needed */
+    z-index: 1000; /* Ensure it is above other elements */
+    background-color: #4c91af; /* Button background color */
+    color: white; /* Button text color */
+    border: none; /* Remove default border */
+    padding: 10px 20px; /* Add padding */
+    cursor: pointer; /* Pointer cursor on hover */
+}
+
+#edit-mode-btn:hover, #save-btn:hover, #exit-edit-mode-btn:hover {
+    background-color: #0056b3; /* Darker background on hover */
+}
+
+#title-box {
+    top: 0; /* Position at the top */
+    height: 30px; /* Set height */
+    background: #4c91af; /* Green background */
+    color: white; /* White text */
+    text-align: center; /* Centered text */
+    vertical-align: center; /* Centered vertically */
+    padding: 10px; /* Some padding */
+    font-size: 18px; /* Font size */
+    font-weight: bold; /* Bold text */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3); /* Shadow for a nice effect */
+}
+/* Media query for small screens */
+@media (max-width: 600px) {
+    #title-box {
+        font-size: 16px; /* Adjust font size for small screens */
+        padding: 8px; /* Adjust padding for small screens */
+    }
+}
+
+/* Media query for very small screens */
+@media (max-width: 400px) {
+    #title-box {
+        font-size: 14px; /* Further adjust font size for very small screens */
+        padding: 6px; /* Further adjust padding for very small screens */
+    }
+}
+
+@media (max-height: 900px) {
+    #title-box {
+        font-size: 12px; /* Further adjust font size for very small screens */
+        padding: 4px; /* Further adjust padding for very small screens */
+    }
+}
+
+#map {
+    position: absolute;
+    top: 4%;
+    bottom: 1%;
+    width: 100%;
+}
+
+#controls-container {
+    position: absolute;
+    width: 200px; /* Adjust width as needed */
+    top: 50px; /* Adjust as needed */
+    bottom: 50px;
+    height: 80%;
+    left: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+}
+
+/** Set rules for how the map overlays
+* (information box and legend) will be displayed
+* on the page. *!*/
+.map-overlay {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: #ffef8e;
+  margin-right: 20px;
+  font-family: "Century Gothic", sans-serif;
+  overflow: auto;
+  border-radius: 3px;
+}
+
+#features {
+  top: 0;
+  height: 100px;
+  margin-top: 20px;
+  width: 250px;
+}
+
+.map-legend {
+    width: auto; /* Adjust width as needed */
+    background: rgba(247, 247, 247, 0.9);
+    padding: 10px;
+    border-radius: 5px;
+    font-family: "Century Gothic", sans-serif;
+    font-size: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    overflow-y: auto; /* Enable scrolling if content overflows */
+}
+
+.legend-key {
+    display: inline-block;
+    width: 30px;
+    height: 20px;
+    margin-left: 10px;
+    margin-right: 10px;
+    vertical-align: middle;
+    border-radius: 5px;
+}
+
+.legend-group {
+    font-family: "Century Gothic", sans-serif;
+    font-weight: bold;
+    font-size: 11px;
+    padding: 5px;
+    border-left: #cccccc 5px solid;
+    text-align: justify-all;
+}
+
+.legend-key-circle {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 20px;
+    margin-left: 10px;
+    vertical-align: middle;
+    border-radius: 60%;
+}
+
+.legend-title {
+    font-weight: bold;
+    font-family: "Century Gothic", sans-serif;
+    font-size: 12px;
+}
+
+.popup-table-title {
+    font-weight: bold;
+    padding-bottom: 2px;
+    font-family: "Century Gothic", sans-serif;
+    font-size: 12px;
+}
+
+.popup-container > .mapboxgl-popup-content{
+    position: absolute;
+    top: 10px; /* Adjust to position it in the top-left corner */
+    right: 10px;
+    background: white;
+    border: 1px solid #ccc;
+    padding: 5px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    z-index: 1000; /* Ensure it appears above the map */
+    /* width: auto; Adjust as needed */
+    /* height: auto; */
+    max-height: 200px;
+    overflow-y: auto;
+    font-family: 'Century Gothic', sans-serif; /* Set font to Helvetica */
+    font-size: 10px; /* Change font size */
+}
+
+.mapboxgl-popup-content {
+    right: 10px;
+    background: white;
+    border-radius: 5px;
+    border: 2px solid #ccc;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    z-index: 1000; /* Ensure it appears above the map */
+    width: fit-content; /* Adjust as needed */
+    max-height: 310px; /* Ensure the popup does not exceed 75px in height */
+    overflow-y: hidden; /* Add scroll if content exceeds max-height */
+    font-family: 'Arial Narrow', sans-serif; /* Set font to Helvetica */
+    font-kerning: auto; /* Enable font kerning */
+    font-size: 11px; /* Change font size  */
+}
+
+.top-left-popup {
+    position: absolute;
+    top: 10px; /* Adjust to position it in the top-left corner */
+    width: 450px; /* Adjust as needed */
+    /* height: auto; */
+    max-height: 75px;
+    overflow-y: auto;
+    font-family: 'Century Gothic', sans-serif; /* Set font to Helvetica */
+    font-size: 10px; /* Change font size */
+}
+
+.close-btn {
+    display: inline-block;
+    position: relative;
+    /*top: 3px;*/
+    /*right: 3px;*/
+    background: rgba(9, 9, 9, 0);
+    border: none;
+    z-index: 10000;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 0 4em;
+    margin: 0 -4em;
+}
+
+.top-left-popup ul {
+    list-style-type: none; /* Remove bullet points */
+    padding-left: 0; /* Remove default padding */
+}
+
+.top-left-popup li {
+    margin-bottom: 1px; /* Optional: Add some spacing between list items */
+}
+
+.popup-table {
+    border-collapse: collapse;
+}
+
+.popup-table th, .popup-table td {
+    border: 1px solid #ddd;
+    padding: 3px;
+}
+
+.popup-table th {
+    background-color: #f2f2f2;
+    text-align: left;
+}
+
+#layer-controls {
+    width: auto; /* Adjust width as needed */
+    background: rgba(247, 247, 247, 0.9);
+    padding: 10px;
+    bottom: 70px;
+    border-radius: 5px;
+    font-family: "Century Gothic", sans-serif;
+    font-size: 11px;
+    font-weight: bold;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+#layer-controls-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#layer-controls-table tr:hover {
+    background-color: #30edd4; /* Highlight color on hover */
+}
+
+/* CSS styles (adjust as needed) */
+#popup-welcome {
+  position: fixed;
+    top: 50%;
+    left: 50%;
+  width: 60%;
+  height: 20%;
+    z-index: 1000;
+    /*border: 1px solid #289fff;*/
+    /*border-radius: 5px;*/
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.popup-content {
+  background-color: rgba(0, 74, 94, 0.9);
+  padding: 20px;
+  border-radius: 5px;
+    color: #cccccc;
+    font-family: 'Century Gothic', sans-serif;
+}
+
+
+#layer-controls-table td {
+    padding: 5px;
+    vertical-align: bottom;
+}
+
+#layer-controls-table label {
+    font-weight: bold;
+    font-size: 11px;
+    font-family: 'Century Gothic', sans-serif;
+}
+
+#layer-controls-table input[type="checkbox"] {
+    margin-right: 10px;
+}
+

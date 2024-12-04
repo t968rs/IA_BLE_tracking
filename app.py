@@ -3,8 +3,10 @@ import os
 import geopandas as gpd
 import pandas as pd
 from py.read_write_df import StatusTableManager, df_to_excel, gdf_to_shapefile
+from datetime import datetime
 from dotenv import load_dotenv
 import logging
+import shutil
 import json
 
 logging.basicConfig(level=logging.DEBUG)
@@ -14,6 +16,7 @@ app.secret_key = os.getenv("SECRET_KEY")
 
 EXCEL_DIR = os.path.join(app.root_path, "data", "tables")
 EXCEL_FILE = os.path.join(EXCEL_DIR, "IA_BLE_Tracking.xlsx")
+BACKUP_LOC = "data/_backups"
 TRACKING_FILE = "data/spatial/IA_BLE_Tracking.geojson"
 SHEET_NAME = "Tracking_Main"
 YAML_FILE = os.path.join(EXCEL_DIR, "last_modified.yaml")
@@ -69,7 +72,7 @@ def update_data():
             logging.error("No data received in the request body.")
             return jsonify({'error': 'No data received'}), 400
         updated_df = pd.DataFrame(updated_data).set_index("HUC8")
-        # logging.info(f"DF data: {updated_df}")
+        logging.debug(f"DF cols: {updated_df.columns}")
     except Exception as e:
         logging.error(f"Error: {e}")
         return jsonify({'error': str(e)}), 400
@@ -80,11 +83,28 @@ def update_data():
         if gdf is None:
             logging.error("GeoJSON file is None. Could not load GeoDataFrame.")
             return jsonify({'error': 'Failed to load GeoJSON file.'}), 500
-        logging.info(f"GeoDataFrame: \n{gdf}")
-        for col in updated_df.columns:
-            if col in gdf.columns:
-                gdf[col] = updated_df[col]
+        logging.debug(f"GeoDataFrame cols: \n{gdf.columns}")
+
+        # Ensure indices match
+        updated_df = updated_df.reindex(index=gdf.index, fill_value=None)
+
+        # Identify rows with differences in common columns
+        common_columns = updated_df.columns.intersection(gdf.columns)
+
+        # Ensure both DataFrames are aligned in terms of indices and columns
+        aligned_gdf = gdf[common_columns].reindex(index=updated_df.index)
+        aligned_updated_df = updated_df[common_columns]
+
+        # Compare for differences
+        diffs = (aligned_gdf != aligned_updated_df).any(axis=1)
+
+        # Update the rows with differences
+        gdf.loc[diffs, common_columns] = updated_df.loc[diffs, common_columns]
+        gdf.loc[diffs, 'last_updated'] = datetime.now().isoformat()
+
+        # Reset the index for saving
         gdf.reset_index(inplace=True)
+
     except Exception as e:
         logging.error(f"Error: {e}")
         return jsonify({'error': str(e)}), 500
@@ -101,6 +121,15 @@ def update_data():
         # Save updated GeoJSON
         temp_file = TRACKING_FILE.replace(".geojson", "_temp.geojson")
         gdf.to_file(temp_file, driver='GeoJSON')
+
+        # Back up current
+        date_string = datetime.now().strftime("%Y_%m%d")
+        path, file = os.path.split(TRACKING_FILE)
+        filename, ext = os.path.splitext(file)
+        backup_path = f"{path}/{filename}_{date_string}{ext}"
+        shutil.copy2(TRACKING_FILE, backup_path)
+
+        # Write the new file
         os.replace(temp_file, TRACKING_FILE)
         logging.info("Saved updated GeoJSON file.")
     except Exception as e:

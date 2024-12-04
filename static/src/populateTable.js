@@ -1,4 +1,5 @@
-import {getMap} from "./mapManager.js";
+import { getMap } from './mapManager.js'; // Access the map instance
+import { updateGeoJSONLayer } from '../main.js'; // Notify map updates
 
 export const panel = document.getElementById("status-table-container");
 export const toggleButton = document.getElementById("toggle-table-btn");
@@ -145,10 +146,10 @@ export async function fetchAndDisplayData() {
                 cell.text(newValue);
 
                 // Update the DataTable cell value
-                const rowIdx = table.row(cell.closest('tr')).index();
-                const rowData = table.row(rowIdx).data();
+                const rowIdx = dataTable.row(cell.closest('tr')).index();
+                const rowData = dataTable.row(rowIdx).data();
                 rowData[column] = newValue;
-                table.row(rowIdx).data(rowData);
+                dataTable.row(rowIdx).data(rowData);
             });
 
             // Automatically focus the input
@@ -247,25 +248,34 @@ async function prepInfoRows(actualLength) {
 // Add Save Table functionality
 document.getElementById("saveTableButton").addEventListener("click", saveTableUpdates);
 
-async function saveTableUpdates() {
-    // Access the DataTable instance
-    const table = $('#status-table').DataTable();
 
-    // Get all table rows as an array
+async function saveTableUpdates() {
+    const table = $('#status-table').DataTable();
     const updatedData = table.rows().data().toArray();
-    console.log("Updated Data to Save:", updatedData);
+    console.debug("Updated Data to Save:", updatedData);
 
     try {
-        // Send updated data to the backend
         const response = await fetch('/update-data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatedData)
+            body: JSON.stringify(updatedData),
         });
 
         const result = await response.json();
         if (result.success) {
             alert("Changes saved successfully!");
+
+            // Trigger GeoJSON update
+            const map = getMap(); // Get the map instance
+            const source = map.getSource("ProjectAreas");
+            // get source url
+            const src_url = source.url || '../data/spatial/IA_BLE_Tracking.geojson';
+            console.debug("Source: ", src_url);
+            if (map) {
+                await updateGeoJSONLayer('ProjectAreas', src_url);
+            } else {
+                console.error("Map instance not available.");
+            }
         } else {
             alert("Error saving changes: " + result.error);
         }
@@ -273,6 +283,9 @@ async function saveTableUpdates() {
         console.error("Error saving table data:", error);
     }
 }
+
+document.getElementById("saveTableButton").addEventListener("click", saveTableUpdates);
+
 
 function sendDataToMap(dataValue, map) {
     // Assuming you have a Mapbox GL JS map instance
