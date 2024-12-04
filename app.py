@@ -16,6 +16,7 @@ load_dotenv()  # Load environment variables from .env file
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
 
+MANUAL_UPDATES_FOLDER = "data/manual_updates"
 EXCEL_DIR = os.path.join(app.root_path, "data", "tables")
 EXCEL_FILE = os.path.join(EXCEL_DIR, "IA_BLE_Tracking.xlsx")
 BACKUP_LOC = "data/_backups"
@@ -114,8 +115,8 @@ def update_data():
 
     try:
         with StatusTableManager(TABLE_METADATA) as manager:
-            manager.enforce_types(gdf)
-            manager.sort_rows(gdf)
+            gdf = manager.enforce_types(gdf)
+            gdf = manager.sort_rows(gdf)
     except Exception as e:
         logging.error(f"Error: {e}")
         return jsonify({'error': str(e)}), 500
@@ -131,7 +132,7 @@ def update_data():
         date_string = datetime.now().strftime("%Y_%m%d")
         path, file = os.path.split(TRACKING_FILE)
         filename, ext = os.path.splitext(file)
-        backup_path = f"{path}/{filename}_{date_string}{ext}"
+        backup_path = f"{BACKUP_LOC}/{filename}_{date_string}{ext}"
         shutil.copy2(TRACKING_FILE, backup_path)
 
         # Write the new file
@@ -156,9 +157,9 @@ def export_excel(gdf):  # TODO Add functions to read GeoJSON and export Excel fi
 
         logging.debug(f"DF columns: {df.columns}")
         with StatusTableManager(TABLE_METADATA) as manager:
-            manager.rename_columns(df, "excel", "geojson")
-            manager.enforce_types(df, "excel")
-            manager.sort_rows(df)
+            df = manager.rename_columns(df, "excel", "geojson")
+            df = manager.enforce_types(df, "excel")
+            df = manager.sort_rows(df)
 
         # Save updated Excel
         df_to_excel(df, EXCEL_FILE, SHEET_NAME)
@@ -176,6 +177,15 @@ def serve_data(filename):
         return jsonify({"error": "File not found"}), 404
     return send_from_directory(data_dir, filename)
 
+@app.route("/update-from-shapefile", methods=["POST"])
+def update_from_shapefile():
+    """API endpoint to update GeoJSON from a shapefile."""
+    result = process_shapefile()
+    if result["success"]:
+        return jsonify({"success": True, "message": result["message"]})
+    else:
+        return jsonify({"success": False, "message": result["message"]}), 400
+
 
 @app.route('/export-shape', methods=['POST'])
 def export_shp(gdf):  # TODO Add functions to read GeoJSON and export Excel files for user downoad
@@ -184,9 +194,9 @@ def export_shp(gdf):  # TODO Add functions to read GeoJSON and export Excel file
         logging.debug(f"GDF has columns: {hasattr(gdf, 'columns')}")
 
         with StatusTableManager(TABLE_METADATA) as manager:
-            manager.rename_columns(gdf, "shapefile", "geojson")
-            manager.enforce_types(gdf, "shapefile")
-            manager.sort_rows(gdf)
+            gdf = manager.rename_columns(gdf, "shapefile", "geojson")
+            gdf = manager.enforce_types(gdf, "shapefile")
+            gdf = manager.sort_rows(gdf)
 
         # Save updated Excel
         gdf_to_shapefile(gdf, SHAPEFILE)
@@ -194,6 +204,50 @@ def export_shp(gdf):  # TODO Add functions to read GeoJSON and export Excel file
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+def process_shapefile():
+    """Check for the most recent .shp file in the designated folder and update GeoJSON."""
+    try:
+        # Find all .shp files in the folder
+        shapefiles = [os.path.join(MANUAL_UPDATES_FOLDER, f) for f in os.listdir(MANUAL_UPDATES_FOLDER) if f.endswith(".shp")]
+        if not shapefiles:
+            return {"success": False, "message": "No shapefiles found."}
+
+        # Find the most recent .shp file by modification time
+        most_recent_shapefile = max(shapefiles, key=os.path.getmtime)
+
+        # Read the shapefile into a GeoDataFrame
+        gdf = gpd.read_file(most_recent_shapefile)
+
+        # Backup the current GeoJSON
+        os.makedirs(BACKUP_LOC, exist_ok=True)
+        date_string = datetime.now().strftime("%Y_%m%d")
+        trackingfilename = os.path.split(TRACKING_FILE)[-1]
+        filename, ext = os.path.splitext(trackingfilename)
+        backup_path = f"{BACKUP_LOC}/{filename}_{date_string}{ext}"
+        shutil.copy2(TRACKING_FILE, backup_path)
+        print(f"Backup saved: {backup_path}")
+
+        with StatusTableManager(TABLE_METADATA) as manager:
+            gdf = manager.rename_columns(gdf, "shapefile", "geojson")
+            print(gdf.columns)
+            gdf = manager.enforce_types(gdf, "geojson")
+            gdf = manager.sort_rows(gdf)
+
+        # Save the new GeoJSON
+        gdf.to_file(TRACKING_FILE, driver="GeoJSON")
+        print(f"Updated GeoJSON saved to: {TRACKING_FILE}")
+
+        # Optionally, clean up the processed shapefile
+        os.remove(most_recent_shapefile)
+        print(f"Processed shapefile deleted: {most_recent_shapefile}")
+
+        return {"success": True, "message": "GeoJSON updated successfully."}
+    except Exception as e:
+        print(f"Error processing shapefile: {e}")
+        return {"success": False, "message": str(e)}
+
 
 if __name__ == "__main__":
     app.run(debug=True)
