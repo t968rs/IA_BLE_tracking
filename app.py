@@ -9,7 +9,9 @@ import logging
 import shutil
 import json
 
-logging.basicConfig(level=logging.DEBUG)
+
+DEBUG_MODE = False
+logging.basicConfig(level=logging.DEBUG if DEBUG_MODE else logging.INFO)
 load_dotenv()  # Load environment variables from .env file
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
@@ -21,6 +23,7 @@ TRACKING_FILE = "data/spatial/IA_BLE_Tracking.geojson"
 SHEET_NAME = "Tracking_Main"
 YAML_FILE = os.path.join(EXCEL_DIR, "last_modified.yaml")
 TABLE_METADATA = "data/IA_BLE_Tracking_metadata.json"
+SHAPEFILE = "data/IA_BLE_Tracking.shp"
 
 
 # Start the file observer when the app starts
@@ -122,6 +125,8 @@ def update_data():
         temp_file = TRACKING_FILE.replace(".geojson", "_temp.geojson")
         gdf.to_file(temp_file, driver='GeoJSON')
 
+        export_shp(gdf)
+
         # Back up current
         date_string = datetime.now().strftime("%Y_%m%d")
         path, file = os.path.split(TRACKING_FILE)
@@ -172,10 +177,23 @@ def serve_data(filename):
     return send_from_directory(data_dir, filename)
 
 
-# @app.teardown_appcontext
-# def shutdown_observer(exception=None):
-#     observer.stop()
-#     observer.join()
+@app.route('/export-shape', methods=['POST'])
+def export_shp(gdf):  # TODO Add functions to read GeoJSON and export Excel files for user downoad
+    try:
+        logging.debug("Updating SHAPEFILE file...")
+        logging.debug(f"GDF has columns: {hasattr(gdf, 'columns')}")
+
+        with StatusTableManager(TABLE_METADATA) as manager:
+            manager.rename_columns(gdf, "shapefile", "geojson")
+            manager.enforce_types(gdf, "shapefile")
+            manager.sort_rows(gdf)
+
+        # Save updated Excel
+        gdf_to_shapefile(gdf, SHAPEFILE)
+
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
