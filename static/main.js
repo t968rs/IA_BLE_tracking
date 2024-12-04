@@ -776,5 +776,27 @@ document.addEventListener("pointerup", function () {
 // Attach the toggle functionality to the button
 toggleButton.addEventListener("click", toggleTable);
 
+export async function updateGeoJSONLayer(sourceId, url) {
+    try {
+        const response = await fetch(url, { cache: 'no-cache' });
+        if (!response.ok) {
+            throw new Error(`Failed to fetch updated GeoJSON: ${response.statusText}`);
+        }
+        const geojsonData = await response.json();
+        const source = map.getSource(sourceId);
+        if (source) {
+            source.setData(geojsonData);
+            console.log(`Updated ${sourceId} source with new data.`);
+        } else {
+            console.warn(`Source with ID ${sourceId} not found.`);
+        }
+    } catch (error) {
+        console.error(`Error updating GeoJSON layer (${sourceId}):`, error);
+    }
+}
+
+
+
+
 
 
