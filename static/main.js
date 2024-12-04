@@ -18,6 +18,8 @@ import {
 
 import { initializeMap } from "./src/mapManager.js";
 
+// import { addUpdateButton } from "./src/buttons.js";
+
 // import MapboxDraw from "@mapbox/mapbox-gl-draw";
 // import { getEditor } from "./src/editor_functionality.js";
 
@@ -41,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const geojsonFileUrl = './data/spatial/IA_BLE_Tracking.geojson';
     const lastUpdated = document.getElementById("timestamp-text");
     fetchAndDisplayData();
+    addUpdateButton();
 
     if (lastUpdated) {
     fetch(geojsonFileUrl, { method: 'HEAD' }) // HEAD request fetches only headers
@@ -795,8 +798,48 @@ export async function updateGeoJSONLayer(sourceId, url) {
     }
 }
 
+// Add the "Update from Shapefile" button to the title banner
+function addUpdateButton() {
+    const titleBanner = document.getElementById('title-box'); // Replace with the actual ID of your title banner element
 
+    if (!titleBanner) {
+        console.error("Title banner not found.");
+        return;
+    }
 
+    const updateButton = document.createElement('button');
+    updateButton.id = 'updateFromShapefileButton';
+    updateButton.textContent = 'Update from Shapefile';
+    updateButton.style.marginLeft = '10px'; // Add some spacing
 
+    // Attach an event listener to the button
+    updateButton.addEventListener('click', async () => {
+        await handleUpdateFromShapefile();
+    });
+
+    titleBanner.appendChild(updateButton);
+}
+
+async function handleUpdateFromShapefile() {
+    try {
+        const response = await fetch('/update-from-shapefile', {
+            method: 'POST', // Use POST for triggering the update
+            headers: { 'Content-Type': 'application/json' },
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            alert("Shapefile processed and GeoJSON updated successfully!");
+
+            // Reload the GeoJSON layer on the map
+            await updateGeoJSONLayer('ProjectAreas', '/data/spatial/IA_BLE_Tracking.geojson');
+        } else {
+            alert("Error updating GeoJSON: " + result.message);
+        }
+    } catch (error) {
+        console.error("Error during shapefile update:", error);
+        alert("Error during shapefile update. Check the console for more details.");
+    }
+}
 
 
