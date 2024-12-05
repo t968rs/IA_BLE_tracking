@@ -6,11 +6,9 @@ import {
     createLayerControls,
     showIt,
     hideIt
-} from './src/mapInteractions.js';
+} from 'src/mapInteractions.js';
 
-import { precisionRound } from "./src/maths.js";
-// import MapboxDraw from "@mapbox/mapbox-gl-draw";
-// import { getEditor } from "./src/editor_functionality.js";
+import { precisionRound } from "src/maths.js";
 
 mapboxgl.accessToken = 'pk.eyJ1IjoidDk2OHJzIiwiYSI6ImNpamF5cTcxZDAwY2R1bWx4cWJvd3JtYXoifQ.XqJkBCgSJeCCeF_yugpG5A';
 const map = new mapboxgl.Map({

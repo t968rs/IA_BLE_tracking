@@ -11,17 +11,13 @@ import {precisionRound} from "./src/maths.js";
 import {
     fetchAndDisplayData,
     panel,
-    toggleButton,
+    buttonContainer,
     toggleTable,
-    updateToggleButtonPosition,
+    updateButtonsPosition,
 } from "./src/populateTable.js";
 
 import { initializeMap } from "./src/mapManager.js";
-
-// import { addUpdateButton } from "./src/buttons.js";
-
-// import MapboxDraw from "@mapbox/mapbox-gl-draw";
-// import { getEditor } from "./src/editor_functionality.js";
+import { handleUploadButtonClick } from "./src/uploadData.js";
 
 
 mapboxgl.accessToken = MAPBOX_TOKEN;
@@ -43,7 +39,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const geojsonFileUrl = './data/spatial/IA_BLE_Tracking.geojson';
     const lastUpdated = document.getElementById("timestamp-text");
     fetchAndDisplayData();
-    addUpdateButton();
+
+    // Upload button listener
+    const uploadButton = document.getElementById("upload-data-button");
+    uploadButton.addEventListener("click", handleUploadButtonClick);
 
     if (lastUpdated) {
     fetch(geojsonFileUrl, { method: 'HEAD' }) // HEAD request fetches only headers
@@ -80,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-const response = await fetch("/data/spatial/Centroids.json");
+const response = await fetch("../data/spatial/Centroids.json");
 const Centroids = await response.json();
 console.log("Centroids: ", Centroids);
 
@@ -763,7 +762,7 @@ document.addEventListener("pointermove", function (e) {
     } else if (newHeight < minHeight) {
         panel.style.height = `${minHeight}px`; // Snap to min height
     }
-    updateToggleButtonPosition(); // Update the toggle button position
+    updateButtonsPosition(); // Update the toggle button position
   }
 });
 
@@ -777,69 +776,9 @@ document.addEventListener("pointerup", function () {
 });
 
 // Attach the toggle functionality to the button
-toggleButton.addEventListener("click", toggleTable);
+buttonContainer.addEventListener("click", toggleTable);
 
-export async function updateGeoJSONLayer(sourceId, url) {
-    try {
-        const response = await fetch(url, { cache: 'no-cache' });
-        if (!response.ok) {
-            throw new Error(`Failed to fetch updated GeoJSON: ${response.statusText}`);
-        }
-        const geojsonData = await response.json();
-        const source = map.getSource(sourceId);
-        if (source) {
-            source.setData(geojsonData);
-            console.log(`Updated ${sourceId} source with new data.`);
-        } else {
-            console.warn(`Source with ID ${sourceId} not found.`);
-        }
-    } catch (error) {
-        console.error(`Error updating GeoJSON layer (${sourceId}):`, error);
-    }
-}
+const uploadButton = document.getElementById("upload-data-button");
 
-// Add the "Update from Shapefile" button to the title banner
-function addUpdateButton() {
-    const titleBanner = document.getElementById('title-box'); // Replace with the actual ID of your title banner element
-
-    if (!titleBanner) {
-        console.error("Title banner not found.");
-        return;
-    }
-
-    const updateButton = document.createElement('button');
-    updateButton.id = 'updateFromShapefileButton';
-    updateButton.textContent = 'Update from Shapefile';
-    updateButton.style.marginLeft = '10px'; // Add some spacing
-
-    // Attach an event listener to the button
-    updateButton.addEventListener('click', async () => {
-        await handleUpdateFromShapefile();
-    });
-
-    titleBanner.appendChild(updateButton);
-}
-
-async function handleUpdateFromShapefile() {
-    try {
-        const response = await fetch('/update-from-shapefile', {
-            method: 'POST', // Use POST for triggering the update
-            headers: { 'Content-Type': 'application/json' },
-        });
-
-        const result = await response.json();
-        if (result.success) {
-            alert("Shapefile processed and GeoJSON updated successfully!");
-
-            // Reload the GeoJSON layer on the map
-            await updateGeoJSONLayer('ProjectAreas', '/data/spatial/IA_BLE_Tracking.geojson');
-        } else {
-            alert("Error updating GeoJSON: " + result.message);
-        }
-    } catch (error) {
-        console.error("Error during shapefile update:", error);
-        alert("Error during shapefile update. Check the console for more details.");
-    }
-}
-
-
+// Attach event listener to the upload button
+uploadButton.addEventListener("click", handleUploadButtonClick);

@@ -1,9 +1,8 @@
-let mapInstance = null;
+// In mapManager.js
+let mapInstance;
 
 export function initializeMap(options) {
-    if (!mapInstance) {
-        mapInstance = new mapboxgl.Map(options);
-    }
+    mapInstance = new mapboxgl.Map(options);
     return mapInstance;
 }
 

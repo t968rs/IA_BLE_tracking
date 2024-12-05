@@ -1,10 +1,9 @@
 import { getMap } from './mapManager.js'; // Access the map instance
-import { updateGeoJSONLayer } from '../main.js'; // Notify map updates
 
 export const panel = document.getElementById("status-table-container");
-export const toggleButton = document.getElementById("toggle-table-btn");
+export const buttonContainer = document.getElementById("button-container");
 
-const unwantedColumns = ["geometry"]
+const unwantedColumns = ["geometry"];
 
 // Predefined color map for MIP Cases
 const mipCaseColors = {
@@ -19,59 +18,57 @@ export function toggleTable() {
     if (panel.style.display === "none" || panel.style.display === "") {
         panel.style.display = "block";
         fetchAndDisplayData(); // Fetch and populate the table if not already loaded
-        updateToggleButtonPosition();
+        updateButtonsPosition();
     } else {
         panel.style.display = "none";
-        resetToggleButtonPosition();
+        resetButtonsPosition();
     }
     console.log("Table toggled");
 }
 
-
 async function fetchMetadata(servePath) {
-  try {
-    const columnsMetaResponse = await fetch(servePath);
-    if (!columnsMetaResponse.ok) {
-      throw new Error(`Failed to fetch columns: ${columnsMetaResponse.statusText}`);
+    try {
+        const columnsMetaResponse = await fetch(servePath);
+        if (!columnsMetaResponse.ok) {
+            throw new Error(`Failed to fetch columns: ${columnsMetaResponse.statusText}`);
+        }
+
+        const metadata = await columnsMetaResponse.json();
+
+        const columnsMetadata = metadata?.meta ?? {};
+        const columnOrder = metadata?.order ?? [];
+
+        if (!columnsMetadata) {
+            console.error("meta not found in json:", metadata);
+        }
+
+        console.log("Col Metadata:", columnsMetadata);
+        console.log("Column Order:", columnOrder);
+
+        return { columnsMetadata, columnOrder };
+    } catch (error) {
+        console.error("Error fetching metadata:", error);
+        throw error; // Re-throw the error to propagate it to the caller
     }
-
-    const metadata = await columnsMetaResponse.json();
-
-    const columnsMetadata = metadata?.meta ?? {};
-    const columnOrder = metadata?.order ?? [];
-
-    if (!columnsMetadata) {
-      console.error("meta not found in json:", metadata);
-    }
-
-    console.log("Col Metadata:", columnsMetadata);
-    console.log("Column Order:", columnOrder);
-
-    return { columnsMetadata, columnOrder };
-  } catch (error) {
-    console.error("Error fetching metadata:", error);
-    throw error; // Re-throw the error to propagate it to the caller
-  }
 }
 
 function filterColumns(tableData, columnList = null) {
-
     // Filter out unwanted columns while maintaining original order
     let columnsFiltered = columnList.filter(column => {
         const isUnwanted = unwantedColumns.includes(column);
         if (isUnwanted === true) {
-            console.debug(column, isUnwanted)
+            console.debug(column, isUnwanted);
         }
         const isInTableData = Object.keys(tableData[0]).includes(column);
         if (isInTableData === false) {
-            console.debug(column, "In table data", isInTableData)
+            console.debug(column, "In table data", isInTableData);
         }
         if (!isUnwanted && isInTableData) {
-            console.debug(column, "both")
+            console.debug(column, "both");
         }
         return !isUnwanted && isInTableData;
     });
-    console.debug("Filtered Columns:", columnsFiltered)
+    console.debug("Filtered Columns:", columnsFiltered);
     return columnsFiltered;
 }
 
@@ -84,11 +81,11 @@ export async function fetchAndDisplayData() {
         }
 
         let tableData = await response.json();
-        console.debug('Table Data json:\n', tableData)
+        console.debug('Table Data json:\n', tableData);
 
         // Fetch column metadata
-        const { columnsMetadata, columnOrder } = await fetchMetadata('/metadata-columns')
-        console.debug("Column Meta: ", columnsMetadata)
+        const { columnsMetadata, columnOrder } = await fetchMetadata('/metadata-columns');
+        console.debug("Column Meta: ", columnsMetadata);
 
         const filteredCols = filterColumns(tableData, columnOrder);
 
@@ -100,61 +97,31 @@ export async function fetchAndDisplayData() {
             return orderedRow;
         });
 
-        // Define editable and locked columns
-        const editableColumns = ['Draft_MIP', 'FP_MIP', "Hydra_MIP", "DFIRM_Grd_MM", "Prod Stage", "FRP_Perc_Complete", "Notes"]; // Define columns you want editable
-        const invisibleColumns = ["geometry"]
+        // Define columns for DataTable
+        const invisibleColumns = ["geometry"];
 
         const columns = filteredCols.map(key => ({
             data: key,
             title: columnsMetadata[key]['excel'], // Use the dictionary value for title
             visible: !invisibleColumns.includes(key),
             render: function (data) {
-                if (editableColumns.includes(key)) {
-                    return `<span class="editable" data-column="${key}">${data}</span>`;
-                }
-                return data || ""; // Locked cells are plain text
+                return data || ""; // Display data as plain text
             }
         }));
 
-        // Append the info header
-        console.log("Column Length:", columns.length)
-        await initDataTable(columns.length, columns)
+        // Initialize DataTable
+        console.log("Column Length:", columns.length);
+        await initDataTable(columns.length, columns);
         const dataTable = $('#status-table').DataTable({
-                    data: tableData,
-                    paging: false,
-                    columns: columns,
-                    destroy: true,
-                    autoWidth: true,
-                    responsive: true,
-                    });
-
-        console.debug('thead\n', dataTable)
-
-        // Add in-line editing event listener for editable cells
-        $('#status-table').on('click', '.editable', function () {
-            const cell = $(this);
-            const currentValue = cell.text();
-            const column = cell.data('column');
-
-            // Create an input field for editing
-            const input = $(`<input type="text" value="${currentValue}">`);
-            cell.empty().append(input);
-
-            // Handle save on blur
-            input.on('blur', function () {
-                const newValue = input.val();
-                cell.text(newValue);
-
-                // Update the DataTable cell value
-                const rowIdx = dataTable.row(cell.closest('tr')).index();
-                const rowData = dataTable.row(rowIdx).data();
-                rowData[column] = newValue;
-                dataTable.row(rowIdx).data(rowData);
-            });
-
-            // Automatically focus the input
-            input.focus();
+            data: tableData,
+            paging: false,
+            columns: columns,
+            destroy: true,
+            autoWidth: true,
+            responsive: true,
         });
+
+        console.debug('thead\n', dataTable);
 
         // Add hover event listener
         $("#status-table tbody").on("mouseenter", "tr", function () {
@@ -214,10 +181,9 @@ async function initDataTable(columnLength, columns) {
         table.appendChild(tbody);
     }
 
-    console.debug("thead:\n", thead)
+    console.debug("thead:\n", thead);
     return thead;
 }
-
 
 async function prepInfoRows(actualLength) {
     const firstThreeLength = 11; // Adjust total columns if necessary
@@ -243,49 +209,6 @@ async function prepInfoRows(actualLength) {
 
     return infoRow;
 }
-
-
-// Add Save Table functionality
-document.getElementById("saveTableButton").addEventListener("click", saveTableUpdates);
-
-
-async function saveTableUpdates() {
-    const table = $('#status-table').DataTable();
-    const updatedData = table.rows().data().toArray();
-    console.debug("Updated Data to Save:", updatedData);
-
-    try {
-        const response = await fetch('/update-data', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatedData),
-        });
-
-        const result = await response.json();
-        if (result.success) {
-            alert("Changes saved successfully!");
-
-            // Trigger GeoJSON update
-            const map = getMap(); // Get the map instance
-            const source = map.getSource("ProjectAreas");
-            // get source url
-            const src_url = source.url || '../data/spatial/IA_BLE_Tracking.geojson';
-            console.debug("Source: ", src_url);
-            if (map) {
-                await updateGeoJSONLayer('ProjectAreas', src_url);
-            } else {
-                console.error("Map instance not available.");
-            }
-        } else {
-            alert("Error saving changes: " + result.error);
-        }
-    } catch (error) {
-        console.error("Error saving table data:", error);
-    }
-}
-
-document.getElementById("saveTableButton").addEventListener("click", saveTableUpdates);
-
 
 function sendDataToMap(dataValue, map) {
     // Assuming you have a Mapbox GL JS map instance
@@ -320,18 +243,17 @@ function resetTableColumn(columnName) {
         .removeClass("highlight-column");
 }
 
-
 // Function to update the toggle button's position dynamically
-function updateToggleButtonPosition() {
+function updateButtonsPosition() {
     const rect = panel.getBoundingClientRect();
-    const tableHeight = rect.height// parseInt(getComputedStyle(panel, "").height);
+    const tableHeight = rect.height;
 
-    toggleButton.style.bottom = (tableHeight + 75) + "px"; // Adjust based on the panel height
+    buttonContainer.style.bottom = (tableHeight + 75) + "px"; // Adjust based on the panel height
 }
 
 // Function to reset the toggle button to its default position
-function resetToggleButtonPosition() {
-    toggleButton.style.bottom = "50px"; // Reset to the original position
+function resetButtonsPosition() {
+    buttonContainer.style.bottom = "50px"; // Reset to the original position
 }
 
-export { highlightTableColumn, resetTableColumn, updateToggleButtonPosition, resetToggleButtonPosition, sendDataToMap}; // Export the functions
+export { highlightTableColumn, resetTableColumn, updateButtonsPosition, resetButtonsPosition, sendDataToMap }; // Export the functions
