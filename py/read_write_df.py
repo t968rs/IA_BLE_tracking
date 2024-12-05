@@ -4,7 +4,18 @@ import toml
 from typing import Tuple, Union
 import geopandas as gpd
 import pandas as pd
+import logging
 import datetime
+import openpyxl
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.table import Table, TableStyleInfo
+
+
+
+DEBUG_MODE = True
+logging.basicConfig(level=logging.DEBUG if DEBUG_MODE else logging.INFO)
 
 
 class StatusTableManager:
@@ -86,15 +97,23 @@ class StatusTableManager:
         for current_col, metadata_col in column_map.items():
             if current_col in df.columns:  # Check if the column exists in the DataFrame
                 tgt_dtype = self.metadata["columns"][metadata_col].get("dtype")
+
                 if tgt_dtype == "date":
                     # Convert to date format without times
                     try:
-                        df[current_col] = pd.to_datetime(df[current_col], errors="coerce").dt.date
+                        df[current_col] = pd.to_datetime(df[current_col], errors="coerce")
+                        df[current_col] = df[current_col].dt.strftime('%Y-%m-%d')
+                        df[current_col] = df[current_col].fillna('')
                     except Exception as e:
+                        logging.debug("Target dtype: %s", tgt_dtype)
                         print(f"Error processing column {current_col}: {e}")
                 elif tgt_dtype == "string":
-                    # Convert to string
-                    df[current_col] = df[current_col].astype(str)
+                    try:
+                        # Convert to string
+                        df[current_col] = df[current_col].astype(str)
+                    except Exception as e:
+                        logging.debug("Target dtype: %s", tgt_dtype)
+                        print(f"Error processing column {current_col}: {e}")
                 # Add other type conversions as needed (e.g., numeric)
                 elif tgt_dtype == "numeric":
                     df[current_col] = pd.to_numeric(df[current_col], errors="coerce").fillna(0)
@@ -146,6 +165,112 @@ def df_to_excel(df: pd.DataFrame, out_loc: str, filename=None, sheetname="Sheet1
         if sheetname in writer.book.sheetnames:
             writer.book.remove(writer.book[sheetname])
         df.to_excel(writer, index=False, sheet_name=sheetname)
+
+def df_to_excel_for_export(df: pd.DataFrame, out_loc: str, filename=None, sheetname="Sheet1", merged_headers=None):
+    if filename is None:
+        filename = "output.xlsx"
+    else:
+        if not filename.endswith('.xlsx'):
+            filename += '.xlsx'
+
+    outpath = os.path.join(out_loc, filename)
+    os.makedirs(out_loc, exist_ok=True)
+
+    if isinstance(df, gpd.GeoDataFrame) or "geometry" in df.columns:
+        df = df.drop(columns='geometry')
+
+    # Remove legend columns if present
+    for c in df.columns:
+        if "legend" in c.lower():
+            df.drop(columns=c, inplace=True)
+
+    # Create a new workbook and worksheet
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = sheetname
+
+    # Apply merged headers if provided
+    if merged_headers:
+        # Create a Font object with the desired font name
+        custom_font = Font(name='Century Gothic', size=12, bold=True, color='F7F7F7')
+        dark_background_fill = PatternFill(start_color='000033', end_color='000033', fill_type='solid')
+        current_col = 1
+        for header in merged_headers:
+            start_col = current_col
+            colspan = header.get('colspan', 1)
+            end_col = current_col + colspan - 1
+            cell = ws.cell(row=1, column=start_col)
+            cell.value = header['text']
+            cell.font = custom_font
+            cell.fill = dark_background_fill
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+
+            if colspan > 1:
+                ws.merge_cells(start_row=1, start_column=start_col, end_row=1, end_column=end_col)
+
+            current_col += colspan
+
+        # Write column headers starting from row 2
+        for idx, col_name in enumerate(df.columns, start=1):
+            cell = ws.cell(row=2, column=idx)
+            cell.value = col_name
+            cell.font = Font(bold=True)
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+
+        start_row = 3  # Data starts from row 3
+    else:
+        # No merged headers; write column headers in row 1
+        for idx, col_name in enumerate(df.columns, start=1):
+            cell = ws.cell(row=1, column=idx)
+            cell.value = col_name
+            cell.font = Font(bold=True)
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+
+        start_row = 2  # Data starts from row 2
+
+    # Write data to worksheet
+    for r_idx, row in enumerate(dataframe_to_rows(df, index=False, header=False), start=start_row):
+        for c_idx, value in enumerate(row, start=1):
+            ws.cell(row=r_idx, column=c_idx, value=value)
+
+    # Freeze panes (freeze top rows)
+    freeze_row = start_row if merged_headers else start_row - 1
+    ws.freeze_panes = ws.cell(row=freeze_row, column=1)
+
+    # Adjust column widths (optional)
+    for column_cells in ws.columns:
+        # Get the column letter using the column index
+        col_idx = column_cells[0].column  # Column index (integer)
+        col_letter = get_column_letter(col_idx)
+        # Calculate the maximum length needed
+        length = max(len(str(cell.value)) if cell.value is not None else 0 for cell in column_cells)
+        ws.column_dimensions[col_letter].width = length + 2
+
+    ws = format_as_excel_table(ws, start_row - 1 if merged_headers else start_row - 2)
+
+    # Save the workbook
+    wb.save(outpath)
+    print(f"Excel file saved to {outpath}")
+
+
+def format_as_excel_table(worksheet, table_start_row=1):
+    # Create an Excel Table
+    start_row = table_start_row
+    table_end_row = worksheet.max_row
+    table_start_col = 1
+    table_end_col = worksheet.max_column
+    table_ref = f"{worksheet.cell(row=start_row, column=table_start_col).coordinate}:{worksheet.cell(row=table_end_row, column=table_end_col).coordinate}"
+
+    tab = Table(displayName="DataTable", ref=table_ref)
+
+    # Add a table style
+    style = TableStyleInfo(name="TableStyleMedium9", showFirstColumn=False,
+                           showLastColumn=False, showRowStripes=True, showColumnStripes=False)
+    tab.tableStyleInfo = style
+
+    worksheet.add_table(tab)
+
+    return worksheet
 
 
 def df_to_json(data, out_loc: str, filename: str = None):

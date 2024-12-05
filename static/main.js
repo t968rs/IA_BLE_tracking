@@ -16,6 +16,8 @@ import {
     updateButtonsPosition,
 } from "./src/populateTable.js";
 
+import { handleExportButtonClick } from "./src/exportData.js";
+
 import { initializeMap } from "./src/mapManager.js";
 import { handleUploadButtonClick } from "./src/uploadData.js";
 
@@ -43,6 +45,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Upload button listener
     const uploadButton = document.getElementById("upload-data-button");
     uploadButton.addEventListener("click", handleUploadButtonClick);
+
+    const exportButton = document.getElementById("export-excel-button");
+    exportButton.addEventListener("click", handleExportButtonClick);
 
     if (lastUpdated) {
     fetch(geojsonFileUrl, { method: 'HEAD' }) // HEAD request fetches only headers
