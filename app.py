@@ -1,21 +1,21 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory
-import os
-import geopandas as gpd
-import pandas as pd
-from py.read_write_df import StatusTableManager, df_to_excel, gdf_to_shapefile, df_to_excel_for_export
-from datetime import datetime
-from dotenv import load_dotenv
-import logging
-import shutil
 import json
+import logging
+import os
+import shutil
 import tempfile
+from datetime import datetime
+import geopandas as gpd
+from dotenv import load_dotenv
+from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask_compress import Compress
 from werkzeug.utils import secure_filename
-
+from py.read_write_df import StatusTableManager, gdf_to_shapefile, df_to_excel_for_export
 
 DEBUG_MODE = True
 logging.basicConfig(level=logging.DEBUG if DEBUG_MODE else logging.INFO)
 load_dotenv()  # Load environment variables from .env file
 app = Flask(__name__)
+Compress(app)
 app.secret_key = os.getenv("SECRET_KEY")
 
 MANUAL_UPDATES_FOLDER = "data/manual_updates"
