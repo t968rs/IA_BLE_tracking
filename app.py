@@ -47,6 +47,23 @@ def metadata_columns():
         "order": list(columns_metadata.keys())  # Include the key order explicitly
     })
 
+@app.route('/verify-password', methods=['POST'])
+def verify_password():
+    data = request.get_json()
+
+    # Validate if required fields are present
+    if not data or 'password' not in data or 'password_variable' not in data:
+        return jsonify({"success": False, "message": "Invalid request data"}), 400
+
+    # Retrieve the password variable and the provided password
+    password_variable = data['password_variable']
+    user_password = data['password']
+    actual_password = os.getenv(password_variable)
+
+    if user_password == actual_password:
+        return jsonify({"success": True, "message": "Password accepted"}), 200
+    else:
+        return jsonify({"success": False, "message": "Invalid password"}), 403
 
 @app.route('/data-table.json', methods=['GET'])
 def get_table_data():
@@ -65,8 +82,6 @@ def get_table_data():
         return jsonify(table_data)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-
 
 @app.route('/export-excel', methods=['GET'])
 def export_excel():

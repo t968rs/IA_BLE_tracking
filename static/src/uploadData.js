@@ -1,38 +1,30 @@
 // Import getMap from mapManager.js
 import { getMap } from './mapManager.js';
 
-export function handleUploadButtonClick() {
-    // Create a file input element
-    const fileInput = document.createElement("input");
-    fileInput.type = "file";
-    fileInput.accept = ".geojson,.shp,.dbf,.shx,.prj,.cpg"; // Accept GeoJSON and shapefile components
-    fileInput.multiple = true; // Allow multiple file selection
-    fileInput.style.display = "none";
+export async function handleUploadButtonClick() {
+    // Prompt user for input
+    const userInput = prompt("Please enter the upload password:");
 
-    // Listen for file selection
-    fileInput.addEventListener("change", async (event) => {
-        const files = event.target.files;
-        if (files && files.length > 0) {
-            try {
-                // Upload the files to the server
-                await uploadFilesToServer(files);
-                alert("Files uploaded successfully!");
+    try {
+        const response = await fetch('/verify-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: userInput ,
+            password_variable: "UPLOAD_PASSWORD"}),
+        });
 
-                // Update the map data source
-                updateMapData();
-            } catch (error) {
-                console.error("Error uploading files:", error);
-                alert("Failed to upload files. Please try again.");
-            }
+        if (response.ok) {
+            const result = response.json();
+            alert(result.message || "Password accepted. You can now upload data.");
+            fileInput()
+        } else {
+            const result = response.json();
+            alert(result.message || "Sorry, you can't upload.");
         }
-    });
-
-    // Trigger the file dialog
-    document.body.appendChild(fileInput);
-    fileInput.click();
-
-    // Remove the file input after use
-    fileInput.remove();
+    } catch (error) {
+        console.error("Error during password verification:", error);
+        alert("An error occurred. Please try again.");
+    }
 }
 
 async function uploadFilesToServer(files) {
@@ -66,4 +58,39 @@ function updateMapData() {
     } else {
         console.error("Map or ProjectAreas source not found.");
     }
+}
+
+function fileInput() {
+        // Create a file input element
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = ".geojson,.shp,.dbf,.shx,.prj,.cpg"; // Accept GeoJSON and shapefile components
+    fileInput.multiple = true; // Allow multiple file selection
+    fileInput.style.display = "none";
+
+    // Listen for file selection
+    fileInput.addEventListener("change", async (event) => {
+        const files = event.target.files;
+        if (files && files.length > 0) {
+            try {
+                // Upload the files to the server
+                await uploadFilesToServer(files);
+                alert("Files uploaded successfully!");
+
+                // Update the map data source
+                updateMapData();
+            } catch (error) {
+                console.error("Error uploading files:", error);
+                alert("Failed to upload files. Please try again.");
+            }
+        }
+    });
+
+    // Trigger the file dialog
+    document.body.appendChild(fileInput);
+    fileInput.click();
+
+    // Remove the file input after use
+    fileInput.remove();
+
 }
