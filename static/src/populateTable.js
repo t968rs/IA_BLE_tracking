@@ -72,7 +72,6 @@ function filterColumns(tableData, columnList = null) {
     return columnsFiltered;
 }
 
-// Function to fetch and display the Excel data
 export async function fetchAndDisplayData() {
     try {
         const response = await fetch('/data-table.json');
@@ -119,6 +118,18 @@ export async function fetchAndDisplayData() {
             destroy: true,
             autoWidth: true,
             responsive: true,
+            searching: false,
+            orderClasses: true,
+            // fixedHeader: true,
+            createdRow: function (row, data, dataIndex) {
+                // Assuming "MIP Case" is at a specific key in your data, adjust according to your data structure
+                const mipCase = data["MIP_Case"]; // adjust key name based on your actual data
+
+                // Set the background color based on mipCaseColors
+                if (mipCaseColors[mipCase]) {
+                    $(row).css('background-color', mipCaseColors[mipCase]);
+                }
+            }
         });
 
         console.debug('thead\n', dataTable);
@@ -127,7 +138,6 @@ export async function fetchAndDisplayData() {
         $("#status-table tbody").on("mouseenter", "tr", function () {
             const rowData = dataTable.row(this).data(); // Get the data for the hovered row
             $(this).addClass('row-hover'); // Add a hover class for custom styling
-            console.log("Entered row");
 
             if (rowData) {
                 sendDataToMap(rowData["HUC8"], getMap()); // Send data to the map

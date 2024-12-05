@@ -12,8 +12,8 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css' type='text/css' />
     <link href="/static/styles_add.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.dataTables.css" />
-    <script src="https://cdn.datatables.net/2.1.8/js/dataTables.js"></script>
+    <link href="https://cdn.datatables.net/v/dt/dt-2.1.8/af-2.7.0/b-3.2.0/b-colvis-3.2.0/b-print-3.2.0/cr-2.0.4/date-1.5.4/fc-5.0.4/fh-4.0.1/kt-2.12.1/r-3.0.3/rg-1.5.1/rr-1.5.0/sc-2.4.3/sb-1.8.1/sp-2.3.3/sl-2.1.0/sr-1.4.1/datatables.min.css" rel="stylesheet">
+    <script src="https://cdn.datatables.net/v/dt/dt-2.1.8/af-2.7.0/b-3.2.0/b-colvis-3.2.0/b-print-3.2.0/cr-2.0.4/date-1.5.4/fc-5.0.4/fh-4.0.1/kt-2.12.1/r-3.0.3/rg-1.5.1/rr-1.5.0/sc-2.4.3/sb-1.8.1/sp-2.3.3/sl-2.1.0/sr-1.4.1/datatables.min.js"></script>
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
     <script src="/static/src/turf.min.js" charset="utf-8"></script>
@@ -24,36 +24,36 @@
 </head>
 <body>
     <div id="title-box">Iowa BLE Project Tracking Map
-
         <span id="timestamp-text">The <b>statuses</b> were last updated: </span>
-
     </div>
-    <div id="map"></div>
-    <div id="controls-container">
-        <div id="layer-controls">
-            <table id="layer-controls-table"></table>
+    <div id="viewport-container">
+        <div id="map"></div>
+        <div id="controls-container">
+            <div id="layer-controls">
+                <table id="layer-controls-table"></table>
 
+            </div>
+            <div id="legend" class="map-legend"></div>
         </div>
-        <div id="legend" class="map-legend"></div>
-    </div>
-    <div class="popup-container" style="display: none;">
-        <button class="close-btn" onclick="closePopup()" type="button" aria-label="Close popup">×</button>
-        <ul id="mapboxgl-popup-content"></ul>
-    </div>
-    <script>
-        const MAPBOX_TOKEN = "{{ mapbox_token }}";
-    </script>
-    <script src="../static/main.js" type="module"></script>
+        <div class="popup-container" style="display: none;">
+            <button class="close-btn" onclick="closePopup()" type="button" aria-label="Close popup">×</button>
+            <ul id="mapboxgl-popup-content"></ul>
+        </div>
+        <script>
+            const MAPBOX_TOKEN = "{{ mapbox_token }}";
+        </script>
+        <script src="../static/main.js" type="module"></script>
 
-    <div id="button-container">
-        <button id="toggle-table-btn">Show/Hide Table</button>
-        <button id="upload-data-button">Upload Data</button>
-    </div>
-    <div id="status-table-container" style="display: none;">
-        <button id="saveTableButton">Save Changes</button>
-        <table id="status-table" border="1">
-            <!-- Table content will be dynamically added here -->
-        </table>
+        <div id="button-container">
+            <button id="toggle-table-btn">Show/Hide Table</button>
+            <button id="upload-data-button">Upload Data</button>
+            <button id="export-excel-button">Export to Excel</button>
+        </div>
+        <div id="status-table-container" style="display: none;">
+            <table id="status-table" border="1">
+                <!-- Table content will be dynamically added here -->
+            </table>
+        </div>
     </div>
 </body>
 </html>

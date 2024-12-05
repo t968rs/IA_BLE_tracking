@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 import os
 import geopandas as gpd
 import pandas as pd
-from py.read_write_df import StatusTableManager, df_to_excel, gdf_to_shapefile
+from py.read_write_df import StatusTableManager, df_to_excel, gdf_to_shapefile, df_to_excel_for_export
 from datetime import datetime
 from dotenv import load_dotenv
 import logging
@@ -12,7 +12,7 @@ import tempfile
 from werkzeug.utils import secure_filename
 
 
-DEBUG_MODE = False
+DEBUG_MODE = True
 logging.basicConfig(level=logging.DEBUG if DEBUG_MODE else logging.INFO)
 load_dotenv()  # Load environment variables from .env file
 app = Flask(__name__)
@@ -51,10 +51,13 @@ def metadata_columns():
 @app.route('/data-table.json', methods=['GET'])
 def get_table_data():
     try:
-        with open(TRACKING_FILE.replace(".geojson", ".json"), "r") as data:
-            df = pd.DataFrame.from_dict(json.load(data), orient="columns")
+        df = gpd.read_file(TRACKING_FILE)
         if 'geometry' in df.columns:
             df = df.drop(columns='geometry')
+
+        with StatusTableManager(TABLE_METADATA) as manager:
+            df = manager.enforce_types(df, "geojson")
+            df = manager.sort_rows(df)
 
         table_data = df.to_dict(orient='records')
 
@@ -64,27 +67,41 @@ def get_table_data():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/export-excel', methods=['POST'])
-def export_excel(gdf):  # TODO Add functions to read GeoJSON and export Excel files for user downoad
+
+@app.route('/export-excel', methods=['GET'])
+def export_excel():
     try:
-        logging.debug("Updating Excel file...")
-        logging.debug(f"GDF has columns: {hasattr(gdf, 'columns')}")
-        if "geometry" in gdf.columns:
+        # Load the GeoJSON data
+        gdf = gpd.read_file(TRACKING_FILE)
+        if 'geometry' in gdf.columns:
             df = gdf.drop(columns='geometry')
         else:
             df = gdf
 
-        logging.debug(f"DF columns: {df.columns}")
         with StatusTableManager(TABLE_METADATA) as manager:
             df = manager.rename_columns(df, "excel", "geojson")
             df = manager.enforce_types(df, "excel")
             df = manager.sort_rows(df)
 
-        # Save updated Excel
-        df_to_excel(df, EXCEL_FILE, SHEET_NAME)
+        # Define merged headers
+        merged_headers = [
+            {'text': 'Delivery Area Info', 'colspan': 3},
+            {'text': 'MIP Task Status', 'colspan': 3},
+            {'text': 'Model Manager Uploads', 'colspan': 5},
+            {'text': 'Details', 'colspan': len(df.columns) - 11},
+        ]
 
-        return jsonify({'success': True})
+        # Generate the Excel file
+        excel_output_dir = os.path.join(app.root_path, 'data', 'exports')
+        os.makedirs(excel_output_dir, exist_ok=True)
+        excel_filename = 'IA_BLE_Tracking.xlsx'
+        df_to_excel_for_export(df, out_loc=excel_output_dir, filename=excel_filename, sheetname='Tracking_Main', merged_headers=merged_headers)
+
+        # Send the file as a response
+        return send_from_directory(excel_output_dir, excel_filename, as_attachment=True)
+
     except Exception as e:
+        logging.error(f"Error generating Excel file: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route("/data/<path:filename>")
