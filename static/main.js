@@ -49,29 +49,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportButton = document.getElementById("export-excel-button");
     exportButton.addEventListener("click", handleExportButtonClick);
 
+    // Defer fetching timestamp
     if (lastUpdated) {
-    fetch(geojsonFileUrl, { method: 'HEAD' }) // HEAD request fetches only headers
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            const lastModified = response.headers.get('Last-Modified');
-            const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            // Dont show seconds in the time
-            const timeOptions = { hour: 'numeric', minute: 'numeric', timeZoneName: 'short' };
-             if (lastModified) {
-                const formattedDate = new Date(lastModified).toLocaleDateString();
-                const formattedTime = new Date(lastModified).toLocaleTimeString([], timeOptions);
-                lastUpdated.innerHTML = `statuses last updated:<br><b>${formattedDate} ${formattedTime}</b>`;
-            } else {
-                console.warn('Last-Modified header not found');
-                lastUpdated.innerHTML = `The <b>statuses</b> were last updated: <b>Unknown</b>`;
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching the geojson file:', error);
-            lastUpdated.innerHTML = `The <b>statuses</b> were last updated: <b>Unknown</b>`;
-        });
+        updateLastUpdatedTimestamp(geojsonFileUrl, lastUpdated);
     }
 
     // Add event listeners to area popup close buttons
@@ -787,3 +767,26 @@ const uploadButton = document.getElementById("upload-data-button");
 
 // Attach event listener to the upload button
 uploadButton.addEventListener("click", handleUploadButtonClick);
+
+async function updateLastUpdatedTimestamp(geojsonFileUrl, lastUpdated) {
+    try {
+        const response = await fetch(geojsonFileUrl, { method: 'HEAD' }); // Use HEAD request to fetch headers
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const lastModified = response.headers.get('Last-Modified');
+        const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const timeOptions = { hour: 'numeric', minute: 'numeric', timeZoneName: 'short' };
+        if (lastModified) {
+            const formattedDate = new Date(lastModified).toLocaleDateString();
+            const formattedTime = new Date(lastModified).toLocaleTimeString([], timeOptions);
+            lastUpdated.innerHTML = `statuses last updated:<br><b>${formattedDate} ${formattedTime}</b>`;
+        } else {
+            console.warn('Last-Modified header not found');
+            lastUpdated.innerHTML = `The <b>statuses</b> were last updated: <b>Unknown</b>`;
+        }
+    } catch (error) {
+        console.error('Error fetching the geojson file:', error);
+        lastUpdated.innerHTML = `The <b>statuses</b> were last updated: <b>Unknown</b>`;
+    }
+}
