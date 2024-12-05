@@ -109,7 +109,6 @@ body {
 
 #status-table tbody tr.row-hover {
     background: #72e4ff;
-    color-rendering: auto;
     font-weight: bold; /* Example: bold text */
     color: #182d33;
     border-width: 2px;
@@ -132,15 +131,6 @@ th.details {
 #status-table tbody tr:nth-child(even) {
   background-color: #f9f9f9; /* Alternate row shading for better readability */
 }
-
-
-/*.highlight-row {*/
-/*    background-color: #202020; !* Example: light gray background *!*/
-/*    font-weight: bold; !* Example: bold text *!*/
-/*    font-size: 12px; !* Example: larger font size *!*/
-/*    font-family: "Century Gothic", sans-serif;*/
-/*    color: #dcdcdc; !* Example: red text *!*/
-/*}*/
 
 .highlight-column {
     color: #ff0000; /* Example: red text */
@@ -225,7 +215,7 @@ th {
     background: #4c91af; /* Green background */
     color: white; /* White text */
     text-align: center; /* Centered text */
-    vertical-align: center; /* Centered vertically */
+    vertical-align: middle; /* Centered vertically */
     padding: 10px; /* Some padding */
     font-size: 18px; /* Font size */
     font-weight: bold; /* Bold text */
@@ -284,9 +274,6 @@ th {
     gap: 10px;
 }
 
-/** Set rules for how the map overlays
-* (information box and legend) will be displayed
-* on the page. *!*/
 .map-overlay {
   position: absolute;
   bottom: 0;
@@ -332,7 +319,7 @@ th {
     font-size: 11px;
     padding: 5px;
     border-left: #cccccc 5px solid;
-    text-align: justify-all;
+    text-align: justify;
 }
 
 .legend-key-circle {
