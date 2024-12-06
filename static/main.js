@@ -4,7 +4,9 @@ import {
     hideIt,
     populateLegend,
     showIt,
-    updateLegendOnVisibilityChange
+    updateLegendOnVisibilityChange,
+    enableTextSelection,
+    disableTextSelection,
 } from './src/mapInteractions.js';
 
 import {precisionRound} from "./src/maths.js";
@@ -762,6 +764,16 @@ document.addEventListener("pointerup", function () {
 
 // Attach the toggle functionality to the button
 buttonContainer.addEventListener("click", toggleTable);
+
+// Disable text selection during drag to resize
+document.getElementById('status-table-container').addEventListener('mousedown', (event) => {
+    if (event.target.matches('#status-table-container::before, #status-table-container::after')) {
+        disableTextSelection(); // Disable text selection globally
+        document.addEventListener('mouseup', () => {
+            enableTextSelection(); // Re-enable text selection
+        }, { once: true });
+    }
+});
 
 const uploadButton = document.getElementById("upload-data-button");
 
