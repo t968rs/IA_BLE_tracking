@@ -1,21 +1,6 @@
-import {
-    areaPopupContent, closePopup,
-    createLayerControls,
-    hideIt,
-    populateLegend,
-    showIt,
-    updateLegendOnVisibilityChange,
-    enableTextSelection,
-    disableTextSelection,
-} from './src/mapInteractions.js';
-
-
-
 import { initializeMap } from "./src/mapManager.js";
 
-
 mapboxgl.accessToken = MAPBOX_TOKEN;
-
 
 const map = initializeMap({
     container: 'map',
@@ -29,9 +14,12 @@ const map = initializeMap({
 // Add user control
 map.addControl(new mapboxgl.NavigationControl({showCompass: true, showZoom: true}));
 
-let loc_popup;
 // Wait for the DOM to be loaded before querying DOM elements and adding UI event listeners
 document.addEventListener('DOMContentLoaded', () => {
+
+    // set up delayed mapIntersection.js import
+    const { enableTextSelection, disableTextSelection, closePopup } = import ("./src/mapInteractions.js");
+
     const geojsonHeadPromise = fetch("/served/spatial/IA_BLE_Tracking.geojson", { method: "HEAD" });
     const lastUpdated = document.getElementById("timestamp-text");
     const panel = document.getElementById("status-table-container");
@@ -132,15 +120,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-
-const centroidPromise = fetch("/served/spatial/Centroids.json");
-
-
 // On Load event
 map.on('load', async () => {
     console.log('Map loaded');
+    let loc_popup;
     const mathModule = await import("./src/maths.js");
     const precisionRound = mathModule.precisionRound;
+    const centroidPromise = fetch("/served/spatial/Centroids.json");
 
     // Function to remove aria-hidden from the close button
     function fixAriaHiddenOnCloseButton() {
@@ -560,9 +546,12 @@ map.on('load', async () => {
         'TO Areas': ['work-areas'],
         // Add more groups and layers as needed
     };
-
     const centroidResponse = await centroidPromise;
     const centroids = await centroidResponse.json();
+
+    // Control and legend imports
+    const { createLayerControls, updateLegendOnVisibilityChange, populateLegend, areaPopupContent }
+        = await import ("./src/mapInteractions.js");
     createLayerControls(map, controlLayers, centroids);
 
     console.log("Sources: ", map.getStyle().sources)
@@ -581,7 +570,7 @@ map.on('load', async () => {
     };
 
     // Add more groups and layers as needed
-    const mapLegend = populateLegend(map, legendLayers);
+    await populateLegend(map, legendLayers);
     updateLegendOnVisibilityChange(map, legendLayers);
 
 
