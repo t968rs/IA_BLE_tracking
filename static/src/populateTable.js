@@ -2,6 +2,7 @@ import { getMap } from './mapManager.js'; // Access the map instance
 
 export const panel = document.getElementById("status-table-container");
 export const buttonContainer = document.getElementById("button-container");
+const statusTableObj = document.getElementById("status-table");
 
 const unwantedColumns = ["geometry"];
 
@@ -17,9 +18,9 @@ const mipCaseColors = {
 export function toggleTable() {
     if (panel.style.display === "none" || panel.style.display === "") {
         panel.style.display = "block";
-        fetchAndDisplayData(); // Fetch and populate the table if not already loaded
         updateButtonsPosition();
     } else {
+        statusTableObj.style.display = "none";
         panel.style.display = "none";
         resetButtonsPosition();
     }

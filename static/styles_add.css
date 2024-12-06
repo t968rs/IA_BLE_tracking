@@ -147,6 +147,17 @@ th.details {
     cursor: e-resize;
 }
 
+#status-table-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    cursor: ns-resize; /* Add hover feedback for vertical resize */
+    background-color: transparent; /* Invisible but interactive */
+}
+
 table {
     table-layout: auto;
     border-collapse: collapse;

@@ -28,6 +28,20 @@ function rangePercent(start, stop, step) {
     return result;
 }
 
+// Function to disable text selection globally
+export function disableTextSelection() {
+    document.body.style.userSelect = "none";
+    document.body.style.msUserSelect = "none";
+    document.body.style.mozUserSelect = "none";
+}
+
+// Function to re-enable text selection
+export function enableTextSelection() {
+    document.body.style.userSelect = "";
+    document.body.style.msUserSelect = "";
+    document.body.style.mozUserSelect = "";
+}
+
 let whichGrid = {'0, 1, 2': "No Grids",
     '1, 2': "DRAFT, Add'l Ret", '2': "Add'l Ret", "All on MM": "All on MM"};
 
