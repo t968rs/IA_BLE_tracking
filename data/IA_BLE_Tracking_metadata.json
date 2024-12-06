@@ -32,5 +32,6 @@
     "last_updated": {"geojson":  "last_updated", "excel":  null, "shapefile":  "LST_UPDATE", "dtype":  "date"},
     "geometry": {"geojson": "geometry", "excel": null, "shapefile": "geometry", "dtype": "geometry"}
   },
-  "sort_order": ["TO_Area", "Name"]
+  "sort_order": ["TO_Area", "Name"],
+  "last_updated": "2019-04-05"
 }
