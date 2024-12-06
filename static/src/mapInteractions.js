@@ -1,7 +1,10 @@
-
+const DEBUG_STATUS = false
+import { debugConsole } from "./debugging.js";
+let dC;
+if (!DEBUG_STATUS) { dC = () => {}; } else { dC = debugConsole; }
 
 function rangePercent(start, stop, step) {
-    console.log("Start: ", start, " Stop: ", stop, " Step: ", step);
+    dC("Start: ", start, " Stop: ", stop, " Step: ", step);
     if (typeof stop == 'undefined') {
         // one param defined
         stop = start;
@@ -9,7 +12,7 @@ function rangePercent(start, stop, step) {
     }
 
     if (typeof step == 'undefined') {
-        console.log("Step is undefined", step);
+        dC("Step is undefined", step);
         step = 1;
     }
 
@@ -24,7 +27,7 @@ function rangePercent(start, stop, step) {
     result.push(100);
     const resSet = new Set(result);
     result = Array.from(resSet);
-    console.log("Result: ", result);
+    dC("Result: ", result);
     return result;
 }
 
@@ -50,9 +53,6 @@ let unwanted = ["OID_", "OID", "OBJECTID", "GlobalID", "Shape__Area",
 // List of unwanted substrings
 let unwantedSubstrings = ["area", "acre", "sq_k", "final", "tie", "nee", "_ac", "mo", "shape", "nee",
 " ac", "global", "legend"];
-
-let allLegendValues = [];
-let percentLegendRamp = {};
 
 // Function to check if a property name contains any unwanted substrings
 function containsUnwantedSubstring(property) {
@@ -109,10 +109,10 @@ export async function areaPopupContent(clickedfeature, addONS) {
 function getFeatureBounds(feature) {
     // Get the bounding box of the feature
     const featureBounds = new mapboxgl.LngLatBounds();
-    console.log("BOUNDS: ", featureBounds);
+    dC("BOUNDS: ", featureBounds);
     feature.geometry.coordinates[0].forEach(coord => {
         const [lng, lat] = coord;
-        // console.log("Lat: ", lat, " Lng: ", lng);
+        // dC("Lat: ", lat, " Lng: ", lng);
         if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
             featureBounds.extend(coord);
         } else {
@@ -121,19 +121,19 @@ function getFeatureBounds(feature) {
     });
 
     // Fit the map to the feature bounds
-    console.log("With popup Bounds: ", featureBounds);
+    dC("With popup Bounds: ", featureBounds);
     return featureBounds;
 }
 
 // Function to close the popup
 export function closePopup() {
-    console.log("closePopup function called");
+    dC("closePopup function called");
     const popup = document.querySelector('.popup-container .close-btn, .mapboxgl-popup-content .close-btn');
     if (popup) {
-        console.log("Popup element found:", popup);
+        dC("Popup element found:", popup);
         popup.style.display = 'none';
         hideIt(popup);
-        console.log("Popup close clicked");
+        dC("Popup close clicked");
     } else {
         console.error('Popup element not found');
     }
@@ -224,7 +224,7 @@ export async function populateLegend(map, layersToInclude) {
             if (colorProperty && Array.isArray(colorProperty)) {
                 let colorMapping = colorProperty.slice(2, -1);
 
-                const aliasItem = await createLegendItem('', group, true);
+                await createLegendItem('', group, true);
 
                 for (let i = 0; i < colorMapping.length; i += 2) {
                     let propertyValue = colorMapping[i];
@@ -296,17 +296,15 @@ export function createLayerControls(map, layerGroups, Centroids) {
         groupRow.appendChild(checkboxCell);
         groupRow.appendChild(labelCell);
         if (group in Centroids) {
-            console.log("Group: ", group);
+            dC("Group: ", group);
             let thisCentroid = Centroids[group]["Centroid"];
             let thisZoom = Centroids[group]["Zoom"];
-            console.log("Centroid: ", thisCentroid);
+            dC("Centroid: ", thisCentroid);
             const zoomCell = document.createElement('td');
             const zoomToLayerButton = document.createElement('zoom-to-button');
-            console.log("Zoom Button: ", zoomToLayerButton);
+            dC("Zoom Button: ", zoomToLayerButton);
             zoomToLayerButton.textContent = 'Z2L';
             zoomToLayerButton.addEventListener('click', () => {
-                // const center = getCenterFromSourceData(map, layers[0]);
-                let currentZoom = map.getZoom();
                 map.jumpTo({
                     center: thisCentroid,
                     zoom: thisZoom,
@@ -328,7 +326,7 @@ function toggleLayerGroup(map, layers, visibility) {
 }
 
 function allVisibleinGroup(map, layers) {
-    // console.log("Layers: ", typeof layers);
+    // dC("Layers: ", typeof layers);
     layers = convertToArray(layers);
     const allVisible = layers.every(layerId => {
         const visibility = map.getLayoutProperty(layerId, 'visibility');

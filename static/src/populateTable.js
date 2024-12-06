@@ -1,4 +1,9 @@
 import { getMap, setTableLoaded, isTableLoaded } from './mapManager.js'; // Access the map instance
+const DEBUG_STATUS = false
+import { debugConsole } from "./debugging.js";
+let dC;
+if (!DEBUG_STATUS) { dC = () => {}; } else { dC = debugConsole; }
+
 
 export const panel = document.getElementById("status-table-container");
 export const buttonContainer = document.getElementById("button-container");
@@ -32,7 +37,7 @@ export function toggleTable() {
         panel.style.display = "none";
         resetButtonsPosition();
     }
-    console.log("Table toggled");
+    dC("Table toggled");
 }
 
 
@@ -52,8 +57,8 @@ async function fetchMetadata(servePath) {
             console.error("meta not found in json:", metadata);
         }
 
-        console.log("Col Metadata:", columnsMetadata);
-        console.log("Column Order:", columnOrder);
+        dC("Col Metadata:", columnsMetadata);
+        dC("Column Order:", columnOrder);
 
         return { columnsMetadata, columnOrder };
     } catch (error) {
@@ -67,18 +72,18 @@ function filterColumns(tableData, columnList = null) {
     let columnsFiltered = columnList.filter(column => {
         const isUnwanted = unwantedColumns.includes(column);
         if (isUnwanted === true) {
-            console.debug(column, isUnwanted);
+            dC(column, isUnwanted);
         }
         const isInTableData = Object.keys(tableData[0]).includes(column);
         if (isInTableData === false) {
-            console.debug(column, "In table data", isInTableData);
+            dC(column, "In table data", isInTableData);
         }
         if (!isUnwanted && isInTableData) {
-            console.debug(column, "both");
+            dC(column, "both");
         }
         return !isUnwanted && isInTableData;
     });
-    console.debug("Filtered Columns:", columnsFiltered);
+    dC("Filtered Columns:", columnsFiltered);
     return columnsFiltered;
 }
 
@@ -95,7 +100,7 @@ export async function fetchAndDisplayData() {
 
     if (isTableLoaded()) {
         loadingMessage.style.display = "none";
-        console.log("Table already loaded, no need to fetch again.");
+        dC("Table already loaded, no need to fetch again.");
         return;
     }
 
@@ -106,13 +111,13 @@ export async function fetchAndDisplayData() {
         }
 
         let tableData = await response.json();
-        console.debug('Table Data json:\n', tableData);
+        dC('Table Data json:\n', tableData);
 
         // Fetch column metadata
         const sourceFileFormat = "geojson"
         const { columnsMetadata, columnOrder } = await fetchMetadata(
             '/metadata-columns?source_file_format=' + sourceFileFormat);
-        console.debug("Column Meta: ", columnsMetadata);
+        dC("Column Meta: ", columnsMetadata);
         
         // Create a reverse lookup map from sourceFormat name to the entire metadata object
         const sourceFormatMap = {};
@@ -144,7 +149,7 @@ export async function fetchAndDisplayData() {
         }));
 
         // Initialize DataTable
-        console.log("Column Length:", columns.length);
+        dC("Column Length:", columns.length);
         await initDataTable(columns.length, columns);
         const dataTable = $('#status-table').DataTable({
             data: tableData,
@@ -167,7 +172,7 @@ export async function fetchAndDisplayData() {
             }
         });
 
-        console.debug('thead\n', dataTable);
+        dC('thead\n', dataTable);
 
         // Add hover event listener
         $("#status-table tbody").on("mouseenter", "tr", function () {
@@ -229,7 +234,7 @@ async function initDataTable(columnLength, columns) {
         table.appendChild(tbody);
     }
 
-    console.debug("thead:\n", thead);
+    dC("thead:\n", thead);
     return thead;
 }
 
@@ -263,34 +268,6 @@ function sendDataToMap(dataValue, map) {
     map.setFilter("areas-highlight", ["==", "HUC8", dataValue]); // Adjust logic as needed
 }
 
-function highlightTableColumn(columnName) {
-    const table = $("#excel-data-table").DataTable();
-
-    // Get the column index by name
-    const columnIndex = table.column(`${columnName}:name`).index();
-
-    // Highlight all cells in the column
-    table
-        .column(columnIndex)
-        .nodes()
-        .to$()
-        .addClass("highlight-column"); // Add a custom class
-}
-
-function resetTableColumn(columnName) {
-    const table = $("#excel-data-table").DataTable();
-
-    // Get the column index by name
-    const columnIndex = table.column(`${columnName}:name`).index();
-
-    // Remove highlight from all cells in the column
-    table
-        .column(columnIndex)
-        .nodes()
-        .to$()
-        .removeClass("highlight-column");
-}
-
 // Function to update the toggle button's position dynamically
 function updateButtonsPosition() {
     const rect = panel.getBoundingClientRect();
@@ -304,4 +281,4 @@ function resetButtonsPosition() {
     buttonContainer.style.bottom = "50px"; // Reset to the original position
 }
 
-export { highlightTableColumn, resetTableColumn, updateButtonsPosition, resetButtonsPosition, sendDataToMap }; // Export the functions
+export { updateButtonsPosition, resetButtonsPosition, sendDataToMap }; // Export the functions

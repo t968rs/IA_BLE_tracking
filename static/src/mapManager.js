@@ -1,4 +1,9 @@
 // mapManager.js
+const DEBUG_STATUS = false;
+import { debugConsole } from "./debugging.js";
+let dC;
+if (!DEBUG_STATUS) { dC = () => {}; } else { dC = debugConsole; }
+
 let mapInstance;
 let tableLoaded = false; // This will store the table load state
 
@@ -16,7 +21,7 @@ export async function createColorStops(serverResponse, fieldName = "HUC8") {
         const data = await serverResponse.json();
         const fieldValues = data.features.map(feature => Number(feature.properties[fieldName]));
         const uniqueValues = [...new Set(fieldValues)].sort((a, b) => a - b);
-        console.debug("Unique Field", fieldName, "Values:", uniqueValues);
+        dC("Unique Field", fieldName, "Values:", uniqueValues);
 
         const colorRamp = [
             '#8c0700', '#9f00c3', '#0045ac', '#00370d',

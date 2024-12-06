@@ -1,4 +1,5 @@
 import { initializeMap } from "./src/mapManager.js";
+import  turfcentroid from 'https://cdn.jsdelivr.net/npm/@turf/centroid@7.1.0/+esm'
 
 mapboxgl.accessToken = MAPBOX_TOKEN;
 
@@ -10,6 +11,8 @@ const map = initializeMap({
     minZoom: 0,
     center: [-93.5, 42]
 });
+let loc_popup;
+const LOG = false;
 
 // Add user control
 map.addControl(new mapboxgl.NavigationControl({showCompass: true, showZoom: true}));
@@ -103,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.addEventListener("pointerup", function () {
         if (isResizing) {
-            console.log("Pointer up detected. Resizing stopped.");
+            if (LOG) { console.debug("Pointer up detected. Resizing stopped."); }
         }
         isResizing = false;
         document.body.style.cursor = "";
@@ -122,8 +125,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // On Load event
 map.on('load', async () => {
-    console.log('Map loaded');
-    let loc_popup;
+    if (LOG) { console.debug('Map loaded'); }
+
     const mathModule = await import("./src/maths.js");
     const precisionRound = mathModule.precisionRound;
     const centroidPromise = fetch("/served/spatial/Centroids.json");
@@ -164,7 +167,7 @@ map.on('load', async () => {
         data: "/served/spatial/S_Submittal_Info_IA_BLE.geojson",
     });
 
-    console.log("Map Added/Loaded");
+    if (LOG) { console.debug("Map Added/Loaded"); }
 
     map.doubleClickZoom.enable();
 
@@ -554,9 +557,9 @@ map.on('load', async () => {
         = await import ("./src/mapInteractions.js");
     createLayerControls(map, controlLayers, centroids);
 
-    console.log("Sources: ", map.getStyle().sources)
-    console.log("Layers: ", map.getStyle().layers)
-    console.log('Layers added');
+    if (LOG) { console.debug("Sources: ", map.getStyle().sources) }
+    if (LOG) { console.debug("Layers: ", map.getStyle().layers) }
+    if (LOG) { console.debug('Layers added'); }
     // create legend
     const legendLayers = {
         'Draft MIP Status': 'draft-mip',
@@ -573,14 +576,13 @@ map.on('load', async () => {
     await populateLegend(map, legendLayers);
     updateLegendOnVisibilityChange(map, legendLayers);
 
-
     // Click actions
     map.on("click", async (e) => {
         const features = map.queryRenderedFeatures(e.point, {
             layers: ['areas-interaction', 'model-outlines-mod'],  // replace 'your-interaction-layer' with the id of your layer
         });
         if (!features.length) {
-            console.log('No features found');
+            if (LOG) { console.debug('No features found'); }
             if (loc_popup) {
                 loc_popup.remove(); // Close the popup if no feature is clicked
                 loc_popup = null;
@@ -598,7 +600,7 @@ map.on('load', async () => {
         }
         const feature = features.find(f => f.layer.id === 'areas-interaction');
         if (!feature) {
-            console.log('Clicked feature is not part of areas-interaction');
+            if (LOG) { console.debug('Clicked feature is not part of areas-interaction'); }
             if (loc_popup) {
                 loc_popup.remove(); // Close the popup if no valid feature is clicked
                 loc_popup = null;
@@ -614,25 +616,21 @@ map.on('load', async () => {
         // Handle the features found
         for (const clickedfeature of features) {
             let fid = feature.properties.HUC8;
-            // console.log('Feature ID:', fid);
             if (fid !== undefined) {
                 map.setFilter('areas-highlight', ['==', 'HUC8', fid]);
             }
             // Calculate the centroid of the polygon
-            const centroid = turf.centroid(clickedfeature);
+            const centroid = turfcentroid(clickedfeature);
             const coordinates = centroid.geometry.coordinates;
-            // console.log('Clicked feature:', clickedfeature.layer.id);
 
             // Ensure coordinates are in the correct format
             if (!Array.isArray(coordinates) || coordinates.length !== 2) {
                 console.error('Invalid coordinates format');
                 continue;
             }
-
             if (clickedfeature.layer.id === 'areas-interaction') {
                 // Get the popup content
                 const [mapPopupContent, featureBounds] = await areaPopupContent(clickedfeature, addONS);
-                // console.log('Clicked feature and popup bounds:', clickedfeature, featureBounds);
                 // Create the popup
                 loc_popup = new mapboxgl.Popup({
                     closeButton: true,
@@ -660,30 +658,17 @@ map.on('load', async () => {
                 let centerArray = featureCenter.toArray();
                 centerArray[1] = centerArray[1] + featureHeight * 0.3;
                 let cameraCenter = new mapboxgl.LngLat(centerArray[0], centerArray[1]);
-                // console.log('Camera Center: ', cameraCenter);
-                // console.log('Feature Center: ', featureCenter);
                 if (mapZoom > camZoom) {
-                    // console.log('Map Zoom is greater than calculated zoom', mapZoom, camZoom);
                     calcZoom = camZoom;
                 } else if (mapZoom < camZoom) {
-                    // console.warn('Map Zoom is less than calculated zoom', mapZoom, camZoom);
                     calcZoom = camZoom;
                 }
-                // console.log('Feature Bounds:', featureBounds);
-                // console.log('Calc Zoom:', calcZoom);
-                // console.log('Map Zoom:', mapZoom);
-                console.log('Feature Height:', featureHeight);
-                // console.log('Center of bounds:', featureCenter);
+                if (LOG) { console.debug('Feature Height:', featureHeight); }
                 map.jumpTo({
                     center: cameraCenter,
                     zoom: calcZoom,
                 })
-
             }
-
-
-            // Ensure the popup fits within the current map bounds
-            // fitMapToFeatureBounds(map, clickedfeature);
         }
     });
 
@@ -693,7 +678,6 @@ map.on('load', async () => {
             if (e.features.length > 0) {
                 const feature = e.features[0];
                 const fid = feature.properties.HUC8;
-                // console.log('Feature ID:', fid);
                 if (fid !== undefined) {
                     map.setFilter('areas-highlight', ['==', 'HUC8', fid]);
                 }
@@ -706,25 +690,22 @@ map.on('load', async () => {
 
         // Primary event handlers using pointer events
         map.on('pointerenter', layer, (e) => {
-            // console.log('Pointer enter event detected');
             map.getCanvas().style.cursor = 'pointer';
             highlightFeature(e);
         });
 
         map.on('pointerleave', layer, () => {
-            // console.log('Pointer leave event detected');
             map.setFilter('areas-highlight', ['==', 'HUC8', '']);
             map.getCanvas().style.cursor = '';
         });
 
         // Fallback event handlers using mouse events
         map.on('mouseenter', layer, (e) => {
-            // console.log('Mouse enter event detected');
             map.getCanvas().style.cursor = 'pointer';
             if (e.features.length > 0) {
                 const feature = e.features[0];
                 const fid = feature.properties.HUC8;
-                console.log('Feature ID:', fid);
+                if (LOG) { console.debug('Feature ID:', fid); }
                 if (fid !== undefined) {
                     map.setFilter('areas-highlight', ['==', 'HUC8', fid]);
                 }
@@ -732,7 +713,7 @@ map.on('load', async () => {
         });
 
         map.on('mouseleave', layer, () => {
-            console.log('Mouse leave event detected');
+            if (LOG) { console.debug('Mouse leave event detected'); }
             map.setFilter('areas-highlight', ['==', 'HUC8', '']);
             map.getCanvas().style.cursor = '';
         });
@@ -753,7 +734,7 @@ async function updateLastUpdatedTimestamp(headPromise, lastUpdated) {
                 const formattedTime = new Date(lastModified).toLocaleTimeString([], timeOptions);
 
                 lastUpdated.innerHTML = `Statuses last updated:<br><b>${formattedDate} ${formattedTime}</b>`;
-                console.log(`Last-Modified fetched and displayed: ${formattedDate} ${formattedTime}`);
+                if (LOG) { console.debug(`Last-Modified fetched and displayed: ${formattedDate} ${formattedTime}`); }
             } else {
                 console.warn('Last-Modified header not found.');
                 lastUpdated.innerHTML = `Unable to fetch the last updated timestamp.`;
