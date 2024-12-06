@@ -1,13 +1,44 @@
 // Import getMap from mapManager.js
 import { getMap } from './mapManager.js';
 
-export async function handleUploadButtonClick() {
-    // Prompt user for input
-    const userInput = prompt("Please enter the upload password:");
+// Main function to handle the upload button click
+export function handleUploadButtonClick() {
+    const fileInput = getFileInput(); // Get or create the file input element
 
+    // Trigger the file picker immediately as part of the user interaction
+    fileInput.click();
+}
+
+// Function to handle file selection
+async function handleFileSelection(event) {
+    const files = event.target.files;
+
+    if (files && files.length > 0) {
+        // Perform password validation after file selection
+        const passwordValid = await validatePassword();
+        if (!passwordValid) {
+            alert("Invalid password. Upload cancelled.");
+            return;
+        }
+
+        // Proceed with file upload
+        try {
+            await uploadFilesToServer(files);
+            alert("Files uploaded successfully!");
+            updateMapData(); // Update map data source if needed
+        } catch (error) {
+            console.error("Error uploading files:", error);
+            alert("Failed to upload files. Please try again.");
+        }
+    }
+}
+
+// Function to validate the password
+async function validatePassword() {
+    const userInput = prompt("Please enter the upload password:");
     if (!userInput) {
         alert("Password is required to proceed.");
-        return;
+        return false;
     }
 
     try {
@@ -16,23 +47,23 @@ export async function handleUploadButtonClick() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 password: userInput,
-                password_variable: "UPLOAD_PASSWORD", // Replace with your actual variable name
+                password_variable: "UPLOAD_PASSWORD", // Replace with your actual variable
             }),
         });
 
         if (response.ok) {
             const result = await response.json();
-            alert(result.message || "Password accepted. You can now upload data.");
-
-            // Open file input dialog
-            fileInput();
+            alert(result.message || "Password accepted.");
+            return true;
         } else {
             const result = await response.json();
             alert(result.message || "Sorry, you can't upload.");
+            return false;
         }
     } catch (error) {
         console.error("Error during password verification:", error);
-        alert("An error occurred. Please try again.");
+        alert("An error occurred during password verification. Please try again.");
+        return false;
     }
 }
 
@@ -70,42 +101,23 @@ function updateMapData() {
     }
 }
 
-function fileInput() {
-    // Create or reuse a static file input element
+// Function to create or retrieve the file input element
+function getFileInput() {
     let fileInput = document.getElementById("file-upload-input");
 
     if (!fileInput) {
-        // Create the input dynamically if not already present
         fileInput = document.createElement("input");
         fileInput.type = "file";
-        fileInput.id = "file-upload-input"; // Add an ID to reuse this input later
-        fileInput.accept = ".geojson,.shp,.dbf,.shx,.prj,.cpg"; // Accept GeoJSON and shapefile components
-        fileInput.multiple = true; // Allow multiple file selection
-        fileInput.style.display = "none"; // Hide it
-
-        // Append it to the body so it's available for user interaction
+        fileInput.id = "file-upload-input";
+        fileInput.accept = ".geojson,.shp,.dbf,.shx,.prj,.cpg";
+        fileInput.multiple = true;
+        fileInput.style.display = "none"; // Hide the input element
         document.body.appendChild(fileInput);
+
+        // Add event listener for file selection
+        fileInput.addEventListener("change", handleFileSelection);
     }
 
-    // Listen for file selection
-    fileInput.addEventListener("change", async (event) => {
-        const files = event.target.files;
-        if (files && files.length > 0) {
-            try {
-                // Upload the files to the server
-                await uploadFilesToServer(files);
-                alert("Files uploaded successfully!");
-
-                // Update the map data source
-                updateMapData();
-            } catch (error) {
-                console.error("Error uploading files:", error);
-                alert("Failed to upload files. Please try again.");
-            }
-        }
-    });
-
-    // Trigger the file input dialog (MUST be called directly from a user-triggered event)
-    fileInput.click();
+    return fileInput;
 }
 

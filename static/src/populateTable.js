@@ -26,6 +26,7 @@ export function toggleTable() {
     console.log("Table toggled");
 }
 
+
 async function fetchMetadata(servePath) {
     try {
         const columnsMetaResponse = await fetch(servePath);
@@ -83,8 +84,17 @@ export async function fetchAndDisplayData() {
         console.debug('Table Data json:\n', tableData);
 
         // Fetch column metadata
-        const { columnsMetadata, columnOrder } = await fetchMetadata('/metadata-columns');
+        const sourceFileFormat = "geojson"
+        const { columnsMetadata, columnOrder } = await fetchMetadata(
+            '/metadata-columns?source_file_format=' + sourceFileFormat);
         console.debug("Column Meta: ", columnsMetadata);
+        
+        // Create a reverse lookup map from sourceFormat name to the entire metadata object
+        const sourceFormatMap = {};
+        for (const [topLevelKey, formats] of Object.entries(columnsMetadata)) {
+            const sourceFormatKey = formats.geojson;
+            sourceFormatMap[sourceFormatKey] = formats;
+        }
 
         const filteredCols = filterColumns(tableData, columnOrder);
 
@@ -101,7 +111,7 @@ export async function fetchAndDisplayData() {
 
         const columns = filteredCols.map(key => ({
             data: key,
-            title: columnsMetadata[key]['excel'], // Use the dictionary value for title
+            title: sourceFormatMap[key]['excel'], // Use the dictionary value for title
             visible: !invisibleColumns.includes(key),
             render: function (data) {
                 return data || ""; // Display data as plain text
