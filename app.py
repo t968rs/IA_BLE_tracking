@@ -37,14 +37,26 @@ def home():
 
 @app.route('/metadata-columns')
 def metadata_columns():
+    # Grab the requested format from the query parameters.
+    # If none is provided, default to 'geojson'.
+    requested_format = request.args.get('source_file_format', default='geojson')
+
     with open(TABLE_METADATA) as f:
         metadata = json.load(f)
 
     columns_metadata = {k: v for k, v in metadata["columns"].items()}
-    print(f"Column Order Before jsonify: {list(columns_metadata.keys())}")
+
+    filtered_meta = {}
+    for col_key, col_info in columns_metadata.items():
+        if requested_format in col_info:
+            filtered_meta[col_key] = {requested_format: col_info[requested_format]}
+
+    # Construct the order based on the requested format
+    filtered_order = [col_info[requested_format] for col_info in columns_metadata.values() if requested_format in col_info]
+
     return jsonify({
         "meta": columns_metadata,
-        "order": list(columns_metadata.keys())  # Include the key order explicitly
+        "order": filtered_order  # Include the key order explicitly
     })
 
 @app.route('/verify-password', methods=['POST'])
@@ -184,6 +196,29 @@ def update_tracking_geojson():
                 # Process the GeoDataFrame
                 if 'HUC8' not in gdf.columns:
                     return jsonify({'success': False, 'message': 'Required column "HUC8" not found in the data'}), 400
+
+                # Get metadata columns
+                # Load metadata directly
+                with open(TABLE_METADATA) as f:
+                    metadata = json.load(f)
+
+                columns_metadata = {k: v for k, v in metadata["columns"].items()}
+                # print(f"Col dict: {columns_metadata}")
+                colnames = set()
+                for k, file_info in columns_metadata.items():
+                    if file_info.get("shapefile"):
+                        colnames.add(file_info.get("shapefile"))
+                print(f"Column names to match: {colnames}")
+
+                # Count matching columns
+                gdf_cols = set(gdf.columns)
+                meta_cols = set(colnames)
+                matching_cols = gdf_cols.intersection(meta_cols)
+                if len(matching_cols) < 2:
+                    logging.warning(f"Upload did not have enough matching cols: {matching_cols}")
+                    return jsonify({'success': False, 'message': f'At least two metadata columns are '
+                                                                 f'required, {len(matching_cols)} provided'}), 400
+
                 gdf = gdf[gdf['HUC8'].notnull()]
 
                 # Optionally, process metadata or enforce column types using StatusTableManager
