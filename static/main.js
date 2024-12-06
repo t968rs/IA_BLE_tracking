@@ -9,22 +9,14 @@ import {
     disableTextSelection,
 } from './src/mapInteractions.js';
 
-import {precisionRound} from "./src/maths.js";
-import {
-    fetchAndDisplayData,
-    panel,
-    buttonContainer,
-    toggleTable,
-    updateButtonsPosition,
-} from "./src/populateTable.js";
 
-import { handleExportButtonClick } from "./src/exportData.js";
 
-import {createColorStops, fetchGeoJSON, initializeMap} from "./src/mapManager.js";
-import { handleUploadButtonClick } from "./src/uploadData.js";
+import { initializeMap } from "./src/mapManager.js";
 
 
 mapboxgl.accessToken = MAPBOX_TOKEN;
+
+
 const map = initializeMap({
     container: 'map',
     style: 'mapbox://styles/t968rs/clzn9s7ej006e01r31wsob7kj',
@@ -38,20 +30,31 @@ const map = initializeMap({
 map.addControl(new mapboxgl.NavigationControl({showCompass: true, showZoom: true}));
 
 let loc_popup;
-// Add event listeners to the close buttons
+// Wait for the DOM to be loaded before querying DOM elements and adding UI event listeners
 document.addEventListener('DOMContentLoaded', () => {
     const geojsonHeadPromise = fetch("/served/spatial/IA_BLE_Tracking.geojson", { method: "HEAD" });
     const lastUpdated = document.getElementById("timestamp-text");
-    fetchAndDisplayData().catch((error) => {
-        console.error("Error in fetchAndDisplayData:", error);
+    const panel = document.getElementById("status-table-container");
+    const buttonContainer = document.getElementById("button-container");
+    const uploadButton = document.getElementById("upload-data-button");
+    const exportButton = document.getElementById("export-excel-button");
+
+    // Dynamically import and attach handlers for upload and export when needed
+    uploadButton.addEventListener("click", async () => {
+        const module = await import('./src/uploadData.js');
+        module.handleUploadButtonClick();
     });
 
-    // Upload button listener
-    const uploadButton = document.getElementById("upload-data-button");
-    uploadButton.addEventListener("click", handleUploadButtonClick);
+    exportButton.addEventListener("click", async () => {
+        const module = await import('./src/exportData.js');
+        module.handleExportButtonClick();
+    });
 
-    const exportButton = document.getElementById("export-excel-button");
-    exportButton.addEventListener("click", handleExportButtonClick);
+    // Lazy-load the toggleTable function
+    buttonContainer.addEventListener("click", async () => {
+        const { toggleTable } = await import('./src/populateTable.js');
+        toggleTable();
+    });
 
     // Defer fetching timestamp
     if (lastUpdated) {
@@ -60,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Add event listeners to area popup close buttons
+    // Close popup on click outside or on close buttons
     document.addEventListener('pointerdown', (e) => {
         [".popup-container", ".close-btn", ".mapboxgl-popup-content", ".close-btn"].forEach(selector => {
             if (e.target.classList.contains(selector)) {
@@ -68,7 +71,67 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    // Add resizing logic for the panel
+    const BORDER_SIZE = 10; // Resize boundary size
+    let isResizing = false;
+    let m_pos = 0;
+
+    panel.addEventListener("pointerdown", function (e) {
+        const rect = panel.getBoundingClientRect();
+        const pointerY = e.clientY - rect.top;
+        if (pointerY < BORDER_SIZE) {
+            isResizing = true;
+            m_pos = e.clientY;
+            document.body.style.cursor = "ns-resize";
+        }
+    });
+
+    document.addEventListener("pointermove", function (e) {
+        if (isResizing) {
+            const rect = panel.getBoundingClientRect();
+            const deltaY = e.clientY - m_pos;
+            const newHeight = rect.height - deltaY;
+
+            const maxHeight = window.innerHeight * 0.95;
+            const minHeight = 50;
+
+            if (newHeight >= minHeight && newHeight <= maxHeight) {
+                panel.style.height = `calc(100% - ${e.clientY}px)`;
+                m_pos = e.clientY;
+            } else if (newHeight > maxHeight) {
+                panel.style.height = `${maxHeight}px`;
+            } else if (newHeight < minHeight) {
+                panel.style.height = `${minHeight}px`;
+            }
+
+            // Dynamically import and call updateButtonsPosition only when resizing is needed
+            (async () => {
+                const { updateButtonsPosition } = await import('./src/populateTable.js');
+                updateButtonsPosition();
+            })();
+        }
+    });
+
+    document.addEventListener("pointerup", function () {
+        if (isResizing) {
+            console.log("Pointer up detected. Resizing stopped.");
+        }
+        isResizing = false;
+        document.body.style.cursor = "";
+    });
+
+    // Disable text selection during drag to resize
+    document.getElementById('status-table-container').addEventListener('mousedown', (event) => {
+        if (event.target.matches('#status-table-container::before, #status-table-container::after')) {
+            disableTextSelection();
+            document.addEventListener('mouseup', () => {
+                enableTextSelection();
+            }, { once: true });
+        }
+    });
 });
+
 
 const centroidPromise = fetch("/served/spatial/Centroids.json");
 
@@ -76,6 +139,8 @@ const centroidPromise = fetch("/served/spatial/Centroids.json");
 // On Load event
 map.on('load', async () => {
     console.log('Map loaded');
+    const mathModule = await import("./src/maths.js");
+    const precisionRound = mathModule.precisionRound;
 
     // Function to remove aria-hidden from the close button
     function fixAriaHiddenOnCloseButton() {
@@ -408,7 +473,10 @@ map.on('load', async () => {
     });
 
     // Use the Flask route to fetch the GeoJSON data
+    const mapManagerModule = await import("./src/mapManager.js")
+    const fetchGeoJSON = mapManagerModule.fetchGeoJSON;
     const geoResponse = await fetchGeoJSON("/served/spatial/S_Submittal_Info_IA_BLE.geojson");
+    const createColorStops = mapManagerModule.createColorStops;
     const colorStops = await createColorStops(geoResponse);
 
     // Apply to new layers
@@ -685,91 +753,24 @@ map.on('load', async () => {
     addInteractionEvents(map, 'areas-interaction');
 });
 
-
-const BORDER_SIZE = 10; // Resize boundary size
-let isResizing = false;
-let m_pos = 0;
-
-// Start resizing
-panel.addEventListener("pointerdown", function (e) {
-  const rect = panel.getBoundingClientRect();
-  const pointerY = e.clientY - rect.top;
-
-  // Check if the pointer is near the top border
-  if (pointerY < BORDER_SIZE) {
-    isResizing = true;
-    m_pos = e.clientY; // Set initial pointer position
-    document.body.style.cursor = "ns-resize"; // Change cursor to resize style
-  }
-});
-
-// Perform resizing with max height constraint
-document.addEventListener("pointermove", function (e) {
-  if (isResizing) {
-    const rect = panel.getBoundingClientRect();
-    const deltaY = e.clientY - m_pos; // Movement difference
-    const newHeight = rect.height - deltaY; // Adjust height based on upward/downward drag
-
-    const maxHeight = window.innerHeight * 0.95; // Maximum height as 95% of the frame
-    const minHeight = 50; // Minimum height to prevent collapsing
-
-    if (newHeight >= minHeight && newHeight <= maxHeight) {
-        // panel.style.height = `${newHeight}px`;
-        panel.style.height = `calc(100% - ${e.clientY}px)`; // Resize based on the pointer position
-        // panel.style.top = `${rect.top}px`; // Adjust the top position to maintain alignment
-        m_pos = e.clientY; // Update reference position
-    } else if (newHeight > maxHeight) {
-        panel.style.height = `${maxHeight}px`; // Snap to max height
-    } else if (newHeight < minHeight) {
-        panel.style.height = `${minHeight}px`; // Snap to min height
-    }
-    updateButtonsPosition(); // Update the toggle button position
-  }
-});
-
-// Stop resizing
-document.addEventListener("pointerup", function () {
-  if (isResizing) {
-    console.log("Pointer up detected. Resizing stopped.");
-  }
-  isResizing = false; // Reset state
-  document.body.style.cursor = ""; // Reset cursor style
-});
-
-// Attach the toggle functionality to the button
-buttonContainer.addEventListener("click", toggleTable);
-
-// Disable text selection during drag to resize
-document.getElementById('status-table-container').addEventListener('mousedown', (event) => {
-    if (event.target.matches('#status-table-container::before, #status-table-container::after')) {
-        disableTextSelection(); // Disable text selection globally
-        document.addEventListener('mouseup', () => {
-            enableTextSelection(); // Re-enable text selection
-        }, { once: true });
-    }
-});
-
-const uploadButton = document.getElementById("upload-data-button");
-
-// Attach event listener to the upload button
-uploadButton.addEventListener("click", handleUploadButtonClick);
-
 async function updateLastUpdatedTimestamp(headPromise, lastUpdated) {
     try {
         const response = await headPromise; // Use HEAD request to fetch headers
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        const lastModified = response.headers.get('Last-Modified');
-        if (lastModified) {
+        if (response.ok) {
+            const lastModified = response.headers.get('Last-Modified');
+            if (lastModified) {
+                const timeOptions = { hour: 'numeric', minute: 'numeric', timeZoneName: 'short' };
+                const formattedDate = new Date(lastModified).toLocaleDateString();
+                const formattedTime = new Date(lastModified).toLocaleTimeString([], timeOptions);
 
-            const timeOptions = { hour: 'numeric', minute: 'numeric', timeZoneName: 'short' };
-            const formattedDate = new Date(lastModified).toLocaleDateString();
-            const formattedTime = new Date(lastModified).toLocaleTimeString([], timeOptions);
-
-            lastUpdated.innerHTML = `statuses last updated:<br><b>${formattedDate} ${formattedTime}</b>`;
+                lastUpdated.innerHTML = `Statuses last updated:<br><b>${formattedDate} ${formattedTime}</b>`;
+                console.log(`Last-Modified fetched and displayed: ${formattedDate} ${formattedTime}`);
+            } else {
+                console.warn('Last-Modified header not found.');
+                lastUpdated.innerHTML = `Unable to fetch the last updated timestamp.`;
+            }
         } else {
-            console.warn('Last-Modified header not found');
+            console.error(`Error: HTTP response not OK. Status: ${response.status}`);
             lastUpdated.innerHTML = `Unable to fetch the last updated timestamp.`;
         }
     } catch (error) {

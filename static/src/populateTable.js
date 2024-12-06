@@ -1,4 +1,4 @@
-import { getMap } from './mapManager.js'; // Access the map instance
+import { getMap, setTableLoaded, isTableLoaded } from './mapManager.js'; // Access the map instance
 
 export const panel = document.getElementById("status-table-container");
 export const buttonContainer = document.getElementById("button-container");
@@ -16,6 +16,14 @@ const mipCaseColors = {
 
 // Function to toggle the table visibility
 export function toggleTable() {
+
+    if (!isTableLoaded()) {
+        fetchAndDisplayData()
+            .catch(error => {
+                console.error("Error loading data:", error);
+            });
+    }
+
     if (panel.style.display === "none" || panel.style.display === "") {
         panel.style.display = "block";
         updateButtonsPosition();
@@ -75,6 +83,22 @@ function filterColumns(tableData, columnList = null) {
 }
 
 export async function fetchAndDisplayData() {
+        const loadingMessage = document.getElementById("loading-message");
+    if (!loadingMessage) {
+        console.error("Loading message element is missing.");
+        return;
+    }
+
+    // Show the loading message
+    loadingMessage.style.display = "block";
+
+
+    if (isTableLoaded()) {
+        loadingMessage.style.display = "none";
+        console.log("Table already loaded, no need to fetch again.");
+        return;
+    }
+
     try {
         const response = await fetch('/data-table.json');
         if (!response.ok) {
@@ -162,6 +186,9 @@ export async function fetchAndDisplayData() {
 
     } catch (error) {
         console.error("Error fetching and displaying data:", error);
+    } finally {
+        loadingMessage.style.display = "none";
+        setTableLoaded(true)
     }
 }
 

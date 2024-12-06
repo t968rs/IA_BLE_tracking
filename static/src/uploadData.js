@@ -1,5 +1,5 @@
 // Import getMap from mapManager.js
-import { getMap } from './mapManager.js';
+import { getMap, setTableLoaded } from './mapManager.js';
 
 // Main function to handle the upload button click
 export function handleUploadButtonClick() {
@@ -88,6 +88,9 @@ async function uploadFilesToServer(files) {
     if (!result.success) {
         throw new Error(`Server error: ${result.message}`);
     }
+
+    // Set table status to not loaded
+    setTableLoaded(false);
 }
 
 // Function to update the map data source
