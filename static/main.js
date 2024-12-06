@@ -20,7 +20,7 @@ import {
 
 import { handleExportButtonClick } from "./src/exportData.js";
 
-import { initializeMap } from "./src/mapManager.js";
+import {createColorStops, fetchGeoJSON, initializeMap} from "./src/mapManager.js";
 import { handleUploadButtonClick } from "./src/uploadData.js";
 
 
@@ -40,9 +40,11 @@ map.addControl(new mapboxgl.NavigationControl({showCompass: true, showZoom: true
 let loc_popup;
 // Add event listeners to the close buttons
 document.addEventListener('DOMContentLoaded', () => {
-    const geojsonFileUrl = './data/spatial/IA_BLE_Tracking.geojson';
+    const geojsonHeadPromise = fetch("/served/spatial/IA_BLE_Tracking.geojson", { method: "HEAD" });
     const lastUpdated = document.getElementById("timestamp-text");
-    fetchAndDisplayData();
+    fetchAndDisplayData().catch((error) => {
+        console.error("Error in fetchAndDisplayData:", error);
+    });
 
     // Upload button listener
     const uploadButton = document.getElementById("upload-data-button");
@@ -53,7 +55,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Defer fetching timestamp
     if (lastUpdated) {
-        updateLastUpdatedTimestamp(geojsonFileUrl, lastUpdated);
+        updateLastUpdatedTimestamp(geojsonHeadPromise, lastUpdated).catch((error) => {
+            console.error("Error updating timestamp:", error);
+        });
     }
 
     // Add event listeners to area popup close buttons
@@ -66,9 +70,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-const response = await fetch("../data/spatial/Centroids.json");
-const Centroids = await response.json();
-console.log("Centroids: ", Centroids);
+const centroidPromise = fetch("/served/spatial/Centroids.json");
+
 
 // On Load event
 map.on('load', async () => {
@@ -87,35 +90,28 @@ map.on('load', async () => {
 
     map.addSource('WorkAreas', {
         type: 'geojson',
-        data: '/data/spatial/Work_Areas.geojson'
+        data: "served/spatial/Work_Areas.geojson"
     });
     map.addSource('ProjectAreas', {
         type: 'geojson',
-        data: '/data/spatial/IA_BLE_Tracking.geojson'
+        data: "/served/spatial/IA_BLE_Tracking.geojson"
     });
     map.addSource('WorkAreaLabels', {
         type: 'geojson',
-        data: '/data/spatial/Work_Area_Labels.geojson'
+        data: "/served/spatial/Work_Area_Labels.geojson"
     });
     map.addSource("CustomModelBoundaries", {
         type: "geojson",
-        data: "/data/spatial/Iowa_WhereISmodel.geojson"
+        data: "/served/spatial/Iowa_WhereISmodel.geojson"
     });
     map.addSource('StateBoundary', {
         type: 'geojson',
-        data: '/data/spatial/US_states.geojson'
+        data: "/served/spatial/US_states.geojson"
     });
     map.addSource('S_Submittal_Info', {
         type: 'geojson',
-        data: '/data/spatial/S_Submittal_Info_IA_BLE.geojson',
+        data: "/served/spatial/S_Submittal_Info_IA_BLE.geojson",
     });
-
-    // const userDataSource = map.addSource('user', {
-    //     type: 'geojson',
-    //     data: './data/user_data/IA_user_data.geojson',
-    //     dynamic: true,
-    //     generateId: true
-    // })
 
     console.log("Map Added/Loaded");
 
@@ -411,26 +407,11 @@ map.on('load', async () => {
         } // Filter to include features without PBL_Assign or PBL_Assign is an empty string
     });
 
-    // Add submittal info layer
-    async function createColorStops() {
-        const response = await fetch("./data/spatial/S_Submittal_Info_IA_BLE.geojson");
-        const data = await response.json();
-        const HUC8Values = data.features.map(feature => Number(feature.properties.HUC8));
-        const uniqueHUC8Values = [...new Set(HUC8Values)].sort((a, b) => a - b);
-        console.log("Unique HUC8 Values:", uniqueHUC8Values);
+    // Use the Flask route to fetch the GeoJSON data
+    const geoResponse = await fetchGeoJSON("/served/spatial/S_Submittal_Info_IA_BLE.geojson");
+    const colorStops = await createColorStops(geoResponse);
 
-        // Use a diverging color scheme from colorbrewer
-        const colorRamp = [
-            '#8c0700', '#9f00c3', '#0045ac', '#00370d', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850'
-        ]; // Example diverging color ramp
-
-        const colorStops = uniqueHUC8Values.flatMap((value, index) => [
-            value, colorRamp[index % colorRamp.length]
-        ]);
-        return colorStops;
-    }
-
-    const colorStops = await createColorStops();
+    // Apply to new layers
     map.addLayer({
         id: 'submittal-info',
         type: 'fill',
@@ -497,16 +478,6 @@ map.on('load', async () => {
         }
     });
 
-    // add draw layer transparent
-    // map.addLayer({
-    //     id: 'user-draw-layer',
-    //     type: 'fill',
-    //     source: 'user',
-    //     paint: {
-    //         'fill-color': 'rgba(0, 0, 0, 0)' // Fully transparent fill
-    //     }
-    // });
-
     // Add layer-group control
     const controlLayers = {
 
@@ -521,7 +492,10 @@ map.on('load', async () => {
         'TO Areas': ['work-areas'],
         // Add more groups and layers as needed
     };
-    createLayerControls(map, controlLayers, Centroids);
+
+    const centroidResponse = await centroidPromise;
+    const centroids = await centroidResponse.json();
+    createLayerControls(map, controlLayers, centroids);
 
     console.log("Sources: ", map.getStyle().sources)
     console.log("Layers: ", map.getStyle().layers)
@@ -780,25 +754,26 @@ const uploadButton = document.getElementById("upload-data-button");
 // Attach event listener to the upload button
 uploadButton.addEventListener("click", handleUploadButtonClick);
 
-async function updateLastUpdatedTimestamp(geojsonFileUrl, lastUpdated) {
+async function updateLastUpdatedTimestamp(headPromise, lastUpdated) {
     try {
-        const response = await fetch(geojsonFileUrl, { method: 'HEAD' }); // Use HEAD request to fetch headers
+        const response = await headPromise; // Use HEAD request to fetch headers
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
         const lastModified = response.headers.get('Last-Modified');
-        const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        const timeOptions = { hour: 'numeric', minute: 'numeric', timeZoneName: 'short' };
         if (lastModified) {
+
+            const timeOptions = { hour: 'numeric', minute: 'numeric', timeZoneName: 'short' };
             const formattedDate = new Date(lastModified).toLocaleDateString();
             const formattedTime = new Date(lastModified).toLocaleTimeString([], timeOptions);
+
             lastUpdated.innerHTML = `statuses last updated:<br><b>${formattedDate} ${formattedTime}</b>`;
         } else {
             console.warn('Last-Modified header not found');
-            lastUpdated.innerHTML = `The <b>statuses</b> were last updated: <b>Unknown</b>`;
+            lastUpdated.innerHTML = `Unable to fetch the last updated timestamp.`;
         }
     } catch (error) {
         console.error('Error fetching the geojson file:', error);
-        lastUpdated.innerHTML = `The <b>statuses</b> were last updated: <b>Unknown</b>`;
+        lastUpdated.innerHTML = `Unable to fetch the last updated timestamp.`;
     }
 }

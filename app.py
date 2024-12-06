@@ -131,7 +131,7 @@ def export_excel():
         logging.error(f"Error generating Excel file: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route("/data/<path:filename>")
+@app.route("/served/<path:filename>")
 def serve_data(filename):
     data_dir = os.path.join(app.root_path, "data")
     if not os.path.exists(data_dir):
