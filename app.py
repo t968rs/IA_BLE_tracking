@@ -131,6 +131,21 @@ def export_excel():
         logging.error(f"Error generating Excel file: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route("/api/sources", methods=["GET"])
+def get_sources_metadata():
+    """Load sources from a JSON file and return them as a response."""
+    # data/mapbox_metadata/mapbox_sources.json
+    sources_file = os.path.normpath(os.path.join(
+        app.root_path, "data/mapbox_metadata", "mapbox_sources.json"))
+
+    if not os.path.exists(sources_file):
+        return jsonify({"error": "Sources file not found"}), 404
+
+    with open(sources_file, "r") as f:
+        sources = json.load(f)
+
+    return jsonify(sources)
+
 @app.route("/served/<path:filename>")
 def serve_data(filename):
     data_dir = os.path.join(app.root_path, "data")
