@@ -58,3 +58,4 @@ export function isTableLoaded() {
 export function setTableLoaded(status) {
     tableLoaded = status;
 }
+

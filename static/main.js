@@ -1,5 +1,42 @@
 import { initializeMap } from "./src/mapManager.js";
-import  turfcentroid from 'https://cdn.jsdelivr.net/npm/@turf/centroid@7.1.0/+esm'
+import turfcentroid from 'https://cdn.jsdelivr.net/npm/@turf/centroid@7.1.0/+esm'
+import * as Comlink from "https://unpkg.com/comlink/dist/esm/comlink.mjs";
+
+
+let fetchedSources = null; // This will store the JSON data fetched by the worker
+let fetchPromise = null;   // A promise to resolve when the worker completes fetching
+
+// Initialize the worker at the top of main.js
+(async function initializeWorker() {
+    const worker = new Worker("./static/src/workers/fetchAPImetadata.js", { type: "module" });
+    const api = Comlink.wrap(worker);
+
+    // Start fetching data immediately and save the promise
+    fetchPromise = api.fetchAPImetadata()
+        .then((data) => {
+            if (data) {
+                fetchedSources = data; // Save fetched data globally
+            } else {
+                console.error("Worker returned null or undefined data.");
+            }
+            worker.terminate(); // Clean up the worker
+        })
+        .catch((error) => {
+            console.error("Error fetching data from the worker:", error);
+        });
+})();
+
+// Function to get data when needed
+async function getSourcesMeta() {
+    if (fetchedSources) {
+        return fetchedSources; // Return already-fetched data
+    }
+    if (fetchPromise) {
+        await fetchPromise;    // Wait for the ongoing fetch to complete
+        return fetchedSources;
+    }
+    throw new Error("Worker has not been initialized or failed to fetch data.");
+}
 
 mapboxgl.accessToken = MAPBOX_TOKEN;
 
@@ -30,12 +67,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadButton = document.getElementById("upload-data-button");
     const exportButton = document.getElementById("export-excel-button");
 
-    // Dynamically import and attach handlers for upload and export when needed
+    // Upload button
     uploadButton.addEventListener("click", async () => {
         const module = await import('./src/uploadData.js');
         module.handleUploadButtonClick();
     });
 
+    // EXport button
     exportButton.addEventListener("click", async () => {
         const module = await import('./src/exportData.js');
         module.handleExportButtonClick();
@@ -142,34 +180,48 @@ map.on('load', async () => {
     // Call this function after the popup is created
     map.on('popupopen', fixAriaHiddenOnCloseButton);
 
-    map.addSource('WorkAreas', {
-        type: 'geojson',
-        data: "served/spatial/Work_Areas.geojson"
-    });
-    map.addSource('ProjectAreas', {
-        type: 'geojson',
-        data: "/served/spatial/IA_BLE_Tracking.geojson"
-    });
-    map.addSource('WorkAreaLabels', {
-        type: 'geojson',
-        data: "/served/spatial/Work_Area_Labels.geojson"
-    });
-    map.addSource("CustomModelBoundaries", {
-        type: "geojson",
-        data: "/served/spatial/Iowa_WhereISmodel.geojson"
-    });
-    map.addSource('StateBoundary', {
-        type: 'geojson',
-        data: "/served/spatial/US_states.geojson"
-    });
-    map.addSource('S_Submittal_Info', {
-        type: 'geojson',
-        data: "/served/spatial/S_Submittal_Info_IA_BLE.geojson",
-    });
+    // Loop through each source and add it to the map
+    let mapSources = null;
+    let vectorSourceNames = null;
+    const mapLayerMeta = await getSourcesMeta();
+    if (LOG) { console.debug("data: ", mapLayerMeta); }
+    if (mapLayerMeta) {
+        mapSources = mapLayerMeta.mapbox_sources;
+        // Loop through each source and add it to the map
+        mapSources.forEach((source) => {
+            try {
+                if (source.type === 'vector') {
+                    map.addSource(source.id, {
+                        type: source.type,
+                        url: source.url
+                    });
+                } else if (source.type === 'geojson') {
+                    map.addSource(source.id, {
+                        type: source.type,
+                        data: source.data
+                    });
+                } else {
+                    console.warn(`Unsupported source type: ${source.type}`);
+                }
+            } catch (sourceError) {
+                console.error(`Error adding source "${source.id}":`, sourceError);
+            }
+        });
 
-    if (LOG) { console.debug("Map Added/Loaded"); }
+            if (LOG) { console.debug("All sources added successfully."); }
+        } else {
+            console.error("Failed to fetch or process sources data.");
+        }
+
+    if (LOG) { console.debug('All sources added'); }
 
     map.doubleClickZoom.enable();
+
+    if (!mapLayerMeta || !mapLayerMeta.mapbox_vector_names) {
+        console.error("Failed to fetch or process sources data.");
+        return;
+    }
+    vectorSourceNames = mapLayerMeta.mapbox_vector_names;
 
     // MIP Submission, Draft
     map.addLayer({
@@ -388,7 +440,8 @@ map.on('load', async () => {
         type: 'fill',
         source: 'StateBoundary',
         paint: {'fill-color': 'rgba(255,255,255,0.85)'},
-        filter: ['!=', ['get', 'STATEFP'], '19']
+        filter: ['!=', ['get', 'STATEFP'], '19'],
+        "source-layer": vectorSourceNames.StateBoundary
     });
 
     map.addLayer({
@@ -399,6 +452,8 @@ map.on('load', async () => {
             "line-color": 'rgb(210,255,163)',
             "line-width": 1.5
         }
+        ,
+        "source-layer": vectorSourceNames.StateBoundary
     });
 
     map.addLayer({
@@ -409,7 +464,8 @@ map.on('load', async () => {
             'line-color': 'rgb(64,108,32)',
             'line-width': 1.2,
             'line-dasharray': [2, 3] // Dashed line
-        }
+        },
+        "source-layer": vectorSourceNames.StateBoundary
     });
 
     // Add work areas layer
@@ -430,7 +486,8 @@ map.on('load', async () => {
                 'rgba(0,0,0,0)' // Default color for unmatched cases
             ],
             'line-width': 3
-        }
+        },
+        "source-layer": vectorSourceNames.WorkAreas
     });
 
     // Add work area labels
