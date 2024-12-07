@@ -1,0 +1,39 @@
+{
+    "mapbox_sources": [
+        {
+            "id": "WorkAreas",
+            "type": "vector",
+            "url": "mapbox://t968rs.0itdpada"
+        },
+        {
+            "id": "ProjectAreas",
+            "type": "geojson",
+            "data": "/served/spatial/IA_BLE_Tracking.geojson"
+        },
+        {
+            "id": "WorkAreaLabels",
+            "type": "geojson",
+            "data": "/served/spatial/Work_Area_Labels.geojson"
+        },
+        {
+            "id": "CustomModelBoundaries",
+            "type": "geojson",
+            "data": "/served/spatial/Iowa_WhereISmodel.geojson"
+        },
+        {
+            "id": "StateBoundary",
+            "type": "vector",
+            "url": "mapbox://t968rs.6otvvusv"
+        },
+        {
+            "id": "S_Submittal_Info",
+            "type": "geojson",
+            "data": "/served/spatial/S_Submittal_Info_IA_BLE.geojson"
+        }
+    ],
+  "mapbox_vector_names":
+    {
+      "WorkAreas": "Work_Areas-0b972m",
+      "StateBoundary": "US_states-9vevdn"
+    }
+}
