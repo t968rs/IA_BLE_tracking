@@ -28,12 +28,14 @@ YAML_FILE = os.path.join(EXCEL_DIR, "last_modified.yaml")
 TABLE_METADATA = "data/IA_BLE_Tracking_metadata.json"
 SHAPEFILE = "data/IA_BLE_Tracking.shp"
 
+
 # Homepage route
 @app.route("/")
 def home():
     mapbox_token = os.getenv("MAPBOX_TOKEN")
     return render_template("index.html",
                            mapbox_token=mapbox_token)  # Dynamic reference to HTML
+
 
 @app.route('/metadata-columns')
 def metadata_columns():
@@ -52,12 +54,14 @@ def metadata_columns():
             filtered_meta[col_key] = {requested_format: col_info[requested_format]}
 
     # Construct the order based on the requested format
-    filtered_order = [col_info[requested_format] for col_info in columns_metadata.values() if requested_format in col_info]
+    filtered_order = [col_info[requested_format] for col_info in columns_metadata.values() if
+                      requested_format in col_info]
 
     return jsonify({
         "meta": columns_metadata,
         "order": filtered_order  # Include the key order explicitly
     })
+
 
 @app.route('/verify-password', methods=['POST'])
 def verify_password():
@@ -77,6 +81,7 @@ def verify_password():
     else:
         return jsonify({"success": False, "message": "Invalid password"}), 403
 
+
 @app.route('/data-table.json', methods=['GET'])
 def get_table_data():
     try:
@@ -94,6 +99,7 @@ def get_table_data():
         return jsonify(table_data)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/export-excel', methods=['GET'])
 def export_excel():
@@ -122,7 +128,8 @@ def export_excel():
         excel_output_dir = os.path.join(app.root_path, 'data', 'exports')
         os.makedirs(excel_output_dir, exist_ok=True)
         excel_filename = 'IA_BLE_Tracking.xlsx'
-        df_to_excel_for_export(df, out_loc=excel_output_dir, filename=excel_filename, sheetname='Tracking_Main', merged_headers=merged_headers)
+        df_to_excel_for_export(df, out_loc=excel_output_dir, filename=excel_filename, sheetname='Tracking_Main',
+                               merged_headers=merged_headers)
 
         # Send the file as a response
         return send_from_directory(excel_output_dir, excel_filename, as_attachment=True)
@@ -130,6 +137,7 @@ def export_excel():
     except Exception as e:
         logging.error(f"Error generating Excel file: {e}")
         return jsonify({'error': str(e)}), 500
+
 
 @app.route("/api/sources", methods=["GET"])
 def get_sources_metadata():
@@ -146,6 +154,7 @@ def get_sources_metadata():
 
     return jsonify(sources)
 
+
 @app.route("/served/<path:filename>")
 def serve_data(filename):
     data_dir = os.path.join(app.root_path, "data")
@@ -154,6 +163,7 @@ def serve_data(filename):
     if not os.path.isfile(os.path.join(data_dir, filename)):
         return jsonify({"error": "File not found"}), 404
     return send_from_directory(data_dir, filename)
+
 
 @app.route('/export-shape', methods=['POST'])
 def export_shp(gdf):  # TODO Add functions to read GeoJSON and export Excel files for user downoad
@@ -173,12 +183,15 @@ def export_shp(gdf):  # TODO Add functions to read GeoJSON and export Excel file
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 # Allowed extensions for file uploads
 ALLOWED_EXTENSIONS = {'geojson', 'shp', 'dbf', 'shx', 'prj', 'cpg'}
 
+
 def allowed_file(filename):
     return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+        filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 @app.route('/update-tracking-geojson', methods=['POST'])
 def update_tracking_geojson():
@@ -256,12 +269,20 @@ def update_tracking_geojson():
                 # Overwrite the served GeoJSON
                 shutil.copy2(temp_geojson_path, TRACKING_FILE)
 
+                # Attributes for the response
+                df = gdf.drop(columns='geometry')
+
                 return jsonify({'success': True, 'message': 'GeoJSON updated successfully'})
             else:
                 return jsonify({'success': False, 'message': 'No .shp file found among uploaded files'}), 400
         except Exception as e:
             logging.error(f"Error processing uploaded files: {e}")
             return jsonify({'success': False, 'message': f'Error processing files: {str(e)}'}), 500
+
+
+@app.route('/static/<path:path>')
+def send_static(path):
+    return send_from_directory('static', path)
 
 
 if __name__ == "__main__":
