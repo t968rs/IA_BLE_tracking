@@ -49,7 +49,7 @@ const map = initializeMap({
     center: [-93.5, 42]
 });
 let loc_popup;
-const LOG = false;
+const LOG = true;
 
 // Add user control
 map.addControl(new mapboxgl.NavigationControl({showCompass: true, showZoom: true}));
