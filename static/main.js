@@ -1,42 +1,9 @@
 import { initializeMap } from "./src/mapManager.js";
 import turfcentroid from 'https://cdn.jsdelivr.net/npm/@turf/centroid@7.1.0/+esm'
-import * as Comlink from "https://unpkg.com/comlink/dist/esm/comlink.mjs";
+import { initSourcesWorker } from "./src/workers/initWorkers.js";
 
 
-let fetchedSources = null; // This will store the JSON data fetched by the worker
-let fetchPromise = null;   // A promise to resolve when the worker completes fetching
-
-// Initialize the worker at the top of main.js
-(async function initializeWorker() {
-    const worker = new Worker("./static/src/workers/fetchAPImetadata.js", { type: "module" });
-    const api = Comlink.wrap(worker);
-
-    // Start fetching data immediately and save the promise
-    fetchPromise = api.fetchAPImetadata()
-        .then((data) => {
-            if (data) {
-                fetchedSources = data; // Save fetched data globally
-            } else {
-                console.error("Worker returned null or undefined data.");
-            }
-            worker.terminate(); // Clean up the worker
-        })
-        .catch((error) => {
-            console.error("Error fetching data from the worker:", error);
-        });
-})();
-
-// Function to get data when needed
-async function getSourcesMeta() {
-    if (fetchedSources) {
-        return fetchedSources; // Return already-fetched data
-    }
-    if (fetchPromise) {
-        await fetchPromise;    // Wait for the ongoing fetch to complete
-        return fetchedSources;
-    }
-    throw new Error("Worker has not been initialized or failed to fetch data.");
-}
+const getSourcesMeta = initSourcesWorker();
 
 mapboxgl.accessToken = MAPBOX_TOKEN;
 
