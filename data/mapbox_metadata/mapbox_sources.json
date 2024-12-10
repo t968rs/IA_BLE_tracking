@@ -3,7 +3,7 @@
         {
             "id": "WorkAreas",
             "type": "vector",
-            "url": "/served/spatial/IA_BLE_Tracking_tiles"
+            "url": "/served/spatial/IA_BLE_Tracking_tiles/{z}/{x}/{y}.pbf"
         },
         {
             "id": "ProjectAreas",

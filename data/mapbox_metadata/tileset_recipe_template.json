@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "layers": {
+    "ia-ble-tracking": {
+      "source": "mapbox://tileset-source/t968rs/ia-ble-tracking",
+      "minzoom": 6,
+      "maxzoom": 17
+    }
+  }
+}
