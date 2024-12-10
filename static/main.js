@@ -163,11 +163,19 @@ map.on('load', async () => {
         // Loop through each source and add it to the map
         mapSources.forEach((source) => {
             try {
-                if (source.type === 'vector') {
+                if (source.type === 'vector' && source.url) {
                     map.addSource(source.id, {
                         type: source.type,
                         url: source.url
                     });
+                } else if (source.type === "vector" && source.tiles) {
+                    map.addSource(source.id, {
+                        type: source.type,
+                        tiles: source.tiles,
+                        minzoom: source.minzoom,
+                        maxzoom: source.maxzoom
+                    })
+
                 } else if (source.type === 'geojson') {
                     map.addSource(source.id, {
                         type: source.type,
