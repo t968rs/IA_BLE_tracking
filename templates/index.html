@@ -3,6 +3,8 @@
 <head>
     <meta charset="utf-8">
     <title>Iowa BLE Project Tracking Map</title>
+    <script type="module" src="/static/src/comlink.mjs"></script>
+<!--    <script src="/static/src/papaparse.min.js"></script>-->
     <meta name="viewport" content="initial-scale=1,width=device-width">
     <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon.ico">
@@ -10,12 +12,9 @@
     <link rel="manifest" href="/static/icons/manifest.json">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="/static/src/DataTables/datatables.min.css" />
-    <script src="/static/src/DataTables/datatables.min.js"></script>
-<!--    <link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css' type='text/css' />-->
-    <link href="/static/styles_add.css" rel="stylesheet">
+    <script src="/static/src/DataTables/datatables.min.js"></script><link href="/static/styles_add.css" rel="stylesheet">
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.js"></script>
     <script src="/static/src/mapInteractions.js" type="module"></script>
-<!--    <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js'></script>-->
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.css" rel="stylesheet">
 </head>
 <body>
@@ -35,9 +34,9 @@
             <button class="close-btn" onclick="closePopup()" type="button" aria-label="Close popup">×</button>
             <ul id="mapboxgl-popup-content"></ul>
         </div>
-        <script>
-            const MAPBOX_TOKEN = "{{ mapbox_token }}";
-        </script>
+<!--        <script>-->
+<!--            const MAPBOX_TOKEN = "{{ mapbox_token }}";-->
+<!--        </script>-->
         <script src="../static/main.js" type="module"></script>
 
         <div id="button-container">

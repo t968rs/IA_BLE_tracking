@@ -4,6 +4,7 @@ import os
 import shutil
 import tempfile
 from datetime import datetime
+import pandas as pd
 import geopandas as gpd
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify, send_from_directory
@@ -13,7 +14,7 @@ from py.read_write_df import StatusTableManager, gdf_to_shapefile, df_to_excel_f
 
 DEBUG_MODE = True
 logging.basicConfig(level=logging.DEBUG if DEBUG_MODE else logging.INFO)
-load_dotenv()  # Load environment variables from .env file
+load_dotenv(override=True)  # Load environment variables from .env file
 app = Flask(__name__)
 Compress(app)
 app.secret_key = os.getenv("SECRET_KEY")
@@ -24,7 +25,6 @@ EXCEL_FILE = os.path.join(EXCEL_DIR, "IA_BLE_Tracking.xlsx")
 BACKUP_LOC = "data/_backups"
 TRACKING_FILE = "data/spatial/IA_BLE_Tracking.geojson"
 SHEET_NAME = "Tracking_Main"
-YAML_FILE = os.path.join(EXCEL_DIR, "last_modified.yaml")
 TABLE_METADATA = "data/IA_BLE_Tracking_metadata.json"
 SHAPEFILE = "data/IA_BLE_Tracking.shp"
 
@@ -32,10 +32,14 @@ SHAPEFILE = "data/IA_BLE_Tracking.shp"
 # Homepage route
 @app.route("/")
 def home():
-    mapbox_token = os.getenv("MAPBOX_TOKEN")
-    return render_template("index.html",
-                           mapbox_token=mapbox_token)  # Dynamic reference to HTML
+    return render_template("index.html")  # Dynamic reference to HTML
 
+@app.route("/mapbox-token/")
+def mapbox_token():
+    logging.debug("Getting mapbox token...")
+    token = os.getenv("MAPBOX_TOKEN")
+    logging.debug(f"MB token: {token}")
+    return jsonify({"MAPBOX_TOKEN": token})
 
 @app.route('/metadata-columns')
 def metadata_columns():
@@ -271,6 +275,12 @@ def update_tracking_geojson():
 
                 # Attributes for the response
                 df = gdf.drop(columns='geometry')
+
+                save_dir, attributes_filename = os.path.split(TRACKING_FILE)
+                attributes_filename, ext = os.path.splitext(attributes_filename)
+                attributes_filename = attributes_filename + "_attributes.csv"
+                outpath = os.path.join(BACKUP_LOC, attributes_filename)
+                df.to_csv(outpath, index=False)
 
                 return jsonify({'success': True, 'message': 'GeoJSON updated successfully'})
             else:

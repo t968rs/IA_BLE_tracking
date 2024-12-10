@@ -1,22 +1,28 @@
-import { initializeMap } from "./src/mapManager.js";
+import { initializeMap, getMapBoxToken } from "/static/src/mapManager.js";
 import turfcentroid from 'https://cdn.jsdelivr.net/npm/@turf/centroid@7.1.0/+esm'
-import { initSourcesWorker } from "./src/workers/initWorkers.js";
+import { initSourcesWorker, initAttributesWorker } from "/static/src/workers/initWorkers.js";
+const LOG = true;
 
-
-const getSourcesMeta = initSourcesWorker();
-
-mapboxgl.accessToken = MAPBOX_TOKEN;
-
+const MAPBOX_TOKEN = await getMapBoxToken();
+if (!MAPBOX_TOKEN) {
+    console.error("Failed to fetch Mapbox token.");
+}
 const map = initializeMap({
     container: 'map',
     style: 'mapbox://styles/t968rs/clzn9s7ej006e01r31wsob7kj',
     projection: 'albers', // Display the map as a globe, since satellite-v9 defaults to Mercator
     zoom: 6,
     minZoom: 0,
-    center: [-93.5, 42]
+    center: [-93.5, 42],
+    // token: MAPBOX_TOKEN,
 });
+
+const getSourcesMeta = initSourcesWorker();
+const csvUrl = "/served/spatial/IA_BLE_Tracking_attributes.csv";
+const getTrackingAttributes = initAttributesWorker(csvUrl);
+
+
 let loc_popup;
-const LOG = true;
 
 // Add user control
 map.addControl(new mapboxgl.NavigationControl({showCompass: true, showZoom: true}));
@@ -27,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // set up delayed mapIntersection.js import
     const { enableTextSelection, disableTextSelection, closePopup } = import ("./src/mapInteractions.js");
 
-    const geojsonHeadPromise = fetch("/served/spatial/IA_BLE_Tracking.geojson", { method: "HEAD" });
+    const trackingLastUpdatedPromise = fetch("/served/spatial/IA_BLE_Tracking.geojson", { method: "HEAD" });
     const lastUpdated = document.getElementById("timestamp-text");
     const panel = document.getElementById("status-table-container");
     const buttonContainer = document.getElementById("button-container");
@@ -54,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Defer fetching timestamp
     if (lastUpdated) {
-        updateLastUpdatedTimestamp(geojsonHeadPromise, lastUpdated).catch((error) => {
+        updateLastUpdatedTimestamp(trackingLastUpdatedPromise, lastUpdated).catch((error) => {
             console.error("Error updating timestamp:", error);
         });
     }
@@ -176,19 +182,29 @@ map.on('load', async () => {
         });
 
             if (LOG) { console.debug("All sources added successfully."); }
-        } else {
-            console.error("Failed to fetch or process sources data.");
-        }
-
+        } else { console.error("Failed to fetch or process sources data."); }
     if (LOG) { console.debug('All sources added'); }
 
     map.doubleClickZoom.enable();
 
+    // Get metadata
     if (!mapLayerMeta || !mapLayerMeta.mapbox_vector_names) {
         console.error("Failed to fetch or process sources data.");
         return;
     }
     vectorSourceNames = mapLayerMeta.mapbox_vector_names;
+
+    // Get tracking attributes
+    const trackingAttributes = await getTrackingAttributes(csvUrl);
+    if (LOG) { console.debug("Fetched attributes: ", trackingAttributes); }
+    // Apply attributes to Mapbox feature states
+    Object.entries(trackingAttributes).forEach(([HUC8, attributes]) => {
+        map.setFeatureState(
+            { source: 'ProjectAreas', id: HUC8 , sourceLayer: vectorSourceNames.ProjectAreas}, // Ensure HUC8 aligns with the `id` used in your vector tileset
+            attributes // Attributes as key-value pairs
+        );
+    });
+    if (LOG) { console.debug("Added tracking attributes.", trackingAttributes); }
 
     // MIP Submission, Draft
     map.addLayer({
@@ -202,7 +218,7 @@ map.on('load', async () => {
         paint: {
             'fill-color': [
                 'match',
-                ['get', 'Draft_MIP'],
+                ['feature-state', 'Draft_MIP'],
                 'Approved',
                 'rgba(2,248,138,0.69)', // 50% transparency
                 'In Backcheck',
@@ -216,6 +232,7 @@ map.on('load', async () => {
                 'rgba(204, 204, 204, 0)', // 0% transparency
             ]
         },
+        "source-layer": vectorSourceNames.ProjectAreas
     });
 
     // MIP Submission, Floodplain
@@ -225,12 +242,12 @@ map.on('load', async () => {
         source: 'ProjectAreas',
         layout: {
             // Make the layer visible by default.
-            'visibility': 'none'
+            'visibility': 'visible'
         },
         paint: {
             'fill-color': [
                 'match',
-                ['get', 'FP_MIP'],
+                ['feature-state', 'FP_MIP'],
                 'Approved',
                 'rgba(2,248,138,0.69)', // 50% transparency
                 'In Backcheck',
@@ -244,6 +261,7 @@ map.on('load', async () => {
                 'rgba(204, 204, 204, 0)', // 0% transparency
             ]
         },
+        "source-layer": vectorSourceNames.ProjectAreas
     });
 
     // MIP Submission, Hydraulics
@@ -253,12 +271,12 @@ map.on('load', async () => {
         source: 'ProjectAreas',
         layout: {
             // Make the layer visible by default.
-            'visibility': 'none'
+            'visibility': 'visible'
         },
         paint: {
             'fill-color': [
                 'match',
-                ['get', 'Hydra_MIP'],
+                ['feature-state', 'Hydra_MIP'],
                 'Approved',
                 'rgba(2,248,138,0.69)', // 50% transparency
                 'In Backcheck',
@@ -272,6 +290,7 @@ map.on('load', async () => {
                 'rgba(204, 204, 204, 0)', // 0% transparency
             ]
         },
+        "source-layer": vectorSourceNames.ProjectAreas
     });
 
     // Add grid status layer
@@ -281,26 +300,26 @@ map.on('load', async () => {
         source: 'ProjectAreas',
         layout: {
             // Make the layer visible by default.
-            'visibility': 'none'
+            'visibility': 'visible'
         },
         paint: {
             'fill-color': [
                 'match',
-                ['get', 'which_grid'],
-                '0, 1, 2',
-                'rgba(255,90,88,0.35)', // 50% transparency
-                '1, 2',
-                'rgba(192,197,28,0.74)', // 50% transparency
-                '2',
-                'rgba(0,230,127,0.5)', // 50% transparency
-                'All on MM',
-                'rgba(5,205,52,0.8)', // 50% transparency
-                '* other *',
+                ['feature-state', 'which_grid'],
+                'Approved',
+                'rgba(2,248,138,0.69)', // 50% transparency
+                'In Backcheck',
+                'rgba(225,250,0,0.69)', // 50% transparency
+                'Submitted',
+                'rgba(2,226,246,0.67)', // 50% transparency
+                'In-Progress',
+                'rgba(251,113,2,0.67)', // 50% transparency
+                'Next',
+                'rgba(0,84,112,0.3)', // Match fill color
                 'rgba(204, 204, 204, 0)', // 0% transparency
-                'rgba(0, 0, 0, 0)' // Default color for unmatched cases
             ]
         },
-        filter: ['!=', ['get', 'which_grid'], null]
+        "source-layer": vectorSourceNames.ProjectAreas
     });
 
     // Add overall production layer
@@ -310,54 +329,55 @@ map.on('load', async () => {
         source: 'ProjectAreas',
         layout: {
             // Make the layer visible by default.
-            'visibility': 'none'
+            'visibility': 'visible'
         },
         paint: {
             'fill-color': [
                 'match',
-                ['get', 'Prod_Stage'],
-
-                "Pass 2/2",
-                'rgba(5,48,37,0.75)', // 50% transparency
-                "Pass 1/2",
-                'rgba(5,244,152,0.75)', // 50% transparency
-                "DD Submit",
-                'rgba(29,208,202,0.7)', // 50% transparency
-                "DD Internal",
-                'rgba(189,189,0,0.70)', // 50% transparency
-                'DD Mapping',
-                'rgba(255,252,88,0.68)', // 50% transparency
-                'Phase 1',
-                'rgba(182,6,2,0.56)', // 50% transparency
-                '* other *',
-                'rgba(126,126,126,0.5)', // 0% transparency
-                'rgba(0, 0, 0, 0)' // Default color for unmatched cases
+                ['feature-state', 'Prod_Stage'],
+                'Approved',
+                'rgba(2,248,138,0.69)', // 50% transparency
+                'In Backcheck',
+                'rgba(225,250,0,0.69)', // 50% transparency
+                'Submitted',
+                'rgba(2,226,246,0.67)', // 50% transparency
+                'In-Progress',
+                'rgba(251,113,2,0.67)', // 50% transparency
+                'Next',
+                'rgba(0,84,112,0.3)', // Match fill color
+                'rgba(204, 204, 204, 0)', // 0% transparency
             ]
-        }
+        },
+        "source-layer": vectorSourceNames.ProjectAreas
     });
 
     // Add FRP Status Layers
     map.addLayer({
         id: 'frp-status',
-        type: 'fill',
         source: 'ProjectAreas',
+        type: 'fill',
         layout: {
-            // Make the layer invisible by default.
-            'visibility': 'none'
+            // Make the layer visible by default.
+            'visibility': 'visible'
         },
         paint: {
             'fill-color': [
                 'match',
-                ['get', 'FRP_Perc_Complete_Legend'],
-                "0%", 'rgba(255,0,0,0.19)', // Default color for values less than the first stop
-                "25%", 'rgba(255,187,0,0.75)', // Color for values >= 30
-                "50%", 'rgba(0,187,255,0.73)', // Color for values >= 40
-                "75%", 'rgba(55,237,195,0.75)', // Color for values >= 60
-                // 76, 'rgb(0,92,175)', // Color for values >= 60
-                "100%", 'rgba(42,221,1,0.5)', // Color for values >= 100
-                'rgba(128,128,128,0)' // Default color for unmatched cases
+                ['feature-state', 'FRP_Perc_Complete'],
+                'Approved',
+                'rgba(2,248,138,0.69)', // 50% transparency
+                'In Backcheck',
+                'rgba(225,250,0,0.69)', // 50% transparency
+                'Submitted',
+                'rgba(2,226,246,0.67)', // 50% transparency
+                'In-Progress',
+                'rgba(251,113,2,0.67)', // 50% transparency
+                'Next',
+                'rgba(0,84,112,0.3)', // Match fill color
+                'rgba(204, 204, 204, 0)', // 0% transparency
             ]
-        }
+        },
+        "source-layer": vectorSourceNames.ProjectAreas
     });
 
     // Add outline layer
@@ -368,7 +388,8 @@ map.on('load', async () => {
         paint: {
             'line-color': 'rgb(247, 247, 247)',
             'line-width': 1
-        }
+        },
+        "source-layer": vectorSourceNames.ProjectAreas
     });
 
     // Add model outlines (CUSTOM OUTLINES)
@@ -398,7 +419,8 @@ map.on('load', async () => {
         paint: {
             'fill-color': 'rgba(255, 255, 255, 0.5)' // Transparent white for highlight
         },
-        filter: ['==', 'HUC8', ''] // Initially no feature is highlighted
+        filter: ['==', 'HUC8', ''],
+        "source-layer": vectorSourceNames.ProjectAreas
     });
 
     // Add state boundary layer
@@ -546,7 +568,8 @@ map.on('load', async () => {
             'text-color': 'rgb(0,28,58)', // Text color
             'text-halo-color': 'rgba(90,185,255,0.68)', // No halo
             'text-halo-width': 2
-        }
+        },
+        "source-layer": vectorSourceNames.ProjectAreas
     });
 
     // Add a transparent fill layer for interaction
@@ -556,7 +579,8 @@ map.on('load', async () => {
         source: 'ProjectAreas',
         paint: {
             'fill-color': 'rgba(0, 0, 0, 0)' // Fully transparent fill
-        }
+        },
+        "source-layer": vectorSourceNames.ProjectAreas
     });
 
     // Add layer-group control

@@ -8,7 +8,7 @@
       <excludeFolder url="file://$MODULE_DIR$/py/test" />
       <excludeFolder url="file://$MODULE_DIR$/venv" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.12 (IA_BLE_tracking)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="IA_BLE_tracking" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="proj4js" level="application" />
     <orderEntry type="library" name="xlsx" level="application" />
@@ -16,5 +16,23 @@
     <orderEntry type="library" name="dataTables.dataTables" level="application" />
     <orderEntry type="library" name="dataTables" level="application" />
     <orderEntry type="library" name="jquery-3.6.0" level="application" />
+    <orderEntry type="library" name="jquery-3.6.0" level="application" />
+    <orderEntry type="library" name="mapbox-gl" level="application" />
+    <orderEntry type="library" name="datatables" level="application" />
+    <orderEntry type="library" name="proj4js" level="application" />
+    <orderEntry type="library" name="dataTables.dataTables" level="application" />
+    <orderEntry type="library" name="dataTables" level="application" />
+  </component>
+  <component name="PackageRequirementsSettings">
+    <option name="versionSpecifier" value="Greater or equal (&gt;=x.y.z)" />
+    <option name="removeUnused" value="true" />
+    <option name="keepMatchingSpecifier" value="false" />
+  </component>
+  <component name="TemplatesService">
+    <option name="TEMPLATE_FOLDERS">
+      <list>
+        <option value="$MODULE_DIR$/templates" />
+      </list>
+    </option>
   </component>
 </module>
