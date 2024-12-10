@@ -158,6 +158,8 @@ map.on('load', async () => {
     let vectorSourceNames = null;
     const mapLayerMeta = await getSourcesMeta();
     if (LOG) { console.debug("data: ", mapLayerMeta); }
+    // map.addControl(new mapboxgl.TilesetDebugControl());
+
     if (mapLayerMeta) {
         mapSources = mapLayerMeta.mapbox_sources;
         // Loop through each source and add it to the map
