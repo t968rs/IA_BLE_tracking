@@ -1,4 +1,4 @@
-const DEBUG_STATUS = false
+const DEBUG_STATUS = true;
 import { debugConsole } from "./debugging.js";
 let dC;
 if (!DEBUG_STATUS) { dC = () => {}; } else { dC = debugConsole; }

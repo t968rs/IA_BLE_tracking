@@ -1,31 +1,55 @@
-import { expose } from "https://unpkg.com/comlink/dist/esm/comlink.mjs";
+import * as Comlink from '/static/src/comlink.mjs';
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+const DEBUG_STATUS = false;
+import { debugConsole } from "/static/src/debugging.js";
 
-export async function fetchTrackingAttributes() {
+let dC;
+if (!DEBUG_STATUS) { dC = () => {}; } else { dC = debugConsole; }
+if (DEBUG_STATUS){console.log("Debug is on for fetchTrackingAttributes");}
 
-    // Fetch attributes from a served JSON file
-    try {
-        const attributesResponse = await fetch('/served/spatial/IA_BLE_Tracking_attributes.json');
-        if (!attributesResponse.ok) {
-            console.error(`Failed to fetch attributes: ${attributesResponse.statusText}`);
-            return null; // Return null to indicate failure
-        }
-        const attributesData = await attributesResponse.json();
-        if (!attributesData || typeof attributesData !== 'object') {
-            console.error("Invalid structure for attributes data:", attributesData);
-            return null; // Return null to indicate invalid structure
-        }
-        return attributesData;
+
+async function fetchTrackingAttributes(csvUrl) {
+
+   try {
+       console.debug("Start: ", csvUrl);
+       const data = await parseCSV(csvUrl);
+       if (!data || !Array.isArray(data)) {
+           console.error("Invalid or empty CSV data", data);
+           return null;
+       }
+       const attributes = {};
+       data.forEach((row) => {
+           const HUC8 = row.HUC8; // Ensure 'HUC8' column exists in CSV
+           if (HUC8) {
+               attributes[HUC8] = { ...row }; // Add row data keyed by HUC8
+           }
+       });
+       return attributes;
+   } catch (err) {
+       console.error("Error fetching or parsing CSV", err);
+       return null;
+   }
+}
+
+async function parseCSV(url) {
+    if (DEBUG_STATUS) {
+        console.log("CSV Link", url);
     }
-    catch (networkError) {
-        console.error("Network or unexpected error loading attributes:", networkError);
-        return null; // Return null to indicate failure
+    const data = await d3.csv(url);
+    if (!data || !Array.isArray(data)) {
+        console.error("Invalid or empty CSV data", data);
+        return null;
+    } else {
+        if (DEBUG_STATUS) {
+            console.log("CSV Data", data);
+        }
+        return data;
     }
 }
 
-
 // Expose the `fetchAPImetadata` function to the main thread
 const api = {
-  fetchTrackingAttributes
+ fetchTrackingAttributes
 };
 
-expose(api);
+Comlink.expose(api);

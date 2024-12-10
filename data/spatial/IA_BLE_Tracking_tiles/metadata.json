@@ -1,0 +1,12 @@
+{
+  "name":"IA_BLE_Tracking_tiles",
+  "description":"",
+  "version":2,
+  "minzoom":3,
+  "maxzoom":11,
+  "center":"-93.3898825,41.9383485,3",
+  "bounds":"-96.6397040,40.3755010,-90.1400610,43.5011960",
+  "type":"overlay",
+  "format":"pbf",
+  "json":"{\n  \"vector_layers\":[\n    {\n      \"id\":\"temp_IA_BLE_Tracking\",\n      \"description\":\"\",\n      \"minzoom\":3,\n      \"maxzoom\":11,\n      \"fields\":{\n        \"HUC8\":\"String\"\n      }\n    }\n  ],\n  \"tilestats\":{\n    \"layerCount\":1,\n    \"layers\":[\n      {\n        \"layer\":\"temp_IA_BLE_Tracking\",\n        \"count\":26,\n        \"geometry\":\"Polygon\",\n        \"attributeCount\":1,\n        \"attributes\":[\n          {\n            \"attribute\":\"HUC8\",\n            \"count\":26,\n            \"type\":\"string\",\n            \"values\":[\n              \"07060001\",\n              \"07060002\",\n              \"07060003\",\n              \"07060004\",\n              \"07060005\",\n              \"07060006\",\n              \"07080101\",\n              \"07080102\",\n              \"07080103\",\n              \"07080105\",\n              \"07080201\",\n              \"07080206\",\n              \"07100006\",\n              \"07100007\",\n              \"07100008\",\n              \"07100009\",\n              \"07110001\",\n              \"10170203\",\n              \"10170204\",\n              \"10230001\",\n              \"10230002\",\n              \"10230003\",\n              \"10230004\",\n              \"10230005\",\n              \"10230006\",\n              \"10230007\"\n            ]\n          }\n        ]\n      }\n    ]\n  }\n}"
+}

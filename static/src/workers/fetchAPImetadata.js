@@ -1,4 +1,4 @@
-import { expose } from "https://unpkg.com/comlink/dist/esm/comlink.mjs";
+import * as Comlink from '/static/src/comlink.mjs';
 
 async function fetchAPImetadata() {
   try {
@@ -24,4 +24,4 @@ const api = {
   fetchAPImetadata
 };
 
-expose(api);
+Comlink.expose(api);
