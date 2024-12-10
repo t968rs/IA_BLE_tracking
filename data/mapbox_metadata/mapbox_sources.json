@@ -3,12 +3,14 @@
         {
             "id": "WorkAreas",
             "type": "vector",
-            "tiles": ["/served/spatial/IA_BLE_Tracking_tiles/{z}/{x}/{y}.pbf"]
+            "url": "mapbox://t968rs.0itdpada"
         },
         {
             "id": "ProjectAreas",
             "type": "vector",
-            "url": "mapbox://t968rs.8c8wz3jo"
+            "tiles": ["/served/spatial/IA_BLE_Tracking_tiles/{z}/{x}/{y}.pbf"],
+            "minzoom": 3,
+            "maxzoom": 11
         },
         {
             "id": "WorkAreaLabels",
