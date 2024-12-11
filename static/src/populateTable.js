@@ -1,15 +1,12 @@
 import { getMap, setTableLoaded, isTableLoaded } from '/static/src/mapManager.js'; // Access the map instance
-const DEBUG_STATUS = false
+const DEBUG_STATUS = true;
 import { debugConsole } from "/static/src/debugging.js";
 let dC;
 if (!DEBUG_STATUS) { dC = () => {}; } else { dC = debugConsole; }
 
 
-export const panel = document.getElementById("status-table-container");
+export const tablePanel = document.getElementById("status-table-container");
 export const buttonContainer = document.getElementById("button-container");
-const statusTableObj = document.getElementById("status-table");
-
-const unwantedColumns = ["geometry"];
 
 // Predefined color map for MIP Cases
 const mipCaseColors = {
@@ -19,25 +16,22 @@ const mipCaseColors = {
     "23-07-0037S": "#84b3ff"  // Light yellow
 };
 
-// Function to toggle the table visibility
 export function toggleTable() {
-
-    if (!isTableLoaded()) {
-        fetchAndDisplayData()
-            .catch(error => {
-                console.error("Error loading data:", error);
-            });
+    if (!tablePanel) {
+        console.error("Table panel element is missing.");
+        return;
     }
 
-    if (panel.style.display === "none" || panel.style.display === "") {
-        panel.style.display = "block";
-        updateButtonsPosition();
-    } else {
-        statusTableObj.style.display = "none";
-        panel.style.display = "none";
-        resetButtonsPosition();
+    if (DEBUG_STATUS) { console.debug(`Table container exists. ${tablePanel}`); }
+
+    // Default to "none" if the display style is not explicitly set
+    if (!tablePanel.style.display || tablePanel.style.display === "") {
+        tablePanel.style.display = "block";
     }
-    dC("Table toggled");
+
+    // Toggle table visibility
+    tablePanel.style.display = tablePanel.style.display === "none" ? "block" : "block"; // force visible
+    if (DEBUG_STATUS) { console.debug(`Table toggled. Current display: ${tablePanel.style.display}`); }
 }
 
 
@@ -57,8 +51,7 @@ async function fetchMetadata(servePath) {
             console.error("meta not found in json:", metadata);
         }
 
-        dC("Col Metadata:", columnsMetadata);
-        dC("Column Order:", columnOrder);
+        if (DEBUG_STATUS) {console.debug('columnOrder:', columnOrder);}
 
         return { columnsMetadata, columnOrder };
     } catch (error) {
@@ -67,28 +60,8 @@ async function fetchMetadata(servePath) {
     }
 }
 
-function filterColumns(tableData, columnList = null) {
-    // Filter out unwanted columns while maintaining original order
-    let columnsFiltered = columnList.filter(column => {
-        const isUnwanted = unwantedColumns.includes(column);
-        if (isUnwanted === true) {
-            dC(column, isUnwanted);
-        }
-        const isInTableData = Object.keys(tableData[0]).includes(column);
-        if (isInTableData === false) {
-            dC(column, "In table data", isInTableData);
-        }
-        if (!isUnwanted && isInTableData) {
-            dC(column, "both");
-        }
-        return !isUnwanted && isInTableData;
-    });
-    dC("Filtered Columns:", columnsFiltered);
-    return columnsFiltered;
-}
-
-export async function fetchAndDisplayData() {
-        const loadingMessage = document.getElementById("loading-message");
+export async function fetchAndDisplayData(sourceData, attributesData) {
+    const loadingMessage = document.getElementById("loading-message");
     if (!loadingMessage) {
         console.error("Loading message element is missing.");
         return;
@@ -97,7 +70,6 @@ export async function fetchAndDisplayData() {
     // Show the loading message
     loadingMessage.style.display = "block";
 
-
     if (isTableLoaded()) {
         loadingMessage.style.display = "none";
         dC("Table already loaded, no need to fetch again.");
@@ -105,54 +77,64 @@ export async function fetchAndDisplayData() {
     }
 
     try {
-        const response = await fetch('/data-table.json');
-        if (!response.ok) {
-            throw new Error(`Failed to fetch data: ${response.statusText}`);
-        }
 
-        let tableData = await response.json();
-        dC('Table Data json:\n', tableData);
+        if (DEBUG_STATUS) {console.debug('Table Data json:', attributesData);}
 
         // Fetch column metadata
         const sourceFileFormat = "geojson"
         const { columnsMetadata, columnOrder } = await fetchMetadata(
             '/metadata-columns?source_file_format=' + sourceFileFormat);
-        dC("Column Meta: ", columnsMetadata);
-        
+        if (DEBUG_STATUS) {console.debug('columnsMetadata:', columnsMetadata);}
+        if (DEBUG_STATUS) {console.debug('columnOrder:', columnOrder);}
+
         // Create a reverse lookup map from sourceFormat name to the entire metadata object
         const sourceFormatMap = {};
         for (const [topLevelKey, formats] of Object.entries(columnsMetadata)) {
             const sourceFormatKey = formats.geojson;
             sourceFormatMap[sourceFormatKey] = formats;
         }
+        if (DEBUG_STATUS) {console.debug('sourceFormatMap:', sourceFormatMap);}
 
-        const filteredCols = filterColumns(tableData, columnOrder);
+        // Filter and Reorder Rows
+        const filteredAndOrderedData = Object.values(attributesData).map(row => {
+            // Filter out keys not in sourceFormatMap
+            const filteredRow = Object.keys(row)
+                .filter(key => key in sourceFormatMap)
+                .reduce((acc, key) => {
+                    acc[key] = row[key];
+                    return acc;
+                }, {});
 
-        tableData = tableData.map(row => {
-            const orderedRow = {};
-            filteredCols.forEach(key => {
-                orderedRow[key] = row[key] || null; // Add all keys in the correct order
-            });
-            return orderedRow;
+            // Reorder keys according to columnOrder
+            return columnOrder.reduce((acc, key) => {
+                if (key in filteredRow) {
+                    acc[key] = filteredRow[key];
+                } else {
+                    acc[key] = null; // Add missing keys with null
+                }
+                return acc;
+            }, {});
         });
 
         // Define columns for DataTable
         const invisibleColumns = ["geometry"];
 
-        const columns = filteredCols.map(key => ({
-            data: key,
-            title: sourceFormatMap[key]['excel'], // Use the dictionary value for title
-            visible: !invisibleColumns.includes(key),
+        if (DEBUG_STATUS) {console.debug('filteredAndOrderedData:', filteredAndOrderedData);}
+        const keys = Object.keys(filteredAndOrderedData[0] || {});
+        const columns = keys.map(key => ({
+            data: key, // Key used to match column with data field
+            title: sourceFormatMap[key]?.excel || key, // Use the dictionary value for the title
+            visible: !invisibleColumns.includes(key), // Hide columns if specified
             render: function (data) {
-                return data || ""; // Display data as plain text
+                return data || ""; // Handle null/undefined values
             }
         }));
 
         // Initialize DataTable
-        dC("Column Length:", columns.length);
+        if (DEBUG_STATUS) {console.debug('columns:', columns.length, columns);}
         await initDataTable(columns.length, columns);
         const dataTable = $('#status-table').DataTable({
-            data: tableData,
+            data: filteredAndOrderedData,
             paging: false,
             columns: columns,
             destroy: true,
@@ -172,7 +154,7 @@ export async function fetchAndDisplayData() {
             }
         });
 
-        dC('thead\n', dataTable);
+        if (DEBUG_STATUS) {console.debug('dataTable:', dataTable);}
 
         // Add hover event listener
         $("#status-table tbody").on("mouseenter", "tr", function () {
@@ -270,7 +252,7 @@ function sendDataToMap(dataValue, map) {
 
 // Function to update the toggle button's position dynamically
 function updateButtonsPosition() {
-    const rect = panel.getBoundingClientRect();
+    const rect = tablePanel.getBoundingClientRect();
     const tableHeight = rect.height;
 
     buttonContainer.style.bottom = (tableHeight + 75) + "px"; // Adjust based on the panel height
