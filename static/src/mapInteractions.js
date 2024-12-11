@@ -76,12 +76,7 @@ export async function areaPopupContent(clickedfeature, addONS, attributes) {
     let popupContent = '<div class="popup-table-title">Iowa BLE Area Info</div>';
     popupContent += '<table class="popup-table">';
 
-    // Add additional information if provided
-    if (addONS !== undefined && addONS !== null && addONS !== "" && addONS !== " ") {
-        for (let [key, value] of Object.entries(addONS)) {
-            popupContent += `<tr><td><strong>${key}</strong></td><td>${value}</td></tr>`;
-        }
-    }
+
 
     // Add feature properties
     for (let property in clickedfeature.properties) {
@@ -105,15 +100,25 @@ export async function areaPopupContent(clickedfeature, addONS, attributes) {
     // Add attributes from the CSV
     const featureHUC8 = clickedfeature.properties?.HUC8; // Ensure the feature has a valid HUC8
     if (featureHUC8 && attributes && attributes[featureHUC8]) {
-        popupContent += '<tr><td colspan="2"><strong>Additional Attributes</strong></td></tr>';
         const featureAttributes = attributes[featureHUC8];
+        const featName = featureAttributes.Name || featureHUC8;
+        popupContent += `<tr><td><strong>Name</strong></td><td>${featName}</td></tr>`;
         for (let [key, value] of Object.entries(featureAttributes)) {
-            popupContent += `<tr><td><strong>${key}</strong></td><td>${value}</td></tr>`;
+            if (value !== featureHUC8 && value !== featName) {
+                popupContent += `<tr><td>${key}</td><td>${value}</td></tr>`;
+            }
         }
     } else if (!featureHUC8) {
         console.warn('Feature is missing HUC8 for attribute matching.');
     } else {
         console.warn(`No additional attributes found for HUC8: ${featureHUC8}`);
+    }
+
+    // Add additional information if provided
+    if (addONS !== undefined && addONS !== null && addONS !== "" && addONS !== " ") {
+        for (let [key, value] of Object.entries(addONS)) {
+            popupContent += `<tr><td><strong>${key}</strong></td><td>${value}</td></tr>`;
+        }
     }
 
     popupContent += '</tbody></table>';

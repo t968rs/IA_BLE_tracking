@@ -1,4 +1,4 @@
-import { initializeMap, getMapBoxToken, fetchGeoJSON, createColorStops } from "/static/src/mapManager.js";
+import { setMap, getMapBoxToken, fetchGeoJSON, createColorStops } from "/static/src/mapManager.js";
 import { updateLastUpdatedTimestamp } from "/static/src/validateDataDir.js";
 import turfcentroid from 'https://cdn.jsdelivr.net/npm/@turf/centroid@7.1.0/+esm'
 import { initSourcesWorker, initAttributesWorker, debugWorkers } from "/static/src/workers/initWorkers.js";
@@ -13,7 +13,8 @@ import { handleUploadButtonClick } from "/static/src/uploadData.js";
 import { handleExportButtonClick } from "/static/src/exportData.js";
 import {precisionRound} from "/static/src/maths.js";
 import { toggleTable, fetchAndDisplayData } from "/static/src/populateTable.js"
-const LOG = true;
+import { loadMapboxGL, initializeMapboxMap } from "/static/src/mapLoader.js";
+const LOG = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("DOM doc state:", document.readyState);
@@ -52,7 +53,8 @@ async function initPage() {
             csvUrl
         );
 
-        await setupMap(sourcesMeta, csvUrl, trackingAttributes);
+        await setupLazyLoadMap(sourcesMeta, csvUrl, trackingAttributes)
+
         console.log("Page initialized successfully.");
     } catch (error) {
         console.error("Error initializing page:", error);
@@ -196,7 +198,7 @@ async function fetchDataAndSetup(jsonUrl, csvUrl) {
     }
 }
 
-async function setupMap(sourcesMeta, csvUrl, trackingAttributes) {
+async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
     if (LOG) {
     console.debug("sourcesMeta: ", sourcesMeta);
     console.debug("csvUrl: ", csvUrl);
@@ -207,16 +209,16 @@ async function setupMap(sourcesMeta, csvUrl, trackingAttributes) {
     if (sourcesMeta && trackingAttributes) {
         await fetchAndDisplayData(sourcesMeta, trackingAttributes)
     }
-    const token = await getMapBoxToken();
-    const map = initializeMap({
-        container: 'map',
-        style: 'mapbox://styles/t968rs/clzn9s7ej006e01r31wsob7kj',
-        projection: 'albers', // Display the map as a globe, since satellite-v9 defaults to Mercator
-        zoom: 6,
-        minZoom: 0,
-        center: [-93.5, 42],
-        token: token,
-    });
+    // const token = await getMapBoxToken();
+    // const map = initializeMap({
+    //     container: 'map',
+    //     style: 'mapbox://styles/t968rs/clzn9s7ej006e01r31wsob7kj',
+    //     projection: 'albers', // Display the map as a globe, since satellite-v9 defaults to Mercator
+    //     zoom: 6,
+    //     minZoom: 0,
+    //     center: [-93.5, 42],
+    //     token: token,
+    // });
 
     // Add user control
     map.addControl(new mapboxgl.NavigationControl({showCompass: true, showZoom: true}));
@@ -889,6 +891,74 @@ async function setupMap(sourcesMeta, csvUrl, trackingAttributes) {
         addInteractionEvents(map, 'areas-interaction');
     });
 
+}
+
+/**
+ * Sets up lazy loading for Mapbox GL JS using Intersection Observer.
+ * @param {Object} sourcesMeta - Metadata for map sources.
+ * @param {string} csvUrl - URL to the CSV data.
+ * @param {Object} trackingAttributes - Attributes for tracking.
+ */
+async function setupLazyLoadMap(sourcesMeta, csvUrl, trackingAttributes) {
+    // Select the map container
+    const mapContainer = document.getElementById('map');
+
+    if (!mapContainer) {
+        console.error("Map container not found.");
+        return;
+    }
+
+    // Define Intersection Observer options
+    const options = {
+        root: null, // Use the viewport as the root
+        rootMargin: '0px',
+        threshold: 0.1 // Trigger when 10% of the map is visible
+    };
+
+    // Create the Intersection Observer
+    const observer = new IntersectionObserver(
+        async (entries, observerInstance) => {
+        for (const entry of entries) {
+            if (entry.isIntersecting) {
+                try {
+                    console.log("Map container is in view. Loading Mapbox GL JS...");
+                    // Load Mapbox GL JS and CSS
+                    await loadMapboxGL();
+
+                    // Retrieve Mapbox access token
+                    const token = await getMapBoxToken();
+
+                    // Initialize the Mapbox map
+                    const map = initializeMapboxMap({
+                        container: 'map',
+                        style: 'mapbox://styles/t968rs/clzn9s7ej006e01r31wsob7kj',
+                        projection: 'albers',
+                        zoom: 6,
+                        minZoom: 0,
+                        center: [-93.5, 42],
+                        token: token,
+                        controls: [
+                            { type: 'NavigationControl', options: { showCompass: true, showZoom: true } }
+                        ]
+                    });
+                    setMap(map);
+
+                    // Proceed with additional map setup
+                    await setupMap(map, sourcesMeta, csvUrl, trackingAttributes);
+
+                    console.log("Map initialized successfully.");
+                } catch (error) {
+                    console.error("Error loading Mapbox GL JS or initializing map:", error);
+                } finally {
+                    // Stop observing after the map has been loaded and initialized
+                    observerInstance.unobserve(entry.target);
+                }
+            }
+        }
+        }, options);
+
+    // Start observing the map container
+    observer.observe(mapContainer);
 }
 
 
