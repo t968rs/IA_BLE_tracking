@@ -20,14 +20,13 @@ export async function getMapBoxToken() {
 let mapInstance;
 let tableLoaded = false; // This will store the table load state
 
-export function initializeMap(options) {
-
-    mapInstance = new mapboxgl.Map(options);
+export function getMap() {
     return mapInstance;
 }
 
-export function getMap() {
-    return mapInstance;
+export function setMap(map) {
+    // receive a map instance from another js
+    mapInstance = map;
 }
 
 export async function createColorStops(serverResponse, fieldName = "HUC8") {

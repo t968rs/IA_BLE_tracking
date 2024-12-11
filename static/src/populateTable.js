@@ -1,5 +1,5 @@
 import { getMap, setTableLoaded, isTableLoaded } from '/static/src/mapManager.js'; // Access the map instance
-const DEBUG_STATUS = true;
+const DEBUG_STATUS = false;
 import { debugConsole } from "/static/src/debugging.js";
 let dC;
 if (!DEBUG_STATUS) { dC = () => {}; } else { dC = debugConsole; }
