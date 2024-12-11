@@ -72,29 +72,48 @@ export function hideIt(docElementPassed) {
 }
 
 // Function to create popup content with table formatting
-export async function areaPopupContent(clickedfeature, addONS) {
+export async function areaPopupContent(clickedfeature, addONS, attributes) {
     let popupContent = '<div class="popup-table-title">Iowa BLE Area Info</div>';
     popupContent += '<table class="popup-table">';
+
+    // Add additional information if provided
     if (addONS !== undefined && addONS !== null && addONS !== "" && addONS !== " ") {
         for (let [key, value] of Object.entries(addONS)) {
             popupContent += `<tr><td><strong>${key}</strong></td><td>${value}</td></tr>`;
         }
     }
+
+    // Add feature properties
     for (let property in clickedfeature.properties) {
         if (!unwanted.includes(property) && !containsUnwantedSubstring(property)) {
             let displayValue, displayProperty;
             if (property === "which_grid") {
                 displayValue = whichGrid[clickedfeature.properties[property]];
-                displayProperty = "Grids TODO"
+                displayProperty = "Grids TODO";
             } else {
                 displayValue = clickedfeature.properties[property];
                 displayProperty = property.replace(/_/g, ' ')
-                displayProperty = displayProperty.replace('  ', ' ').replace("Su", "Submit")
-                    .replace("Mapping In", "Ph1 Mapped By")
-                    .replace("Perc", "%")
+                                          .replace('  ', ' ')
+                                          .replace("Su", "Submit")
+                                          .replace("Mapping In", "Ph1 Mapped By")
+                                          .replace("Perc", "%");
             }
             popupContent += `<tr><td><strong>${displayProperty}</strong></td><td>${displayValue}</td></tr>`;
         }
+    }
+
+    // Add attributes from the CSV
+    const featureHUC8 = clickedfeature.properties?.HUC8; // Ensure the feature has a valid HUC8
+    if (featureHUC8 && attributes && attributes[featureHUC8]) {
+        popupContent += '<tr><td colspan="2"><strong>Additional Attributes</strong></td></tr>';
+        const featureAttributes = attributes[featureHUC8];
+        for (let [key, value] of Object.entries(featureAttributes)) {
+            popupContent += `<tr><td><strong>${key}</strong></td><td>${value}</td></tr>`;
+        }
+    } else if (!featureHUC8) {
+        console.warn('Feature is missing HUC8 for attribute matching.');
+    } else {
+        console.warn(`No additional attributes found for HUC8: ${featureHUC8}`);
     }
 
     popupContent += '</tbody></table>';
@@ -107,22 +126,31 @@ export async function areaPopupContent(clickedfeature, addONS) {
 
 // Function to fit the map to the bounds of the popup and its feature
 function getFeatureBounds(feature) {
-    // Get the bounding box of the feature
+    if (!feature || !feature.geometry || !Array.isArray(feature.geometry.coordinates)) {
+        console.error('Invalid feature object provided:', feature);
+        return null;
+    }
+
     const featureBounds = new mapboxgl.LngLatBounds();
-    dC("BOUNDS: ", featureBounds);
-    feature.geometry.coordinates[0].forEach(coord => {
-        const [lng, lat] = coord;
-        // dC("Lat: ", lat, " Lng: ", lng);
+
+    // Flatten coordinates and validate each pair
+    const coordinates = feature.geometry.coordinates.flat(Infinity);
+    if (coordinates.length % 2 !== 0) {
+        console.error('Invalid coordinates length. Expected pairs of longitude and latitude:', coordinates);
+        return null;
+    }
+
+    for (let i = 0; i < coordinates.length; i += 2) {
+        const lng = coordinates[i];
+        const lat = coordinates[i + 1];
         if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
-            featureBounds.extend(coord);
+            featureBounds.extend([lng, lat]);
         } else {
             console.error(`Invalid coordinate: [${lng}, ${lat}]`);
         }
-    });
+    }
 
-    // Fit the map to the feature bounds
-    dC("With popup Bounds: ", featureBounds);
-    return featureBounds;
+    return featureBounds.isEmpty() ? null : featureBounds;
 }
 
 // Function to close the popup

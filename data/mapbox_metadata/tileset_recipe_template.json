@@ -3,8 +3,11 @@
   "layers": {
     "ia-ble-tracking": {
       "source": "mapbox://tileset-source/t968rs/ia-ble-tracking",
-      "minzoom": 6,
-      "maxzoom": 17
+      "minzoom": 3,
+      "maxzoom": 17,
+      "features": {
+        "id": "{HUC8}"
+      }
     }
   }
 }

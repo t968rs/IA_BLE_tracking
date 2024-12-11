@@ -198,7 +198,7 @@ def allowed_file(filename):
 
 
 @app.route('/update-tracking-geojson', methods=['POST'])
-def update_tracking_geojson():
+def update_tracking_attributes():
     if 'files' not in request.files:
         return jsonify({'success': False, 'message': 'No files part in the request'}), 400
 

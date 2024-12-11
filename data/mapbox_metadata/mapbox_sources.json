@@ -8,7 +8,7 @@
         {
             "id": "ProjectAreas",
             "type": "vector",
-            "tiles": ["/served/spatial/IA_BLE_Tracking_tiles/{z}/{x}/{y}.pbf"],
+            "url": "mapbox://t968rs.ia-ble-tracking",
             "minzoom": 3,
             "maxzoom": 11
         },
@@ -37,6 +37,6 @@
     {
         "WorkAreas": "Work_Areas-0b972m",
         "StateBoundary": "US_states-9vevdn",
-        "ProjectAreas": "IA_BLE_Tracking_layer"
+        "ProjectAreas": "ia-ble-tracking-01"
     }
 }

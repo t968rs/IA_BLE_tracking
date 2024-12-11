@@ -1,5 +1,5 @@
 // mapManager.js
-const DEBUG_STATUS = false;
+const DEBUG_STATUS = true;
 import { debugConsole } from "./debugging.js";
 let dC;
 if (!DEBUG_STATUS) { dC = () => {}; } else { dC = debugConsole; }
@@ -8,7 +8,7 @@ export async function getMapBoxToken() {
        try {
            const response = await fetch('/mapbox-token/');
            const data = await response.json();
-           dC("Mapbox token:", data.MAPBOX_TOKEN);  // Check the exact key name here
+           dC("env:", data);  // Check the exact key name here
            mapboxgl.accessToken = data.MAPBOX_TOKEN;  // Check this key name matches server-side response
            return mapboxgl.accessToken;
        } catch (error) {
@@ -21,6 +21,7 @@ let mapInstance;
 let tableLoaded = false; // This will store the table load state
 
 export function initializeMap(options) {
+
     mapInstance = new mapboxgl.Map(options);
     return mapInstance;
 }
