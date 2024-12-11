@@ -45,7 +45,6 @@ export function loadMapboxGL() {
 export function initializeMapboxMap(options) {
     if (!window.mapboxgl) {
         console.error('Mapbox GL JS is not loaded.');
-        return;
     }
 
     mapboxgl.accessToken = options.token;
