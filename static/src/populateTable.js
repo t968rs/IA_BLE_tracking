@@ -1,12 +1,15 @@
 import { getMap, setTableLoaded, isTableLoaded } from '/static/src/mapManager.js'; // Access the map instance
-const DEBUG_STATUS = false;
-import { debugConsole } from "/static/src/debugging.js";
-let dC;
-if (!DEBUG_STATUS) { dC = () => {}; } else { dC = debugConsole; }
+const DEBUG_STATUS = true;
+const dC = (message) => {
+    if (DEBUG_STATUS) {
+        console.debug(message);
+    }
+};
 
 
 export const tablePanel = document.getElementById("status-table-container");
-export const buttonContainer = document.getElementById("button-container");
+export const tableButton = document.getElementById("status-table-button");
+const buttonContainer = document.getElementById("button-container");
 
 // Predefined color map for MIP Cases
 const mipCaseColors = {
@@ -24,14 +27,20 @@ export function toggleTable() {
 
     if (DEBUG_STATUS) { console.debug(`Table container exists. ${tablePanel}`); }
 
-    // Default to "none" if the display style is not explicitly set
-    if (!tablePanel.style.display || tablePanel.style.display === "") {
-        tablePanel.style.display = "block";
+    if (!tablePanel.style.height){
+        tablePanel.style.height = "15vh";
+        tableButton.textContent = "▲"
+    } else if (tablePanel.style.height === '15vh') {
+        tablePanel.style.height = '80vh';
+        tableButton.textContent = '▼';
+    } else if (tablePanel.style.height === '80vh') {
+        tablePanel.style.height = '2vh';
+        tableButton.textContent = "▲"
+    } else {
+        tablePanel.style.height = '15vh';
+        tableButton.textContent = '▼';
     }
-
-    // Toggle table visibility
-    tablePanel.style.display = tablePanel.style.display === "none" ? "block" : "block"; // force visible
-    if (DEBUG_STATUS) { console.debug(`Table toggled. Current display: ${tablePanel.style.display}`); }
+    updateButtonsPosition();
 }
 
 
@@ -251,11 +260,17 @@ function sendDataToMap(dataValue, map) {
 }
 
 // Function to update the toggle button's position dynamically
-function updateButtonsPosition() {
-    const rect = tablePanel.getBoundingClientRect();
-    const tableHeight = rect.height;
-
-    buttonContainer.style.bottom = (tableHeight + 75) + "px"; // Adjust based on the panel height
+function updateButtonsPosition(tableHeight) {
+    let newTableHeight;
+    if (!tableHeight) {
+        dC("input tableHeight", tableHeight);
+        const rect = tablePanel.getBoundingClientRect();
+        newTableHeight = rect.height;
+    } else {
+        newTableHeight = tableHeight;
+    }
+    dC("newTableHeight", newTableHeight);
+    buttonContainer.style.bottom = (newTableHeight + 75) + "px"; // Adjust based on the panel height
 }
 
 // Function to reset the toggle button to its default position
