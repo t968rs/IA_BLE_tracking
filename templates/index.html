@@ -3,9 +3,8 @@
 <head>
     <meta charset="utf-8">
     <title>Iowa BLE Project Tracking Map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script type="module" src="/static/src/comlink.mjs"></script>
-<!--    <script src="/static/src/papaparse.min.js"></script>-->
-    <meta name="viewport" content="initial-scale=1,width=device-width">
     <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon.ico">
     <link rel="apple-icon" sizes="180x180" href="/static/icons/apple-icon.png">
@@ -13,40 +12,64 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="/static/src/DataTables/datatables.min.css" />
     <script src="/static/src/DataTables/datatables.min.js"></script><link href="/static/styles_add.css" rel="stylesheet">
-    <script src="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.js"></script>
-    <script src="/static/src/mapInteractions.js" type="module"></script>
+<!--    <script src="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.js"></script>-->
+<!--    <script src="/static/src/mapInteractions.js" type="module"></script>-->
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.css" rel="stylesheet">
 </head>
 <body>
-    <div id="title-box">Iowa BLE Project Tracking Map
-        <span id="timestamp-text">Fetching last update...</span>
-    </div>
-    <div id="viewport-container">
-        <div id="map"></div>
-        <div id="controls-container">
-            <div id="layer-controls">
-                <table id="layer-controls-table"></table>
 
-            </div>
-            <div id="legend" class="map-legend"></div>
+    <div id="viewport-container">
+        <div id="title-box">
+            <div id="title">Iowa BLE Project Tracking Map</div>
+            <div id="timestamp-text">Fetching last update...</div>
         </div>
+
+        <div id="map-container-1" class="map-container-1">
+            <div id="map"></div>
+                <!-- Controls and Legend Container-->
+                <div id="controls-container">
+                    <div id="layer-controls">
+                        <div class="layer-controls-header">
+                            <b>Layer Controls</b>
+                            <button id="toggle-controls-btn">▼</button>
+                        </div>
+                        <table id="layer-controls-table"></table>
+                    </div>
+                    <div id="legend-container">
+                        <div class="legend-header">
+                            <b>Legend</b>
+                            <button id="toggle-legend-btn">▼</button>
+                        </div>
+                        <div id="legend"></div>
+                    </div>
+                </div>
+        </div>
+
+        <!-- Popups Container-->
         <div class="popup-container" style="display: none;">
             <button class="close-btn" onclick="closePopup()" type="button" aria-label="Close popup">×</button>
             <ul id="mapboxgl-popup-content"></ul>
         </div>
 
+        <!-- Upload / Download Buttons-->
         <div id="button-container">
-            <button id="toggle-table-btn">Show/Hide Table</button>
             <button id="upload-data-button">Upload Data</button>
             <button id="export-excel-button">Export to Excel</button>
         </div>
-        <div id="status-table-container" style="display: none;">
+
+        <!-- Table Elements -->
+        <div id="status-table-container">
+            <div id="table-bars-header">
+                <button id="status-table-button">▶</button> Project Status Table
+            </div>
             <div id="loading-message">Table loading...</div>
-            <table id="status-table" border="1">
+            <table id="status-table">
                 <!-- Table content will be dynamically added here -->
             </table>
         </div>
+
     </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js" defer></script>
     <script src="../static/main.js" type="module"></script>
 </body>

@@ -5,16 +5,17 @@ import { initSourcesWorker, initAttributesWorker, debugWorkers } from "/static/s
 import {enableTextSelection,
     disableTextSelection,
     closePopup,
+    areaPopupContent} from "/static/src/mapInteractions.js";
+import {
     createLayerControls,
     updateLegendOnVisibilityChange,
-    populateLegend,
-    areaPopupContent} from "/static/src/mapInteractions.js";
+    populateLegend } from "/static/src/legendControls.js"
 import { handleUploadButtonClick } from "/static/src/uploadData.js";
 import { handleExportButtonClick } from "/static/src/exportData.js";
 import {precisionRound} from "/static/src/maths.js";
-import { toggleTable, fetchAndDisplayData } from "/static/src/populateTable.js"
+import { toggleTable, fetchAndDisplayData, updateButtonsPosition } from "/static/src/populateTable.js"
 import { loadMapboxGL, initializeMapboxMap } from "/static/src/mapLoader.js";
-const LOG = false;
+const LOG = true;
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("DOM doc state:", document.readyState);
@@ -80,8 +81,7 @@ async function setupUI() {
     const tablePanel = document.getElementById("status-table-container");
 
     try {
-        const buttonContainer = document.getElementById("button-container");
-        buttonContainer.addEventListener("click", async () => {
+        document.getElementById('status-table-button').addEventListener('click', () => {
             toggleTable();
         });
     } catch (error) {
@@ -123,43 +123,41 @@ async function setupUI() {
     });
 
     // Add resizing logic for the panel
-    const BORDER_SIZE = 10; // Resize boundary size
+    const tableContainer = document.getElementById('status-table-container');
+    const statusTable = document.getElementById('status-table');
+    const BORDER_SIZE = 10;
     let isResizing = false;
-    let m_pos = 0;
+    let startY = 0;
+    let startHeight = 0;
 
-    tablePanel.addEventListener("pointerdown", function (e) {
-        const rect = tablePanel.getBoundingClientRect();
-        const pointerY = e.clientY - rect.top;
-        if (pointerY < BORDER_SIZE) {
+    tableContainer.addEventListener(
+        'pointerdown', (e) => {
+        if (e.target.id === 'table-bars-header') {
+            // Start resizing
             isResizing = true;
-            m_pos = e.clientY;
-            document.body.style.cursor = "ns-resize";
+            startY = e.clientY;
+            startHeight = tableContainer.getBoundingClientRect().height;
+            document.body.style.cursor = 'ns-resize';
         }
     });
 
-    document.addEventListener("pointermove", function (e) {
+    document.addEventListener("pointermove", (e) => {
         if (isResizing) {
-            const rect = tablePanel.getBoundingClientRect();
-            const deltaY = e.clientY - m_pos;
-            const newHeight = rect.height - deltaY;
+            disableTextSelection();
+            const deltaY = e.clientY - startY;
+            let newHeight = startHeight - deltaY;
 
-            const maxHeight = window.innerHeight * 0.95;
-            const minHeight = 50;
 
-            if (newHeight >= minHeight && newHeight <= maxHeight) {
-                tablePanel.style.height = `calc(100% - ${e.clientY}px)`;
-                m_pos = e.clientY;
-            } else if (newHeight > maxHeight) {
-                tablePanel.style.height = `${maxHeight}px`;
-            } else if (newHeight < minHeight) {
-                tablePanel.style.height = `${minHeight}px`;
-            }
+            // Get table scoll height
+            const tableHeight = statusTable.scrollHeight + 50
 
-            // Dynamically import and call updateButtonsPosition only when resizing is needed
-            (async () => {
-                const { updateButtonsPosition } = await import('./src/populateTable.js');
-                updateButtonsPosition();
-            })();
+            // Enforce min and max if desired
+            const minHeight = 50; // pixels
+            const maxHeight = Math.min(window.innerHeight * 0.8, tableHeight);
+            newHeight = Math.max(minHeight, Math.min(maxHeight, newHeight));
+            tableContainer.style.height = `${newHeight}px`;
+            if (LOG) {console.debug("New height:", newHeight, "Window Inner", window.innerHeight);}
+            updateButtonsPosition(newHeight);
         }
     });
 
@@ -168,6 +166,7 @@ async function setupUI() {
             if (LOG) { console.debug("Pointer up detected. Resizing stopped."); }
         }
         isResizing = false;
+        enableTextSelection();
         document.body.style.cursor = "";
     });
 
@@ -209,16 +208,6 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
     if (sourcesMeta && trackingAttributes) {
         await fetchAndDisplayData(sourcesMeta, trackingAttributes)
     }
-    // const token = await getMapBoxToken();
-    // const map = initializeMap({
-    //     container: 'map',
-    //     style: 'mapbox://styles/t968rs/clzn9s7ej006e01r31wsob7kj',
-    //     projection: 'albers', // Display the map as a globe, since satellite-v9 defaults to Mercator
-    //     zoom: 6,
-    //     minZoom: 0,
-    //     center: [-93.5, 42],
-    //     token: token,
-    // });
 
     // Add user control
     map.addControl(new mapboxgl.NavigationControl({showCompass: true, showZoom: true}));
@@ -240,7 +229,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
         }
 
         // Call this function after the popup is created
-        map.on('popupopen', fixAriaHiddenOnCloseButton);
+        // map.on('popupopen', fixAriaHiddenOnCloseButton);
 
         // Loop through each source and add it to the map
         let mapSources = null;
@@ -412,78 +401,67 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
                 'fill-color': [
                     'match',
                     ['feature-state', 'which_grid'],
-                    'Approved',
+                    'All on MM',
                     'rgba(2,248,138,0.69)', // 50% transparency
-                    'In Backcheck',
+                    '2',
                     'rgba(225,250,0,0.69)', // 50% transparency
-                    'Submitted',
+                    '1, 2',
                     'rgba(2,226,246,0.67)', // 50% transparency
-                    'In-Progress',
-                    'rgba(251,113,2,0.67)', // 50% transparency
-                    'Next',
-                    'rgba(0,84,112,0.3)', // Match fill color
                     'rgba(204, 204, 204, 0)', // 0% transparency
                 ]
             },
             "source-layer": vectorSourceNames.ProjectAreas
         });
 
-        // Add overall production layer
-        map.addLayer({
-            id: 'prod-status',
-            type: 'fill',
-            source: 'ProjectAreas',
-            layout: {
-                // Make the layer visible by default.
-                'visibility': 'none'
-            },
-            paint: {
-                'fill-color': [
-                    'match',
-                    ['feature-state', 'Prod_Stage'],
-                    'Approved',
-                    'rgba(2,248,138,0.69)', // 50% transparency
-                    'In Backcheck',
-                    'rgba(225,250,0,0.69)', // 50% transparency
-                    'Submitted',
-                    'rgba(2,226,246,0.67)', // 50% transparency
-                    'In-Progress',
-                    'rgba(251,113,2,0.67)', // 50% transparency
-                    'Next',
-                    'rgba(0,84,112,0.3)', // Match fill color
-                    'rgba(204, 204, 204, 0)', // 0% transparency
-                ]
-            },
-            "source-layer": vectorSourceNames.ProjectAreas
-        });
+        // // Add overall production layer
+        // map.addLayer({
+        //     id: 'prod-status',
+        //     type: 'fill',
+        //     source: 'ProjectAreas',
+        //     layout: {
+        //         // Make the layer visible by default.
+        //         'visibility': 'none'
+        //     },
+        //     paint: {
+        //         'fill-color': [
+        //             'match',
+        //             ['feature-state', 'Prod_Stage'],
+        //             'Approved',
+        //             'rgba(2,248,138,0.69)', // 50% transparency
+        //             'In Backcheck',
+        //             'rgba(225,250,0,0.69)', // 50% transparency
+        //             'Submitted',
+        //             'rgba(2,226,246,0.67)', // 50% transparency
+        //             'In-Progress',
+        //             'rgba(251,113,2,0.67)', // 50% transparency
+        //             'Next',
+        //             'rgba(0,84,112,0.3)', // Match fill color
+        //             'rgba(204, 204, 204, 0)', // 0% transparency
+        //         ]
+        //     },
+        //     "source-layer": vectorSourceNames.ProjectAreas
+        // });
 
         // Add FRP Status Layers
+        const frpColorStops = await createColorStops(trackingAttributes, 'FRP_Perc_Complete');
+        if (LOG) {console.debug("frpColorStops", frpColorStops);}
         map.addLayer({
             id: 'frp-status',
-            source: 'ProjectAreas',
             type: 'fill',
+            source: 'ProjectAreas', // Ensure this matches your vector tile source name
             layout: {
-                // Make the layer visible by default.
-                'visibility': 'none'
+                'visibility': 'none' // Set to 'visible' to display the layer by default
             },
             paint: {
                 'fill-color': [
-                    'match',
-                    ['feature-state', 'FRP_Perc_Complete'],
-                    'Approved',
-                    'rgba(2,248,138,0.69)', // 50% transparency
-                    'In Backcheck',
-                    'rgba(225,250,0,0.69)', // 50% transparency
-                    'Submitted',
-                    'rgba(2,226,246,0.67)', // 50% transparency
-                    'In-Progress',
-                    'rgba(251,113,2,0.67)', // 50% transparency
-                    'Next',
-                    'rgba(0,84,112,0.3)', // Match fill color
-                    'rgba(204, 204, 204, 0)', // 0% transparency
-                ]
+                    'interpolate',
+                    ['linear'],
+                    ['to-number', ['feature-state', 'FRP_Perc_Complete']],
+                    ...frpColorStops
+                ],
+                'fill-opacity': 0.5
             },
-            "source-layer": vectorSourceNames.ProjectAreas
+            "source-layer": vectorSourceNames.ProjectAreas // Ensure this matches the layer name within your vector tileset
         });
 
         // Add outline layer
@@ -614,8 +592,9 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
         });
 
         // Use the Flask route to fetch the GeoJSON data
-        const geoResponse = await fetchGeoJSON("/served/spatial/S_Submittal_Info_IA_BLE.geojson");
-        const colorStops = await createColorStops(geoResponse);
+        const jsonData = await fetchGeoJSON("/served/spatial/S_Submittal_Info_IA_BLE.geojson");
+        const colorStops = await createColorStops(jsonData);
+        if (LOG) {console.debug("colorStops", colorStops);}
 
         // Apply to new layers
         map.addLayer({
@@ -693,7 +672,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
             'FP MIP': ['fp-mip'],
             'Hydraulics MIP': ['hydraulics-mip'],
             'FRP Status': ['frp-status'],
-            'Draft Status Detail': ['prod-status'],
+            // 'Draft Status Detail': ['prod-status'],
             'Grid Status': ['grid-status'],
             'Mod Model Outlines': ['model-outlines-mod'],
             'Submitted Proj Outlines': ['submittal-info', 'submittal-info_outline'],
@@ -720,7 +699,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
             'Draft MIP Status': 'draft-mip',
             'FP MIP Status': 'fp-mip',
             'Hydra MIP Status': 'hydraulics-mip',
-            'Production Status': 'prod-status',
+            // 'Production Status': 'prod-status',
             'Grid Status': 'grid-status',
             'FRP Status': 'frp-status',
             'Mod Model Outlines': 'model-outlines-mod',
