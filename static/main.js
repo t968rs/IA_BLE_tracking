@@ -209,9 +209,6 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
         await fetchAndDisplayData(sourcesMeta, trackingAttributes)
     }
 
-    // Add user control
-    map.addControl(new mapboxgl.NavigationControl({showCompass: true, showZoom: true}));
-
     // On Load event
     map.on('load', async () => {
         if (LOG) {
@@ -220,13 +217,13 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
 
         const centroidPromise = fetch("/served/spatial/Centroids.json");
 
-        // Function to remove aria-hidden from the close button
-        function fixAriaHiddenOnCloseButton() {
-            const closeButton = document.querySelector('.mapboxgl-popup-close-button');
-            if (closeButton) {
-                closeButton.removeAttribute('aria-hidden');
-            }
-        }
+        // // Function to remove aria-hidden from the close button
+        // function fixAriaHiddenOnCloseButton() {
+        //     const closeButton = document.querySelector('.mapboxgl-popup-close-button');
+        //     if (closeButton) {
+        //         closeButton.removeAttribute('aria-hidden');
+        //     }
+        // }
 
         // Call this function after the popup is created
         // map.on('popupopen', fixAriaHiddenOnCloseButton);
@@ -234,8 +231,6 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
         // Loop through each source and add it to the map
         let mapSources = null;
         let vectorSourceNames = null;
-
-
         if (sourcesMeta) {
             mapSources = sourcesMeta.mapbox_sources;
             // Loop through each source and add it to the map
@@ -286,7 +281,6 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
         }
         vectorSourceNames = sourcesMeta.mapbox_vector_names;
 
-        // Get tracking attributes
         if (LOG) {
             console.debug("Fetched attributes: ", trackingAttributes);
         }
@@ -639,7 +633,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
             type: 'symbol',
             source: 'ProjectAreas',
             layout: {
-                'text-field': ['get', 'Name'],
+                'text-field': '{HUC8}',
                 'text-size': 11,
                 'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
                 // 'text-radial-offset': 0.5,

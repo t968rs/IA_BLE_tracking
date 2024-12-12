@@ -1,12 +1,16 @@
 import subprocess
 import geopandas as gpd
+import pandas as pd
 import os
 import json
 import shutil
 import requests
 import dotenv
+from read_write_df import StatusTableManager
 
 TILING_ENV_PATH = "../data/mapbox_metadata/mapbox_tilekey.env"
+TEMP_FOLDER = "../data/mapbox_metadata/temp"
+TABLE_METADATA = "../data/IA_BLE_Tracking_metadata.json"
 USERNAME = "t968rs"
 
 
@@ -87,10 +91,23 @@ def check_mapbox_api(username):
     else:
         print("Error:", response.status_code, response.text)
 
-def preprocess_geojson(input_path, id_field="HUC8"):
+def preprocess_geojson(input_path, id_field="HUC8", to_keep=None):
     # First, remove all columns except HUC8
     gdf = gpd.read_file(input_path)
-    gdf = gdf[[id_field, "geometry"]]
+    if any(c not in gdf.columns for c in to_keep):
+        base, filename = os.path.split(input_path)
+        name, ext = os.path.splitext(filename)
+        attributes_filename = f"{name}_attributes.csv"
+        attributes_path = os.path.join(base, attributes_filename)
+        if os.path.exists(attributes_path):
+            # Get attributes from CSV and join to gdf
+            attributes = pd.read_csv(attributes_path)
+            with StatusTableManager(TABLE_METADATA) as manager:
+                attributes = manager.enforce_types(attributes)
+            gdf = gdf.merge(attributes, on=id_field)
+    gdf = gdf[[id_field, "geometry"] + to_keep] if to_keep else gdf[[id_field, "geometry"]]
+    print(f'Preprocessing {input_path}...')
+    print(gdf.columns)
     gdf.to_file(input_path, driver="GeoJSON")
 
     with open(input_path, 'r') as infile:
@@ -118,7 +135,7 @@ def upload_tileset_source(username, tileset_name, geojson_file):
     delete_existing_source(full_name)
 
     # Preprocess
-    geojson_file = preprocess_geojson(geojson_file)
+    geojson_file = preprocess_geojson(geojson_file, to_keep=["Name", "MIP_Case"])
 
     # Get token
     access_token = check_mapbox_api(username)
@@ -153,16 +170,25 @@ def prep_post_payload(recipe, tileset_name, full_name, access_token):
 
     # Create or update tileset
     url = f"https://api.mapbox.com/tilesets/v1/{USERNAME}.{tileset_name}?access_token={access_token}"
-    print(f"\tURL: {url}")
-    response = requests.post(url, json=payload)
 
-    return response
 
-def create_new_tileset(tileset_name, recipe):
+    return url, payload
+
+def create_new_tileset(tileset_name, recipe, delete_existing=False):
     access_token = check_mapbox_api(USERNAME)
     full_name = f"{USERNAME}/{tileset_name}"
 
-    return prep_post_payload(recipe, tileset_name, full_name, access_token)
+    url, payload = prep_post_payload(recipe, tileset_name, full_name, access_token)
+    print(f"\tURL: {url}")
+    if delete_existing:
+        print(f"\tDeleting {tileset_name}")
+        response = requests.delete(url)
+        if not response.ok:
+            print(f'\tFailed to delete existing tilset, {tileset_name}')
+            print(response.status_code, response.text)
+    response = requests.post(url, json=payload, headers={"Content-Type": "application/json"})
+
+    return response
 
 
 def update_tileset_recipe(username, tileset_name, info_json, suffix=""):
@@ -188,18 +214,42 @@ def update_tileset_recipe(username, tileset_name, info_json, suffix=""):
           "minzoom": 3,
           "maxzoom": 16,
           "features": {
-            "id": ["get", "HUC8"]
+              "id": ["get", "HUC8"],
+              "attributes": {
+                  "allowed_output": ["Name", "HUC8", "MIP_Case"]
+              }
           }
         }
       }
     }
 
+    recipe_path = os.path.normpath(os.path.abspath(os.path.join(TEMP_FOLDER, "tileset_recipe.json")))
+    with open(recipe_path, 'w') as outfile:
+        json.dump(recipe, outfile, indent=4)
+
     # Check if the tileset exists
     tileset_check_url = f"https://api.mapbox.com/tilesets/v1/{tileset_id}?access_token={access_token}"
     get_res = requests.get(tileset_check_url)
-    if not get_res.ok:
-        print(f"\tCan't get tileset details: {get_res.status_code}, {get_res.text}")
-        print("\tAttempting to create a new tileset...")
+    if get_res.ok:
+        tileset_id = get_res.json().get("id")
+        if tileset_id and suffix != tileset_id[-3]:
+            print(f"\tExisting tileset details: {get_res.status_code}, {get_res.text}")
+            print("\tAttempting to create a new tileset...")
+            delete_ex = False
+            if suffix != tileset_id[-3]:
+                delete_ex = True
+            create_res = create_new_tileset(tileset_name, recipe, delete_existing=delete_ex)
+            if create_res.ok:
+                print("Tileset created successfully.")
+                print(create_res.json())
+                return True
+            else:
+                print("Error creating tileset:")
+                print(create_res.status_code, create_res.text)
+                return False
+    else:
+        print("Error retrieving tileset details.")
+        print(get_res.status_code, get_res.text)
         create_res = create_new_tileset(tileset_name, recipe)
         if create_res.ok:
             print("Tileset created successfully.")
@@ -212,7 +262,7 @@ def update_tileset_recipe(username, tileset_name, info_json, suffix=""):
 
     # Update the recipe using PUT
     update_url = f"https://api.mapbox.com/tilesets/v1/{tileset_id}/recipe?access_token={access_token}"
-    response = requests.put(update_url, json=recipe)
+    response = requests.put(update_url, json=recipe, headers={"Content-Type": "application/json"})
     if response.ok:
         print("Recipe updated successfully.")
         print(response.json())
@@ -254,7 +304,7 @@ if __name__ == "__main__":
 
     user_name = "t968rs"
     tileset_nameing = "ia-ble-tracking"
-    suffix = "-01"
+    suffix = "-02"
     geojson_filepath = r"Z:\automation\toolboxes\IA_BLE_tracking\data\spatial\IA_BLE_Tracking.geojson"
     recipe_filepath = r"Z:\automation\toolboxes\IA_BLE_tracking\data\mapbox_metadata\tileset_recipe_template.json"
 
@@ -265,11 +315,11 @@ if __name__ == "__main__":
     else:
         print(f"Tileset '{tileset_nameing}' does not exist.")
     # uploaded_info_path = upload_tileset_source(user_name, tileset_nameing, geojson_filepath)
-    #
+    # #
     # update_tileset_recipe(user_name, tileset_nameing, uploaded_info_path, suffix)
-    # publish_tileset(
-    #     user_name,
-    #     tileset_nameing,)
+    publish_tileset(
+        user_name,
+        tileset_nameing,)
 
 
 
