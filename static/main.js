@@ -285,6 +285,17 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
             console.debug("Added tracking attributes.", trackingAttributes);
         }
 
+        // Background
+        map.addLayer({
+            id: 'background',
+            type: 'background',
+            maxzoom: 8,
+            paint: {
+                'background-color': 'rgb(135,75,75)',
+                'background-opacity': 0.5,
+            }
+        })
+
         // MIP Submission, Draft
         map.addLayer({
             id: 'draft-mip',
@@ -294,7 +305,9 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
                 // Make the layer visible by default.
                 'visibility': 'visible'
             },
+
             paint: {
+                'fill-antialias': true,
                 'fill-color': [
                     'match',
                     ['feature-state', 'Draft_MIP'],
@@ -547,16 +560,41 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
             "source-layer": vectorSourceNames.WorkAreas
         });
 
+        // Add labels for areas
+        map.addLayer({
+            id: 'areas-labels',
+            type: 'symbol',
+            source: 'ProjectAreas',
+            minzoom: 7,
+            layout: {
+                'text-field': '{Name}',
+                'text-size': 11,
+                'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
+                // 'text-radial-offset': 0.5,
+                'text-justify': 'auto',
+                'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'] // Regular font
+            },
+            paint: {
+                'text-color': 'rgb(14,15,19)', // Text color
+                'text-halo-color': 'rgba(247,247,247,0.65)', // No halo
+                'text-halo-width': 1
+            },
+            "source-layer": vectorSourceNames.ProjectAreas
+        });
+
         // Add work area labels
         map.addLayer({
             id: 'work-area-labels',
             type: 'symbol',
-            source: 'WorkAreaLabels',
+            source: 'WorkAreas',
+            "source-layer": vectorSourceNames.WorkAreas,
             layout: {
                 'text-field': ['get', 'MIP_Case'],
                 'text-font': ['Arial Unicode MS Bold'], // Bold font
                 'text-allow-overlap': false, // Allow overlapping labels
-                'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
+                'text-offset': [0, -1],
+                'text-anchor': 'top',
+                // 'text-radial-offset': 1,
                 'text-justify': 'auto',
                 'visibility': 'visible',
                 'text-size': 16,
@@ -564,14 +602,21 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
             paint: {
                 'text-color': [
                     'match', ['get', 'MIP_Case'],
-                    "21-07-0002S", 'rgb(152,0,213)', // Color for FY20_1A
-                    "22-07-0035S", 'rgb(15,71,0)', // Color for FY21_2A
-                    "23-07-0036S", 'rgb(193,3,47)', // Color for FY22_3A
-                    "23-07-0037S", 'rgb(0,19,142)', // Color for FY22_3A
+                    "21-07-0002S", 'rgb(43,17,53)', // Color for FY20_1A
+                    "22-07-0035S", 'rgb(17,34,13)', // Color for FY21_2A
+                    "23-07-0036S", 'rgb(39,5,14)', // Color for FY22_3A
+                    "23-07-0037S", 'rgb(2,8,48)', // Color for FY22_3A
                     'rgba(0,0,0,0)' // Default color for unmatched cases
                 ],
-                'text-halo-color': 'rgba(0,196,255,1)', // Halo color
-                'text-halo-width': 2
+                'text-halo-color': [
+                    'match', ['get', 'MIP_Case'],
+                    "21-07-0002S", 'rgb(194,167,204)', // Color for FY20_1A
+                    "22-07-0035S", 'rgb(179,186,174)', // Color for FY21_2A
+                    "23-07-0036S", 'rgb(182,163,178)', // Color for FY22_3A
+                    "23-07-0037S", 'rgb(142,146,175)', // Color for FY22_3A
+                    'rgba(0,0,0,0)' // Default color for unmatched cases
+                ], // Halo color
+                'text-halo-width': 1
             } // Filter to include features without PBL_Assign or PBL_Assign is an empty string
         });
 
@@ -617,26 +662,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
             },
         });
 
-        // Add labels for areas
-        map.addLayer({
-            id: 'areas-labels',
-            type: 'symbol',
-            source: 'ProjectAreas',
-            layout: {
-                'text-field': '{Name}',
-                'text-size': 11,
-                'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
-                // 'text-radial-offset': 0.5,
-                'text-justify': 'auto',
-                'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'] // Regular font
-            },
-            paint: {
-                'text-color': 'rgb(0,28,58)', // Text color
-                'text-halo-color': 'rgba(90,185,255,0.68)', // No halo
-                'text-halo-width': 2
-            },
-            "source-layer": vectorSourceNames.ProjectAreas
-        });
+
 
         // Add a transparent fill layer for interaction
         map.addLayer({
