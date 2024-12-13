@@ -1,5 +1,5 @@
 import { getMap, setTableLoaded, isTableLoaded } from '/static/src/mapManager.js'; // Access the map instance
-const DEBUG_STATUS = true;
+const DEBUG_STATUS = false;
 const dC = (message) => {
     if (DEBUG_STATUS) {
         console.debug(message);

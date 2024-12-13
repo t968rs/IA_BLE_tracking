@@ -1,13 +1,16 @@
 {
-  "version": 1,
-  "layers": {
-    "ia-ble-tracking": {
-      "source": "mapbox://tileset-source/t968rs/ia-ble-tracking",
-      "minzoom": 3,
-      "maxzoom": 17,
-      "features": {
-        "id": "{HUC8}"
+      "version": 1,
+      "layers": {
+        "{tileset_name}{suffix}": {
+          "source": "mapbox://tileset-source/{USERNAME}/{tileset_name}",
+          "minzoom": 3,
+          "maxzoom": 16,
+          "features": {
+              "id": ["get", "HUC8"],
+              "attributes": {
+                  "allowed_output": ["Name", "HUC8", "MIP_Case"]
+              }
+          }
+        }
       }
     }
-  }
-}

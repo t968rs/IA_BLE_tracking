@@ -16,7 +16,7 @@ import { toggleTable, fetchAndDisplayData, updateButtonsPosition } from "/static
 import { loadMapboxGL, initializeMapboxMap } from "/static/src/mapLoader.js";
 import {    closePopup,
     areaPopupContent} from "/static/src/mapFeaturePopups.js"
-const LOG = true;
+const LOG = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("DOM doc state:", document.readyState);
