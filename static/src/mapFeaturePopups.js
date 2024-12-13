@@ -1,4 +1,4 @@
-import { whichGrid} from "/static/src/legendControls.js";
+import { whichGrid } from "/static/src/legendControls.js";
 
 
 let unwanted = ["OID_", "OID", "OBJECTID", "GlobalID", "Shape__Area",

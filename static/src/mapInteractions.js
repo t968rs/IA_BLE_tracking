@@ -1,4 +1,4 @@
-const DEBUG_STATUS = true;
+const DEBUG_STATUS = false;
 const dC = (message) => {
     if (DEBUG_STATUS) {
         console.debug(message);
