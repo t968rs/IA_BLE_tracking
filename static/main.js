@@ -769,13 +769,8 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
                 }
                 // Calculate the centroid of the polygon
                 const centroid = turfcentroid(clickedfeature);
-                const coordinates = centroid.geometry.coordinates;
+                const coordinates = e.lngLat;
 
-                // Ensure coordinates are in the correct format
-                if (!Array.isArray(coordinates) || coordinates.length !== 2) {
-                    console.error('Invalid coordinates format');
-                    continue;
-                }
                 if (clickedfeature.layer.id === 'areas-interaction') {
                     // Get the popup content
                     const [mapPopupContent, featureBounds] = await areaPopupContent(feature, addONS,
@@ -790,36 +785,6 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
                         .setLngLat(coordinates)
                         .setHTML(mapPopupContent)
                         .addTo(map);
-
-                    // Calc feature specs and zoom specs
-                    const mapZoom = precisionRound(map.getZoom(), 1);
-                    let featureCenter = featureBounds.getCenter();
-                    let featureHeight = featureBounds.getNorth() - featureBounds.getSouth();
-                    const cameraOffset = [0, featureHeight];
-
-                    const newCameraTransform = map.cameraForBounds(featureBounds, {
-                        offset: cameraOffset,
-                        padding: {top: 5, bottom: 0, left: 5, right: 5}
-                    });
-                    let camZoom = newCameraTransform.zoom * featureHeight;
-                    if (camZoom < 5) {
-                        camZoom = 5;
-                    }
-                    if (camZoom > 11) {
-                        camZoom = 11;
-                    }
-                    camZoom = precisionRound(camZoom, 1);
-                    let centerArray = featureCenter.toArray();
-                    centerArray[1] = centerArray[1] + featureHeight * 0.3;
-                    let cameraCenter = new mapboxgl.LngLat(centerArray[0], centerArray[1]);
-
-                    if (LOG) {
-                        console.debug('Feature Height:', featureHeight, "Zoom:", camZoom, "Center:", cameraCenter);
-                    }
-                    map.jumpTo({
-                        center: cameraCenter,
-                        zoom: camZoom,
-                    })
                 }
             }
         });
@@ -887,7 +852,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
 }
 
 /**
- * Sets up lazy loading for Mapbox GL JS using Intersection Observer.
+ * Set up lazy loading for Mapbox GL JS using Intersection Observer.
  * @param {Object} sourcesMeta - Metadata for map sources.
  * @param {string} csvUrl - URL to the CSV data.
  * @param {Object} trackingAttributes - Attributes for tracking.
