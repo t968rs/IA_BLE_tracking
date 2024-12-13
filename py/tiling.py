@@ -304,7 +304,7 @@ if __name__ == "__main__":
 
     user_name = "t968rs"
     tileset_nameing = "ia-ble-tracking"
-    suffix = "-02"
+    suffix = "-04"
     geojson_filepath = r"Z:\automation\toolboxes\IA_BLE_tracking\data\spatial\IA_BLE_Tracking.geojson"
     recipe_filepath = r"Z:\automation\toolboxes\IA_BLE_tracking\data\mapbox_metadata\tileset_recipe_template.json"
 
@@ -314,9 +314,9 @@ if __name__ == "__main__":
             json.dump(tilset_info, outfile, indent=4)
     else:
         print(f"Tileset '{tileset_nameing}' does not exist.")
-    # uploaded_info_path = upload_tileset_source(user_name, tileset_nameing, geojson_filepath)
-    # #
-    # update_tileset_recipe(user_name, tileset_nameing, uploaded_info_path, suffix)
+    uploaded_info_path = upload_tileset_source(user_name, tileset_nameing, geojson_filepath)
+    #
+    update_tileset_recipe(user_name, tileset_nameing, uploaded_info_path, suffix)
     publish_tileset(
         user_name,
         tileset_nameing,)
