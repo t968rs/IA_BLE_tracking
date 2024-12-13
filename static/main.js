@@ -4,8 +4,7 @@ import turfcentroid from 'https://cdn.jsdelivr.net/npm/@turf/centroid@7.1.0/+esm
 import { initSourcesWorker, initAttributesWorker, debugWorkers } from "/static/src/workers/initWorkers.js";
 import {enableTextSelection,
     disableTextSelection,
-    closePopup,
-    areaPopupContent} from "/static/src/mapInteractions.js";
+} from "/static/src/mapInteractions.js";
 import {
     createLayerControls,
     updateLegendOnVisibilityChange,
@@ -15,6 +14,8 @@ import { handleExportButtonClick } from "/static/src/exportData.js";
 import {precisionRound} from "/static/src/maths.js";
 import { toggleTable, fetchAndDisplayData, updateButtonsPosition } from "/static/src/populateTable.js"
 import { loadMapboxGL, initializeMapboxMap } from "/static/src/mapLoader.js";
+import {    closePopup,
+    areaPopupContent} from "/static/src/mapFeaturePopups.js"
 const LOG = true;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -216,17 +217,6 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
         }
 
         const centroidPromise = fetch("/served/spatial/Centroids.json");
-
-        // // Function to remove aria-hidden from the close button
-        // function fixAriaHiddenOnCloseButton() {
-        //     const closeButton = document.querySelector('.mapboxgl-popup-close-button');
-        //     if (closeButton) {
-        //         closeButton.removeAttribute('aria-hidden');
-        //     }
-        // }
-
-        // Call this function after the popup is created
-        // map.on('popupopen', fixAriaHiddenOnCloseButton);
 
         // Loop through each source and add it to the map
         let mapSources = null;
@@ -633,7 +623,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
             type: 'symbol',
             source: 'ProjectAreas',
             layout: {
-                'text-field': '{HUC8}',
+                'text-field': '{Name}',
                 'text-size': 11,
                 'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
                 // 'text-radial-offset': 0.5,
@@ -810,14 +800,12 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
 
         // Add event listeners for mouse enter and leave -- NON CLICKs
         function addInteractionEvents(map, layer) {
-            function highlightFeature(e) {
-                if (e.features.length > 0) {
-                    const feature = e.features[0];
-                    const fid = feature.properties.HUC8;
-                    if (fid !== undefined) {
-                        map.setFilter('areas-highlight', ['==', 'HUC8', fid]);
-                    }
-                }
+
+
+            function highlightFeature(fid) {
+
+                map.setFilter('areas-highlight', ['==', 'HUC8', fid]);
+
             }
 
             map.on("hover", layer, (e) => {
@@ -826,9 +814,15 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
             });
 
             // Primary event handlers using pointer events
-            map.on('pointerenter', layer, (e) => {
-                map.getCanvas().style.cursor = 'pointer';
-                highlightFeature(e);
+            map.on('pointermove', layer, (e) => {
+                if (e.features.length > 0) {
+                    const feature = e.features[0];
+                    const fid = feature.properties.HUC8;
+                    if (fid !== undefined) {
+                        map.getCanvas().style.cursor = 'pointer';
+                        highlightFeature(fid);
+                    }
+                }
             });
 
             map.on('pointerleave', layer, () => {
@@ -837,7 +831,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
             });
 
             // Fallback event handlers using mouse events
-            map.on('mouseenter', layer, (e) => {
+            map.on('mousemove', layer, (e) => {
                 map.getCanvas().style.cursor = 'pointer';
                 if (e.features.length > 0) {
                     const feature = e.features[0];
