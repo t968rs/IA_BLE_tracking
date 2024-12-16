@@ -1,5 +1,14 @@
-// Import getMap from mapManager.js
-import { getMap, setTableLoaded } from './mapManager.js';
+// static/src/uploadData.js
+const DEBUG_STATUS = false;
+const dC = (message) => {
+    if (DEBUG_STATUS) {
+        console.debug(message);
+    }
+};
+
+
+import { getMap, setTableLoaded } from '/static/src/mapManager.js';
+import { initSourcesWorker, initAttributesWorker } from "/static/src/workers/initWorkers.js";
 
 // Main function to handle the upload button click
 export function handleUploadButtonClick() {
@@ -25,7 +34,7 @@ async function handleFileSelection(event) {
         try {
             await uploadFilesToServer(files);
             alert("Files uploaded successfully!");
-            // updateMapData(); // Update map data source if needed
+            await updateMapData(); // Update map data source if needed
         } catch (error) {
             console.error("Error uploading files:", error);
             alert("Failed to upload files. Please try again.");
@@ -94,13 +103,46 @@ async function uploadFilesToServer(files) {
 }
 
 // Function to update the map data source
-function updateMapData() {
-    const map = getMap();
-    if (map && map.getSource("ProjectAreas")) {
-        // Update the data of the source with a cache-busting parameter
-        map.getSource("ProjectAreas").setData('/data/spatial/IA_BLE_Tracking.geojson?timestamp=' + new Date().getTime());
-    } else {
-        console.error("Map or ProjectAreas source not found.");
+async function updateMapData() {
+    // const socket = io(); // e.g., http://localhost:5000
+    //
+    // socket.on('connect', () => {
+    //     console.log('WebSocket connection established!');
+    // });
+    //
+    // socket.on('data_updated', async (data) => {
+    // console.log(data.message);
+    // Re-fetch the CSV attributes
+
+    const [jsonUrl, csvUrl] = ['/served/mapbox_metadata/mapbox_sources.json',
+    '/served/spatial/IA_BLE_Tracking_attributes.csv'];
+
+    try {
+
+        // Once updatedAttributes is ready, you can reapply the attributes using setFeatureState
+        const map = getMap(); // assuming getMap returns your Mapbox instance
+
+        // If your table is displayed somewhere, re-fetch that or update it as needed
+        const [sourcesData, attributesData] = await Promise.all([
+            initSourcesWorker(jsonUrl),
+            initAttributesWorker(csvUrl)
+        ]);
+
+        const vectorSourceNames = sourcesData.mapbox_vector_names;
+
+        dC("Fetched attributes: ", attributesData)
+
+        // Apply attributes to Mapbox feature states
+        Object.entries(attributesData).forEach(([HUC8, attributes]) => {
+            map.setFeatureState(
+                {source: 'ProjectAreas', id: HUC8, sourceLayer: vectorSourceNames.ProjectAreas}, // Ensure HUC8 aligns with the `id` used in your vector tileset
+                attributes // Attributes as key-value pairs
+            );
+        });
+
+        console.log("Attributes reloaded from updated CSV.");
+    } catch (err) {
+        console.error("Error updating attributes from CSV:", err);
     }
 }
 

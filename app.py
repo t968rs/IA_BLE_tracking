@@ -11,6 +11,7 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_compress import Compress
 from werkzeug.utils import secure_filename
 from py.read_write_df import StatusTableManager, gdf_to_shapefile, df_to_excel_for_export
+# from flask_socketio import SocketIO, emit
 
 DEBUG_MODE = True
 logging.basicConfig(level=logging.DEBUG if DEBUG_MODE else logging.INFO)
@@ -18,6 +19,8 @@ load_dotenv(override=True)  # Load environment variables from .env file
 app = Flask(__name__)
 Compress(app)
 app.secret_key = os.getenv("SECRET_KEY")
+# socketio = SocketIO(app, cors_allowed_origins='*', path='/socket.io')  # or another custom path
+
 
 MANUAL_UPDATES_FOLDER = "data/manual_updates"
 EXCEL_DIR = os.path.join(app.root_path, "data", "tables")
@@ -286,6 +289,17 @@ def update_tracking_attributes():
                 df.to_csv(temp_path, index=False)
 
                 shutil.copy2(temp_path, os.path.join(save_dir, attributes_filename))
+
+                # *** EMIT SOCKET UPDATE HERE ***
+                # Here you emit an event signaling that the data has been updated
+                # You can send along any relevant data. For example, you might send:
+                # - A message that data is updated
+                # - The URL/path to the new GeoJSON so the client can fetch it
+                # emit('data_updated', {
+                #     'message': 'Tracking attributes updated successfully',
+                #     'csv_url': '/served/spatial/IA_BLE_Tracking_attributes.csv',  # Adjust this URL to how you serve the file
+                #     'timestamp': date_string
+                # }, broadcast=True)
 
                 return jsonify({'success': True, 'message': 'GeoJSON updated successfully'})
             else:
