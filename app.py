@@ -32,7 +32,7 @@ SHAPEFILE = "data/IA_BLE_Tracking.shp"
 # Homepage route
 @app.route("/")
 def home():
-    return render_template("index.html")  # Dynamic reference to HTML
+    return render_template("index.html", )  # Dynamic reference to HTML
 
 @app.route("/mapbox-token/")
 def mapbox_token():
@@ -226,7 +226,9 @@ def update_tracking_attributes():
                 gdf = gpd.read_file(shp_file_path)
 
                 # Process the GeoDataFrame
-                if 'HUC8' not in gdf.columns:
+                if 'huc8' in gdf.columns and 'HUC8' not in gdf.columns:
+                    gdf['HUC8'] = gdf['huc8']
+                elif 'HUC8' not in gdf.columns and 'huc8' not in gdf.columns:
                     return jsonify({'success': False, 'message': 'Required column "HUC8" not found in the data'}), 400
 
                 # Get metadata columns
