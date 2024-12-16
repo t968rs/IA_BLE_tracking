@@ -25,7 +25,7 @@ async function handleFileSelection(event) {
         try {
             await uploadFilesToServer(files);
             alert("Files uploaded successfully!");
-            updateMapData(); // Update map data source if needed
+            // updateMapData(); // Update map data source if needed
         } catch (error) {
             console.error("Error uploading files:", error);
             alert("Failed to upload files. Please try again.");
