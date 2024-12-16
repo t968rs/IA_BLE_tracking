@@ -15,11 +15,11 @@ function initAttributesWorker(csvUrl) {
 async function debugWorkers(jsonUrl, csvUrl) {
     console.log("Initializing sources worker...");
     const sourcesData = await initSourcesWorker(jsonUrl);
-    console.log("Sources Data:", sourcesData);
+    // console.log("Sources Data:", sourcesData);
 
     console.log("Initializing attributes worker...");
     const attributesData = await initAttributesWorker(csvUrl);
-    console.log("Attributes Data:", attributesData);
+    // console.log("Attributes Data:", attributesData);
 }
 
 export { initSourcesWorker, initAttributesWorker, debugWorkers };
