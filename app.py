@@ -276,11 +276,14 @@ def update_tracking_attributes():
                 # Attributes for the response
                 df = gdf.drop(columns='geometry')
 
+                # Copy CSV to temp then overwrite production csv
                 save_dir, attributes_filename = os.path.split(TRACKING_FILE)
                 attributes_filename, ext = os.path.splitext(attributes_filename)
                 attributes_filename = attributes_filename + "_attributes.csv"
-                outpath = os.path.join(BACKUP_LOC, attributes_filename)
-                df.to_csv(outpath, index=False)
+                temp_path = os.path.join(temp_dir, attributes_filename)
+                df.to_csv(temp_path, index=False)
+
+                shutil.copy2(temp_path, os.path.join(save_dir, attributes_filename))
 
                 return jsonify({'success': True, 'message': 'GeoJSON updated successfully'})
             else:
