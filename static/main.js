@@ -193,6 +193,8 @@ async function fetchDataAndSetup(jsonUrl, csvUrl) {
         ]);
 
         return [sourcesData, attributesData];
+
+
     } catch (error) {
         console.error("Error fetching data:", error);
     }
