@@ -243,10 +243,6 @@ th, td {
     top: 30px;
     left: 10px;
 
-    /* Remove the large height and bottom constraints that caused it to fill vertical space */
-    /* No height:80%; no bottom:50px; */
-    /* Just let inner elements define the space they need */
-
     /* Provide a subtle background or make it transparent so it "floats" */
     background: transparent;
     pointer-events: auto; /* ensure controls are clickable */
@@ -387,10 +383,13 @@ th, td {
 /* Collapsing states */
 #legend-container.collapsed {
     max-height: 8px;
+    overflow-y: hidden;
 }
 
 #layer-controls.collapsed {
     max-height: 8px;
+
+    overflow-y: hidden;
 }
 
 /*Popup stuff*/
