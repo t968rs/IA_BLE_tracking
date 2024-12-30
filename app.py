@@ -11,7 +11,7 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_compress import Compress
 from werkzeug.utils import secure_filename
 from py.read_write_df import StatusTableManager, gdf_to_shapefile, df_to_excel_for_export
-# from flask_socketio import SocketIO, emit
+
 
 DEBUG_MODE = True
 logging.basicConfig(level=logging.DEBUG if DEBUG_MODE else logging.INFO)
