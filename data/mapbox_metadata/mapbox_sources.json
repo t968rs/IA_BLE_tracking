@@ -10,7 +10,8 @@
             "type": "vector",
             "url": "mapbox://t968rs.ia-ble-tracking",
             "minzoom": 3,
-            "maxzoom": 11
+            "maxzoom": 11,
+            "promoteId": "project_id"
         },
         {
             "id": "WorkAreaLabels",
@@ -37,6 +38,6 @@
     {
         "WorkAreas": "Work_Areas-0b972m",
         "StateBoundary": "US_states-9vevdn",
-        "ProjectAreas": "ia-ble-tracking-04"
+        "ProjectAreas": "ia-ble-tracking_01"
     }
 }

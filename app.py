@@ -256,7 +256,7 @@ def update_tracking_attributes():
                     return jsonify({'success': False, 'message': f'At least two metadata columns are '
                                                                  f'required, {len(matching_cols)} provided'}), 400
 
-                gdf = gdf[gdf['HUC8'].notnull()]
+                gdf = gdf[gdf['project_id'].notnull()]
 
                 # Optionally, process metadata or enforce column types using StatusTableManager
                 with StatusTableManager(TABLE_METADATA) as manager:

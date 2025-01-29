@@ -293,6 +293,53 @@ def df_to_json(data, out_loc: str, filename: str = None):
         json.dump(dicted, f, indent=2)
 
 
+def df_to_metadata(data, out_loc: str, filename: str = None):
+    # Ensure data is a GeoDataFrame or DataFrame
+    if isinstance(data, gpd.GeoDataFrame):
+        df = pd.DataFrame(data.drop(columns='geometry'))  # Drop geometry for GeoDataFrame
+    elif isinstance(data, pd.DataFrame):
+        df = data.copy()
+    else:
+        raise ValueError("Data must be a GeoDataFrame or DataFrame")
+
+    # Automatically convert datetime columns to strings
+    for col in df.select_dtypes(include=['datetime', 'datetime64[ns]']).columns:
+        df[col] = df[col].dt.strftime('%Y-%m-%d')  # Format as 'YYYY-MM-DD'
+
+    # Ensure all other types are safely converted into string if required
+    for col in df.columns:
+        if df[col].dtype not in [bool, int, float, 'datetime64[ns]'] and not pd.api.types.is_numeric_dtype(df[col]):
+            df[col] = df[col].astype(str)
+
+    # Handle output file path
+    if ".json" in out_loc:  # If file path is given directly
+        out_loc, file = os.path.split(out_loc)
+        filename, ext = os.path.splitext(file)
+    if filename is None:  # Default filename if not provided
+        filename = "metadata"
+    outpath_table = os.path.normpath(os.path.join(out_loc, filename + ".json"))
+
+    # Convert DataFrame to JSON records
+    dicted = df.to_dict(orient='records')
+
+    # Convert to unique values
+    unique_dict = {}
+    for row in dicted:
+        for key, value in row.items():
+            if key not in unique_dict:
+                unique_dict[key] = [value]
+            if value not in unique_dict[key]:
+                unique_dict[key].append(value)
+    unique_dict = {k: list(set(v)) for k, v in unique_dict.items()}
+
+    # Write to JSON file
+    os.makedirs(out_loc, exist_ok=True)  # Ensure directory exists
+    with open(outpath_table, 'w') as f:
+        json.dump(unique_dict, f, indent=2)
+
+    print(f"Metadata successfully written to {outpath_table}")
+
+
 def gdf_to_geojson(gdf: gpd.GeoDataFrame, out_loc, filename=None):
     if not isinstance(gdf, gpd.GeoDataFrame):
         if isinstance(gdf, gpd.GeoSeries):
@@ -379,3 +426,7 @@ def toml_to_json(toml_file: str, json_file: str = None
         json.dump(data, jf, indent=2)
 
     return data, json_file
+
+
+if __name__ == "__main__":
+    pass

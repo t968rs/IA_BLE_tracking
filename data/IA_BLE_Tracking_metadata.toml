@@ -1,6 +1,12 @@
 sort_order = [ "TO_Area", "Name",]
 last_updated = "2019-04-05"
 
+[columns.project_id]
+geojson = "project_id"
+excel = "project_id"
+shapefile = "project_id"
+dtype = "string"
+
 [columns.HUC8]
 geojson = "HUC8"
 excel = "HUC8"
