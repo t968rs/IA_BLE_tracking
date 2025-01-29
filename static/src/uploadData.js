@@ -133,11 +133,11 @@ async function updateMapData() {
         dC("Fetched attributes: ", attributesData)
 
         // Apply attributes to Mapbox feature states
-        Object.entries(attributesData).forEach(([HUC8, attributes]) => {
+        Object.entries(attributesData).forEach(([project_id, attributes]) => {
             map.setFeatureState(
-                {source: 'ProjectAreas', id: HUC8, sourceLayer: vectorSourceNames.ProjectAreas}, // Ensure HUC8 aligns with the `id` used in your vector tileset
+                {source: 'ProjectAreas', id: project_id, sourceLayer: vectorSourceNames.ProjectAreas}, // Ensure HUC8 aligns with the `id` used in your vector tileset
                 attributes // Attributes as key-value pairs
-            );
+            ); // TODO switch from HUC8 to project_id
         });
 
         console.log("Attributes reloaded from updated CSV.");

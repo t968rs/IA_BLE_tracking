@@ -16,7 +16,7 @@ import { toggleTable, fetchAndDisplayData, updateButtonsPosition } from "/static
 import { loadMapboxGL, initializeMapboxMap } from "/static/src/mapLoader.js";
 import {    closePopup,
     areaPopupContent} from "/static/src/mapFeaturePopups.js"
-const LOG = false;
+const LOG = true;
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("DOM doc state:", document.readyState);
@@ -220,37 +220,26 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
 
         const centroidPromise = fetch("/served/spatial/Centroids.json");
 
-        // Loop through each source and add it to the map
-        let mapSources = null;
-        let vectorSourceNames = null;
-        if (sourcesMeta) {
-            mapSources = sourcesMeta.mapbox_sources;
-            // Loop through each source and add it to the map
-            mapSources.forEach((source) => {
-                try {
-                    if (source.type === 'vector' && source.url) {
-                        map.addSource(source.id, {
-                            type: source.type,
-                            url: source.url
-                        });
-                    } else if (source.type === "vector" && source.tiles) {
-                        map.addSource(source.id, {
-                            type: source.type,
-                            tiles: source.tiles,
-                            minzoom: source.minzoom,
-                            maxzoom: source.maxzoom
-                        })
+        if (!sourcesMeta || !sourcesMeta["mapbox_sources"]) {
+            console.error("Failed to fetch or process sources data.");
+            return;
+        }
 
-                    } else if (source.type === 'geojson') {
-                        map.addSource(source.id, {
-                            type: source.type,
-                            data: source.data
-                        });
-                    } else {
-                        console.warn(`Unsupported source type: ${source.type}`);
-                    }
+        // Pull out subcomponents
+        const mapSources = sourcesMeta["mapbox_sources"];
+        const {ProjectAreas, StateBoundary, WorkAreas} = sourcesMeta["mapbox_vector_names"];
+
+        // Loop through each source and add it to the map
+        if (sourcesMeta) {
+
+            mapSources.forEach(( {id, ...rest} ) => {
+                try {
+                    const source = {id, ...rest};
+                    map.addSource(id, {
+                        ...rest
+                    });
                 } catch (sourceError) {
-                    console.error(`Error adding source "${source.id}":`, sourceError);
+                    console.error(`Error adding source "${id}":`, sourceError);
                 }
             });
 
@@ -267,19 +256,23 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
         map.doubleClickZoom.enable();
 
         // Get metadata
-        if (!sourcesMeta || !sourcesMeta.mapbox_vector_names) {
+        if (!sourcesMeta || !sourcesMeta["mapbox_vector_names"]) {
             console.error("Failed to fetch or process sources data.");
             return;
         }
-        vectorSourceNames = sourcesMeta.mapbox_vector_names;
+
 
         if (LOG) {
             console.debug("Fetched attributes: ", trackingAttributes);
         }
         // Apply attributes to Mapbox feature states
-        Object.entries(trackingAttributes).forEach(([HUC8, attributes]) => {
+        Object.entries(trackingAttributes).forEach(([project_id, attributes]) => {
             map.setFeatureState(
-                {source: 'ProjectAreas', id: HUC8, sourceLayer: vectorSourceNames.ProjectAreas}, // Ensure HUC8 aligns with the `id` used in your vector tileset
+                {
+                    source: 'ProjectAreas',
+                    id: project_id,
+                    sourceLayer: ProjectAreas
+                }, // Ensure id aligns with the `id` used in your vector tileset
                 attributes // Attributes as key-value pairs
             );
         });
@@ -287,16 +280,19 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
             console.debug("Added tracking attributes.", trackingAttributes);
         }
 
+        // const fsTest = map.getFeatureState(source: 'ProjectAreas')
+        // console.debug("fsTest", fsTest)
+
         // Background
-        map.addLayer({
-            id: 'background',
-            type: 'background',
-            maxzoom: 8,
-            paint: {
-                'background-color': 'rgb(135,75,75)',
-                'background-opacity': 0.5,
-            }
-        })
+        // map.addLayer({
+        //     id: 'background',
+        //     type: 'background',
+        //     maxzoom: 8,
+        //     paint: {
+        //         'background-color': 'rgb(135,75,75)',
+        //         'background-opacity': 0.5,
+        //     }
+        // })
 
         // MIP Submission, Draft
         map.addLayer({
@@ -326,7 +322,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
                     'rgba(204, 204, 204, 0)', // 0% transparency
                 ]
             },
-            "source-layer": vectorSourceNames.ProjectAreas
+            "source-layer": ProjectAreas
         });
 
         // MIP Submission, Floodplain
@@ -355,7 +351,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
                     'rgba(204, 204, 204, 0)', // 0% transparency
                 ]
             },
-            "source-layer": vectorSourceNames.ProjectAreas
+            "source-layer": ProjectAreas
         });
 
         // MIP Submission, Hydraulics
@@ -384,7 +380,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
                     'rgba(204, 204, 204, 0)', // 0% transparency
                 ]
             },
-            "source-layer": vectorSourceNames.ProjectAreas
+            "source-layer": ProjectAreas
         });
 
         // Add grid status layer
@@ -409,7 +405,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
                     'rgba(204, 204, 204, 0)', // 0% transparency
                 ]
             },
-            "source-layer": vectorSourceNames.ProjectAreas
+            "source-layer": ProjectAreas
         });
 
         // // Add overall production layer
@@ -460,7 +456,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
                 ],
                 'fill-opacity': 0.5
             },
-            "source-layer": vectorSourceNames.ProjectAreas // Ensure this matches the layer name within your vector tileset
+            "source-layer": ProjectAreas // Ensure this matches the layer name within your vector tileset
         });
 
         // Add outline layer
@@ -472,7 +468,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
                 'line-color': 'rgb(247, 247, 247)',
                 'line-width': 1
             },
-            "source-layer": vectorSourceNames.ProjectAreas
+            "source-layer": ProjectAreas
         });
 
         // Add model outlines (CUSTOM OUTLINES)
@@ -502,8 +498,8 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
             paint: {
                 'fill-color': 'rgba(255, 255, 255, 0.5)' // Transparent white for highlight
             },
-            filter: ['==', 'HUC8', ''],
-            "source-layer": vectorSourceNames.ProjectAreas
+            filter: ['==', 'project_id', ''],
+            "source-layer": ProjectAreas
         });
 
         // Add state boundary layer
@@ -513,7 +509,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
             source: 'StateBoundary',
             paint: {'fill-color': 'rgba(255,255,255,0.85)'},
             filter: ['!=', ['get', 'STATEFP'], '19'],
-            "source-layer": vectorSourceNames.StateBoundary
+            "source-layer": StateBoundary
         });
 
         map.addLayer({
@@ -525,7 +521,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
                 "line-width": 1.5
             }
             ,
-            "source-layer": vectorSourceNames.StateBoundary
+            "source-layer": StateBoundary
         });
 
         map.addLayer({
@@ -537,7 +533,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
                 'line-width': 1.2,
                 'line-dasharray': [2, 3] // Dashed line
             },
-            "source-layer": vectorSourceNames.StateBoundary
+            "source-layer": StateBoundary
         });
 
         // Add work areas layer
@@ -559,7 +555,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
                 ],
                 'line-width': 3
             },
-            "source-layer": vectorSourceNames.WorkAreas
+            "source-layer": WorkAreas
         });
 
         // Add labels for areas
@@ -581,7 +577,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
                 'text-halo-color': 'rgba(247,247,247,0.65)', // No halo
                 'text-halo-width': 1
             },
-            "source-layer": vectorSourceNames.ProjectAreas
+            "source-layer": ProjectAreas
         });
 
         // Add work area labels
@@ -589,7 +585,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
             id: 'work-area-labels',
             type: 'symbol',
             source: 'WorkAreas',
-            "source-layer": vectorSourceNames.WorkAreas,
+            "source-layer": WorkAreas,
             layout: {
                 'text-field': ['get', 'MIP_Case'],
                 'text-font': ['Arial Unicode MS Bold'], // Bold font
@@ -674,7 +670,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
             paint: {
                 'fill-color': 'rgba(0, 0, 0, 0)' // Fully transparent fill
             },
-            "source-layer": vectorSourceNames.ProjectAreas
+            "source-layer": ProjectAreas
         });
 
         // Add layer-group control
@@ -765,9 +761,9 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
 
             // Handle the features found
             for (const clickedfeature of features) {
-                let fid = feature.properties.HUC8;
+                let fid = feature.properties.project_id;
                 if (fid !== undefined) {
-                    map.setFilter('areas-highlight', ['==', 'HUC8', fid]);
+                    map.setFilter('areas-highlight', ['==', 'project_id', fid]);
                 }
                 // Calculate the centroid of the polygon
                 const centroid = turfcentroid(clickedfeature);
@@ -797,7 +793,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
 
             function highlightFeature(fid) {
 
-                map.setFilter('areas-highlight', ['==', 'HUC8', fid]);
+                map.setFilter('areas-highlight', ['==', 'project_id', fid]);
 
             }
 
@@ -810,7 +806,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
             map.on('pointermove', layer, (e) => {
                 if (e.features.length > 0) {
                     const feature = e.features[0];
-                    const fid = feature.properties.HUC8;
+                    const fid = feature.properties.project_id;
                     if (fid !== undefined) {
                         map.getCanvas().style.cursor = 'pointer';
                         highlightFeature(fid);
@@ -819,7 +815,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
             });
 
             map.on('pointerleave', layer, () => {
-                map.setFilter('areas-highlight', ['==', 'HUC8', '']);
+                map.setFilter('areas-highlight', ['==', 'project_id', '']);
                 map.getCanvas().style.cursor = '';
             });
 
@@ -828,12 +824,12 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
                 map.getCanvas().style.cursor = 'pointer';
                 if (e.features.length > 0) {
                     const feature = e.features[0];
-                    const fid = feature.properties.HUC8;
+                    const fid = feature.properties.project_id;
                     if (LOG) {
                         console.debug('Feature ID:', fid);
                     }
                     if (fid !== undefined) {
-                        map.setFilter('areas-highlight', ['==', 'HUC8', fid]);
+                        map.setFilter('areas-highlight', ['==', 'project_id', fid]);
                     }
                 }
             });
@@ -842,7 +838,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
                 if (LOG) {
                     console.debug('Mouse leave event detected');
                 }
-                map.setFilter('areas-highlight', ['==', 'HUC8', '']);
+                map.setFilter('areas-highlight', ['==', 'project_id', '']);
                 map.getCanvas().style.cursor = '';
             });
         }

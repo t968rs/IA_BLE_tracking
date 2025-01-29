@@ -1,5 +1,6 @@
 {
   "columns": {
+    "project_id": {"geojson":  "project_id", "excel":  "project_id", "shapefile":  "project_id", "dtype":  "string"},
     "HUC8": {"geojson": "HUC8",
       "excel": "HUC8", "shapefile": "HUC8", "dtype": "string"},
     "Name": {"geojson": "Name",

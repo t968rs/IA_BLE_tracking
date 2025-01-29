@@ -60,22 +60,22 @@ export async function areaPopupContent(clickedfeature, addONS, attributes) {
     }
 
     // Add attributes from CSV
-    const featureHUC8 = clickedfeature.properties?.HUC8;
-    if (featureHUC8 && attributes && attributes[featureHUC8]) {
-        const featureAttributes = attributes[featureHUC8];
-        const featName = featureAttributes.Name || featureHUC8;
+    const featureID = clickedfeature.properties?.project_id;
+    if (featureID && attributes && attributes[featureID]) {
+        const featureAttributes = attributes[featureID];
+        const featName = featureAttributes.Name || featureID;
 
         for (let [key, value] of Object.entries(featureAttributes)) {
-            if (value !== featureHUC8 && value !== featName && !propertiesAdded.includes(key)) {
+            if (value !== featureID && value !== featName && !propertiesAdded.includes(key)) {
                 [key, value] = formatKeyValueNames(key, value);
                 popupContent += `<tr><td>${key}</td><td>${value}</td></tr>`;
                 propertiesAdded.push(key);
             }
         }
-    } else if (!featureHUC8) {
+    } else if (!featureID) {
         console.warn('Feature is missing HUC8 for attribute matching.');
     } else {
-        console.warn(`No additional attributes found for HUC8: ${featureHUC8}`);
+        console.warn(`No additional attributes found for HUC8: ${featureID}`);
     }
 
     // Add additional info if provided

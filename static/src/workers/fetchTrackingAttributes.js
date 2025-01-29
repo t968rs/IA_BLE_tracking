@@ -13,9 +13,10 @@ async function fetchTrackingAttributes(csvUrl) {
 
         const attributes = {};
         data.forEach((row) => {
-            const HUC8 = row.HUC8;
-            if (HUC8) {
-                attributes[HUC8] = { ...row };
+            // console.debug(row)
+            const feat_id = row.project_id;
+            if (feat_id) {
+                attributes[feat_id] = { ...row };
             }
         });
         return attributes;

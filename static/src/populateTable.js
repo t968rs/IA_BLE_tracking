@@ -171,7 +171,7 @@ export async function fetchAndDisplayData(sourceData, attributesData) {
             $(this).addClass('row-hover'); // Add a hover class for custom styling
 
             if (rowData) {
-                sendDataToMap(rowData["HUC8"], getMap()); // Send data to the map
+                sendDataToMap(rowData["project_id"], getMap()); // Send data to the map
             }
         });
 
@@ -256,7 +256,7 @@ async function prepInfoRows(actualLength) {
 
 function sendDataToMap(dataValue, map) {
     // Assuming you have a Mapbox GL JS map instance
-    map.setFilter("areas-highlight", ["==", "HUC8", dataValue]); // Adjust logic as needed
+    map.setFilter("areas-highlight", ["==", "project_id", dataValue]); // Adjust logic as needed
 }
 
 // Function to update the toggle button's position dynamically
