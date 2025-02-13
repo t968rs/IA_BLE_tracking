@@ -15,6 +15,8 @@
       "excel": "Hydraulics", "shapefile": "HYDRA_MIP", "dtype": "string"},
     "P01_MM": {"geojson": "P01_MM",
       "excel": "P01 GDB", "shapefile": "P01_MM", "dtype": "date"},
+    "P02_MM": {"geojson":  "P02_MM",
+    "excel":  "P02 GDB", "shapefile":  "P02_MM", "dtype":  "date"},
     "RAW_Grd_MM": {"geojson": "RAW_Grd_MM",
       "excel": "RAW Grids", "shapefile": "RAW_GRD", "dtype": "date"},
     "DFIRM_Grd_MM": {"geojson": "DFIRM_Grd_MM",
