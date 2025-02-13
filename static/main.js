@@ -325,6 +325,25 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
             "source-layer": ProjectAreas
         });
 
+        // P02 Submission
+        map.addLayer({
+          id: 'P02_MM',
+          type: 'fill',
+          source: 'ProjectAreas',
+          layout: {
+            'visibility': 'none'
+          },
+          paint: {
+            'fill-color': [
+              'match',
+              ['feature-state', 'P02_MM'],
+              [null, 'NaT', ''],    // If the value is null, 'NaT', or empty …
+              'rgba(126,125,125,0.75)',            // … use this color (no date),
+              'rgba(0,255,0,0.73)'             // Otherwise, use this color (has date).
+            ]
+          }
+        });
+
         // MIP Submission, Floodplain
         map.addLayer({
             id: 'fp-mip',
@@ -675,7 +694,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
 
         // Add layer-group control
         const controlLayers = {
-
+            'P02 GDB': ["P02_MM"],
             'Draft MIP': ['draft-mip'],
             'FP MIP': ['fp-mip'],
             'Hydraulics MIP': ['hydraulics-mip'],
@@ -705,6 +724,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
         // create legend
         const legendLayers = {
             'Draft MIP Status': 'draft-mip',
+            "P02 GDB Status": "P02_MM",
             'FP MIP Status': 'fp-mip',
             'Hydra MIP Status': 'hydraulics-mip',
             // 'Production Status': 'prod-status',
