@@ -334,14 +334,17 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
             'visibility': 'none'
           },
           paint: {
-            'fill-color': [
-              'match',
-              ['feature-state', 'P02_MM'],
-              [null, 'NaT', ''],    // If the value is null, 'NaT', or empty …
-              'rgba(126,125,125,0.75)',            // … use this color (no date),
-              'rgba(0,255,0,0.73)'             // Otherwise, use this color (has date).
-            ]
-          }
+              'fill-color': [
+                'match',
+                ['feature-state', 'P02_MM'],
+                null, 'rgba(126,125,125,0.75)',  // Color if value is null
+                'NaT', 'rgba(126,125,125,0.75)', // Color if value is 'NaT'
+                '', 'rgba(126,125,125,0.58)',    // Color if value is an empty string
+                'rgba(0,255,0,0.73)'             // Fallback (else)
+              ]
+          },
+            "source-layer": ProjectAreas
+
         });
 
         // MIP Submission, Floodplain
