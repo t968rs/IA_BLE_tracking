@@ -341,7 +341,9 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
               'rgba(126,125,125,0.75)',            // … use this color (no date),
               'rgba(0,255,0,0.73)'             // Otherwise, use this color (has date).
             ]
-          }
+          },
+            "source-layer": ProjectAreas
+
         });
 
         // MIP Submission, Floodplain
