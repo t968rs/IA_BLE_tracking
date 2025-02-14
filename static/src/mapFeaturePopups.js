@@ -5,7 +5,7 @@ let unwanted = ["OID_", "OID", "OBJECTID", "GlobalID", "Shape__Area",
     "Shape__Length", "Shape__Are", "Shape__Len", "Shape__Area_", "States", "GlobalID"];
 // List of unwanted substrings
 let unwantedSubstrings = ["area", "acre", "sq_k", "final", "tie", "nee", "_ac", "mo", "shape", "nee",
-    " ac", "global", "legend"];
+    " ac", "global", "legend", 'file'];
 
 // Function to check if a property name contains any unwanted substrings
 function containsUnwantedSubstring(property) {
