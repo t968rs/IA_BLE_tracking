@@ -342,9 +342,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
                 '', 'rgba(126,125,125,0.58)',    // Color if value is an empty string
                 'rgba(0,255,0,0.73)'             // Fallback (else)
               ]
-          },
-            "source-layer": ProjectAreas
-
+          }, "source-layer": ProjectAreas
         });
 
         // MIP Submission, Floodplain
