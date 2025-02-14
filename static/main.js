@@ -275,6 +275,21 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
                 }, // Ensure id aligns with the `id` used in your vector tileset
                 attributes // Attributes as key-value pairs
             );
+
+            const p02_mm_value = attributes.P02_MM
+            const isUploaded =
+                p02_mm_value !== null && p02_mm_value !== '' && p02_mm_value !== 'NaT';
+            map.setFeatureState(
+                {
+                    source: 'ProjectAreas',
+                    id: project_id,
+                    sourceLayer: ProjectAreas
+                },
+                {
+                  P02_MM: p02_mm_value,
+                  P02_Status: isUploaded ? 'Uploaded' : 'Not Uploaded'
+                }
+            )
         });
         if (LOG) {
             console.debug("Added tracking attributes.", trackingAttributes);
@@ -301,7 +316,7 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
             source: 'ProjectAreas',
             layout: {
                 // Make the layer visible by default.
-                'visibility': 'visible'
+                'visibility': 'none'
             },
 
             paint: {
@@ -331,19 +346,20 @@ async function setupMap(map, sourcesMeta, csvUrl, trackingAttributes) {
           type: 'fill',
           source: 'ProjectAreas',
           layout: {
-            'visibility': 'none'
+            'visibility': 'visible'
           },
           paint: {
               'fill-color': [
                 'match',
-                ['feature-state', 'P02_MM'],
-                null, 'rgba(126,125,125,0.75)',  // Color if value is null
-                'NaT', 'rgba(126,125,125,0.75)', // Color if value is 'NaT'
-                '', 'rgba(126,125,125,0.58)',    // Color if value is an empty string
-                'rgba(0,255,0,0.73)'             // Fallback (else)
+                ['feature-state', 'P02_Status'],
+                'Not Uploaded', 'rgba(255,161,161,0.75)',  // Color if value is null
+                'Uploaded', 'rgba(29,189,29,0.73)',             // Uploaded
+                'rgba(119,108,83,0.55)'
               ]
           }, "source-layer": ProjectAreas
         });
+
+        if (LOG) {console.debug("Layers:", map.getStyle().layers)}
 
         // MIP Submission, Floodplain
         map.addLayer({

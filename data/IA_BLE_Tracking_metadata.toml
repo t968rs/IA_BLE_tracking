@@ -49,6 +49,12 @@ excel = "P01 GDB"
 shapefile = "P01_MM"
 dtype = "date"
 
+[columns.P02_MM]
+geojson = "P02_MM"
+excel = "P02 GDB"
+shapefile = "P02_MM"
+dtype = "date"
+
 [columns.RAW_Grd_MM]
 geojson = "RAW_Grd_MM"
 excel = "RAW Grids"

@@ -10,6 +10,12 @@ export let whichGrid = {
     '1, 2': "DRAFT, Add'l Ret", '2': "Add'l Ret", "All on MM": "All on MM"
 };
 
+function legendKeyReplacements(value) {
+    value = value.replace(/<br>/g, '\n');
+    value = value.replace("NaT", "")
+    return value;
+}
+
 // Function to create legend items
 export async function createLegendItem(color, label, isAlias = false, isCircle = false) {
     const item = document.createElement('div');
@@ -25,7 +31,8 @@ export async function createLegendItem(color, label, isAlias = false, isCircle =
     key.style.backgroundColor = color;
 
     const value = document.createElement('span');
-    value.innerHTML = label;
+
+    value.innerHTML = legendKeyReplacements(label);
     if (isAlias) {
         value.style.fontWeight = 'bold';
         value.style.fontFamily = 'Century Gothic';
@@ -88,7 +95,7 @@ export async function populateLegend(map, layersToInclude) {
             }
 
             if (colorProperty && typeof colorProperty === 'string') {
-                const aliasItem = await createLegendItem('', "", true);
+                const aliasItem = await createLegendItem(colorProperty, "", true);
                 legend.appendChild(aliasItem);
 
                 if (colorProperty !== '* other *') {

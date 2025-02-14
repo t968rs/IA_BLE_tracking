@@ -25,7 +25,8 @@ function formatKeyValueNames(key, value) {
             .replace('  ', ' ')
             .replace("Su", "Submit")
             .replace("Mapping In", "Ph1 Mapped By")
-            .replace("Perc", "%");
+            .replace("Perc", "%")
+            .replace("NaT", "");
     }
     return [displayKey, displayValue];
 }
