@@ -7,8 +7,11 @@ import typing as T
 from shapely.geometry import Polygon, Point
 from shapely.lib import unary_union
 from shapely.ops import nearest_points
-
 import pyproj
+import pyproj.aoi
+
+from read_write_df import df_to_excel, df_to_json, gdf_to_geojson
+from filter_sort_select import look_for_duplicates, filter_gdf_by_column, format_dates, reorder_gdf_columns
 
 
 def get_utm_zone(gdf):
@@ -130,24 +133,6 @@ def get_label_point(gdf, position=None, buffer_distance=None):
     return nearest_point
 
 
-def process_date(x):
-    from datetime import datetime
-    try:
-        # Try to parse the date to check if it's a valid datetime
-        dt = datetime.fromisoformat(str(x))
-        new_date = dt.strftime('%Y/%m/%d')
-
-        # Check for 0s
-        number_contents = [c for c in new_date if c.isnumeric()]
-        number_contents = list(set(number_contents))
-        if len(number_contents) == 1 and number_contents[0] == "0":
-            return ""
-
-        return new_date
-    except ValueError:
-        return x
-
-
 def read_json_to_dict(file: str) -> dict:
     with open(file, 'r') as f:
         return json.load(f)
@@ -167,16 +152,6 @@ def get_centroids(gdf):
     new_gdf['geometry'] = points
     new_gdf = gpd.GeoDataFrame(new_gdf, geometry='geometry', crs=gdf.crs)
     return new_gdf
-
-
-def look_for_duplicates(gdf, column):
-    duplicates = gdf[gdf.duplicated(subset=column, keep=False)]
-    # print(f" \nDuplicates in {column}: \n  {duplicates}\n")
-    return duplicates
-
-
-def filter_gdf_by_column(gdf, column, value):
-    return gdf[gdf[column].fillna("").str.contains(value, case=False)]
 
 
 def add_numbered_primary_key(gdf, col_name):
@@ -199,35 +174,35 @@ GROUP_LAYERS_LOOKUP = {
 }
 
 COLUMN_MAPPING = {"IA_BLE_Tracking": {"huc8": "HUC8", "which_grid": "which_grid", "name": "Name", "Name HUC8": None,
-                                        "Draft_MIP": "Draft_MIP",
-                                        "FP_MIP": "FP_MIP",
-                                        "MIP_Case": "MIP_Case",
-                                        "Hydra MIP": "Hydraulics MIP",
-                                        "BFE_TODO": "BFE_TODO",
-                                        "has_AECOM": "Has AECOM Tie",
-                                        "FRP_Perc_Complete": "FRP_Perc_Complete",
-                                        "FRP": "FRP",
-                                        'PBL_Assign': "P02a_Assign",
-                                        'Phase_1_Su': "P01_MM",
-                                        'RAW_Grid': "RAW_Grd_MM",
-                                        'DFIRM_Grid': "DFIRM_Grd_MM",
-                                        'Addl_Grids': "Addl_Grd_MM",
-                                        'Production': "Prod Stage",
-                                        'Mapping_In': "P01 Analyst",
-                                        'Has_Tie_In': "AECOM Tie-in",
-                                        'Name__HUC8': None,
-                                        'TO_Area': "TO_Area",
-                                        'Final_Mode': "Model Complete",
-                                        'Contractor': None,
-                                        'loc_id': None,
-                                        'Grids_Note': "Notes",
-                                        'has_AECOM_': None,
-                                        'Extent': None}}
+                                      "Draft_MIP": "Draft_MIP",
+                                      "FP_MIP": "FP_MIP",
+                                      "MIP_Case": "MIP_Case",
+                                      "Hydra MIP": "Hydraulics MIP",
+                                      "BFE_TODO": "BFE_TODO",
+                                      "has_AECOM": "Has AECOM Tie",
+                                      "FRP_Perc_Complete": "FRP_Perc_Complete",
+                                      "FRP": "FRP",
+                                      'PBL_Assign': "P02a_Assign",
+                                      'Phase_1_Su': "P01_MM",
+                                      'RAW_Grid': "RAW_Grd_MM",
+                                      'DFIRM_Grid': "DFIRM_Grd_MM",
+                                      'Addl_Grids': "Addl_Grd_MM",
+                                      'Production': "Prod Stage",
+                                      'Mapping_In': "P01 Analyst",
+                                      'Has_Tie_In': "AECOM Tie-in",
+                                      'Name__HUC8': None,
+                                      'TO_Area': "TO_Area",
+                                      'Final_Mode': "Model Complete",
+                                      'Contractor': None,
+                                      'loc_id': None,
+                                      'Grids_Note': "Notes",
+                                      'has_AECOM_': None,
+                                      'Extent': None}}
 
 COLUMN_ORDERS = {"IA_BLE_Tracking": {"first": ['huc8', "Name", "Draft_MIP", "FP_MIP", "Hydraulics MIP",
                                                "FRP_Perc_Complete", "FRP", "BFE_TODO", "PBL_Assign",
-                                                 "Phase_1_Su"],
-                                       "last": ['geometry']}, }
+                                               "Phase_1_Su"],
+                                     "last": ['geometry']}, }
 
 PROD_STATUS_MAPPING = {"DD Submit": "DD Submit",
                        "DD Validation": "DD Internal",
@@ -239,141 +214,6 @@ PROD_STATUS_MAPPING = {"DD Submit": "DD Submit",
 SPECIAL_COLUMNS = {"FRP": 4}
 
 STATIC_DATA = ["Iowa_WhereISmodel", "US_states"]
-
-
-def format_dates(gdf):
-    """
-    Remove the time part from date columns in a GeoDataFrame.
-
-    Parameters:
-    gdf (GeoDataFrame): The GeoDataFrame whose date columns need to be processed.
-    date_columns (list): A list of column names that contain date strings with a "T".
-
-    Returns:
-    GeoDataFrame: The GeoDataFrame with modified date columns.
-    """
-    # Convert Timestamp objects to strings
-    for col in gdf.columns:
-        if pd.api.types.is_datetime64_any_dtype(gdf[col]):
-            print(f"\t\tConverting {col} to string")
-            gdf[col] = gdf[col].astype(str)
-            gdf[col] = gdf[col].apply(process_date)
-            gdf[col] = gdf[col].str.replace("0000/00/00", "")
-    gdf = gdf.replace("0000/00/00", "")
-
-    return gdf
-
-
-def summarize_column(gdf, column):
-    if column in gdf.columns:
-        unique_names = gdf[column].unique()
-        print(f"Unique {column} values: {[u for u in unique_names]}")
-        print(f'   Plus, {None if None in unique_names else "No-NULL"}  values')
-
-
-def df_to_excel(df, out_loc, filename=None, sheetname="Sheet1"):
-    print(f"\nExcel Stuff for {filename}")
-    if filename is None:
-        filename = "output"
-    outpath = os.path.join(out_loc, f"{filename}.xlsx")
-    os.makedirs(out_loc, exist_ok=True)
-
-    if isinstance(df, gpd.GeoDataFrame) or "geometry" in df.columns:
-        df = pd.DataFrame(df.drop(columns=['geometry']))
-
-    for c in df.columns:
-        if "legend" in c.lower():
-            df.drop(columns=c, inplace=True)
-
-    # Check existing sheets for target and value sheets
-    if os.path.exists(outpath):
-        situations = {"Target Sheet Exists": False, "Value Sheet Exists": False}
-        with pd.ExcelFile(outpath) as reader:
-            pd.read_excel(reader, sheet_name=None)
-            sheets = reader.sheet_names
-            print(f" Sheet Names: {sheets}")
-            if sheetname in sheets:
-                situations["Target Sheet Exists"] = True
-            if sheetname + "_values" in sheets:
-                situations["Value Sheet Exists"] = True
-
-        # Get existing header
-        try:
-            existing_df = pd.read_excel(outpath, sheet_name=sheetname, header=0)
-            print(f" Existing: {existing_df.head()}")
-            existing_columns = existing_df.columns.to_list()
-            print(f"Existing Columns: {existing_columns}")
-            # df.drop(columns=[c for c in df.columns if c not in existing_columns], inplace=True)
-            # print(f"Unique Names: {df['Name'].unique()}")
-        except Exception as e:
-            print(f"Error reading existing file: {e}")
-            os.remove(outpath)
-            df.to_excel(outpath, index=False, sheet_name=sheetname)
-            return
-
-        # Append to the existing Excel file
-        # Mod write kwargs based on situations
-        write_kwargs = {"sheet_name": sheetname, "header": True, "startrow": 1}
-        if situations["Target Sheet Exists"]:
-            write_kwargs["sheet_name"] = sheetname + "_values"
-        else:
-            write_kwargs["sheet_name"] = sheetname
-
-        # Do the write operation
-        with pd.ExcelWriter(outpath, engine='openpyxl', mode="a", if_sheet_exists="overlay") as writer:
-            # Clear the existing data in the sheet
-            print(f" Sheets: {writer.sheets}")
-            if situations["Target Sheet Exists"]:
-                sheet = writer.sheets[sheetname + "_values"]
-            if situations["Value Sheet Exists"]:
-                sheet = writer.sheets[sheetname + "_values"]
-
-            first_df_col = df.columns[0]
-            print(f"  First Column: {first_df_col}")
-            if "_Perc" in first_df_col:
-                min_out_column = first_df_col.split("_")[0] + " %"
-            elif first_df_col in existing_columns:
-                min_out_column = first_df_col
-            else:
-                min_out_column = sheet.min_column
-            sheet_column_index = existing_df.columns.get_loc(min_out_column)
-            write_kwargs["startcol"] = sheet_column_index
-            print(f"  Min Row: {sheet.min_row}")
-            print(f"  Min Row Value: {sheet.cell(row=sheet.min_row, column=1).value}")
-            print(f"  Max Row Value: {sheet.cell(row=sheet.max_row, column=1).value}")
-
-            # Clear values sheet if exists
-            if situations["Value Sheet Exists"]:
-                print(f"  Clearing {sheetname}_values")
-                values_sheet = writer.sheets[sheetname + "_values"]
-                for row in values_sheet.iter_rows():
-                    for cell in row:
-                        cell.value = None
-
-            # Write the new data to the sheet
-            df.to_excel(writer, index=False, **write_kwargs)
-
-    else:
-        # Create a new Excel file
-        df.to_excel(outpath, index=False, sheet_name=sheetname)
-
-
-def reorder_gdf_columns(gdf, first_columns, last_columns=None):
-    if last_columns is None:
-        last_columns = []
-
-    # Columns that are not in first_columns or last_columns
-    middle_columns = [col for col in gdf.columns if col not in first_columns and col not in last_columns]
-
-    # New column order
-    first_columns = [col for col in first_columns if col in gdf.columns]
-    last_columns = [col for col in last_columns if col in gdf.columns]
-    new_column_order = first_columns + middle_columns + last_columns
-
-    # Reorder the columns in the GeoDataFrame
-    gdf = gdf[new_column_order]
-
-    return gdf
 
 
 def aggregate_buffer_polygons(gdf, buffer_distance, summary_column: T.Union[str, list, None] = None):
@@ -425,36 +265,7 @@ def aggregate_buffer_polygons(gdf, buffer_distance, summary_column: T.Union[str,
     return gdf
 
 
-def df_to_json(data, out_loc, filename=None):
-    if isinstance(data, gpd.GeoDataFrame):
-        df = pd.DataFrame(data.drop(columns='geometry'))
-    elif isinstance(data, pd.DataFrame):
-        df = data
-    else:
-        raise ValueError("Data must be a GeoDataFrame or DataFrame")
-
-    outpath_table = out_loc + filename + ".json"
-    dicted = df.to_dict(orient='index')
-    with open(outpath_table, 'w') as f:
-        json.dump(dicted, f, indent=2)
-
-
-def gdf_to_geojson(gdf: gpd.GeoDataFrame, out_loc, filename=None):
-    if not isinstance(gdf, gpd.GeoDataFrame):
-        if isinstance(gdf, gpd.GeoSeries):
-            gdf = gpd.GeoDataFrame(geometry=gdf)
-        print(f"Data type: {type(gdf)}")
-        raise ValueError("Data must be a GeoDataFrame")
-    driver = "GeoJSON"
-    outpath = out_loc + f"{filename}.geojson"
-    os.makedirs(out_loc, exist_ok=True)
-    gdf.to_file(filename=outpath, driver=driver)
-
-    print(f"Saved {filename} to {outpath}")
-    print(f"Columns: {gdf.columns.to_list()}")
-
-
-class WriteNewGeoJSON:
+class esri2geoJSON:
     def __init__(self):
         self.server_path = os.path.split(__file__)[0]
         self.esri_folder = "../data/esri_exports/"
@@ -573,7 +384,7 @@ class WriteNewGeoJSON:
         # Add percentage complete column
         perc_complete_column = f"{column}_Perc_Complete"
         gdf['temp_split'] = gdf[column].apply(
-            lambda x: [] if x in [None, ""] else [part for part in str(x).split(";") if part not in [None, ""]] )
+            lambda x: [] if x in [None, ""] else [part for part in str(x).split(";") if part not in [None, ""]])
         unique_test = gdf['temp_split'].explode().unique()
         print(f"\n\tColumn: {column}, {unique_test}")
         gdf['num_parts'] = gdf['temp_split'].apply(lambda x: len(x) if x not in [None, ""] else 0.0)
@@ -700,7 +511,6 @@ class WriteNewGeoJSON:
         wa_label_gdf = gpd.GeoDataFrame(wa_label_points, geometry='geometry', crs=work_areas_gdf.crs)
         self.gdf_dict["Work_Area_Labels"] = wa_label_gdf
 
-
         self.export_geojsons(*kwd_list)
         self.output_centroids()
 
@@ -708,6 +518,6 @@ class WriteNewGeoJSON:
 if __name__ == "__main__":
     cname = "Production"
     keywords = ["TODO", "UPDATE"]
-    to_gdf = WriteNewGeoJSON()
+    to_gdf = esri2geoJSON()
     to_gdf.update_iowa_status_map(cname, keywords)
     print("Done")

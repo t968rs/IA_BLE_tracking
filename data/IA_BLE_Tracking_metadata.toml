@@ -1,0 +1,132 @@
+sort_order = [ "TO_Area", "Name",]
+last_updated = "2019-04-05"
+
+[columns.project_id]
+geojson = "project_id"
+excel = "project_id"
+shapefile = "project_id"
+dtype = "string"
+
+[columns.HUC8]
+geojson = "HUC8"
+excel = "HUC8"
+shapefile = "HUC8"
+dtype = "string"
+
+[columns.Name]
+geojson = "Name"
+excel = "Name"
+shapefile = "Name"
+dtype = "string"
+
+[columns.TO_Area]
+geojson = "TO_Area"
+excel = "TO Area"
+shapefile = "TO_AREA"
+dtype = "string"
+
+[columns.Draft_MIP]
+geojson = "Draft_MIP"
+excel = "Draft"
+shapefile = "DRAFT"
+dtype = "string"
+
+[columns.FP_MIP]
+geojson = "FP_MIP"
+excel = "Floodplain"
+shapefile = "FP_MIP"
+dtype = "string"
+
+[columns.Hydra_MIP]
+geojson = "Hydra_MIP"
+excel = "Hydraulics"
+shapefile = "HYDRA_MIP"
+dtype = "string"
+
+[columns.P01_MM]
+geojson = "P01_MM"
+excel = "P01 GDB"
+shapefile = "P01_MM"
+dtype = "date"
+
+[columns.P02_MM]
+geojson = "P02_MM"
+excel = "P02 GDB"
+shapefile = "P02_MM"
+dtype = "date"
+
+[columns.RAW_Grd_MM]
+geojson = "RAW_Grd_MM"
+excel = "RAW Grids"
+shapefile = "RAW_GRD"
+dtype = "date"
+
+[columns.DFIRM_Grd_MM]
+geojson = "DFIRM_Grd_MM"
+excel = "DFIRM Grids"
+shapefile = "DFIRM_GRD"
+dtype = "date"
+
+[columns.Addl_Grd_MM]
+geojson = "Addl_Grd_MM"
+excel = "Additional Grids"
+shapefile = "ADDL_GRD"
+dtype = "date"
+
+[columns.which_grid]
+geojson = "which_grid"
+excel = "Missing Grids"
+shapefile = "WHICH_GRD"
+dtype = "string"
+
+[columns."Prod Stage"]
+geojson = "Prod_Stage"
+excel = "Prod Stage"
+shapefile = "PROD_STG"
+dtype = "string"
+
+[columns."P01 Analyst"]
+geojson = "P01_Analyst"
+excel = "P01 Analyst"
+shapefile = "P01_ANLYST"
+dtype = "string"
+
+[columns."Model Complete"]
+geojson = "Model_Complete"
+excel = "Model Complete"
+shapefile = "MODEL_CMPL"
+dtype = "date"
+
+[columns.FRP_Perc_Complete]
+geojson = "FRP_Perc_Complete"
+excel = "FRP %"
+shapefile = "FRP_PCT"
+dtype = "string"
+
+[columns.Notes]
+geojson = "Notes"
+excel = "Notes"
+shapefile = "NOTES"
+dtype = "string"
+
+[columns."Has AECOM Tie"]
+geojson = "Has_AECOM_Tie"
+excel = "Has AECOM Tie"
+shapefile = "AECOM_TIE"
+dtype = "string"
+
+[columns.MIP_Case]
+geojson = "MIP_Case"
+excel = "MIP Case"
+shapefile = "MIP_CASE"
+dtype = "string"
+
+[columns.last_updated]
+geojson = "last_updated"
+shapefile = "LST_UPDATE"
+dtype = "date"
+
+[columns.geometry]
+geojson = "geometry"
+shapefile = "geometry"
+dtype = "geometry"

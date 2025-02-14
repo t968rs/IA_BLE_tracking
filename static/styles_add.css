@@ -1,0 +1,508 @@
+
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    font-family: "Century Gothic", sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+#viewport-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* Fill the viewport */
+}
+
+#title-box {
+    flex: 0 0 auto;
+    display: flex;
+    height: 30px;
+    background: #4c91af;
+    color: white;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 1px 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+#title {
+    padding: 0 1rem;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+#timestamp-text {
+    font-size: 0.7em;
+    color: #2c2c2c;
+    padding-right: 1rem;
+    font-family: "Arial", sans-serif;
+}
+
+.map-container-1 {
+    flex: 1 1 auto;
+    display: flex;
+    position: relative;
+    align-items: stretch;
+    justify-content: center;
+    min-height: 25vh;
+    background-color: #f0f0f0;
+}
+
+#map {
+    height: 100%;
+    width: 100%;
+    background-color: rgba(224, 224, 224, 0);
+}
+
+#status-table-container {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    background-color: #4c91af;
+    height: 2vh;
+    min-height: 2vh;
+    font-size: 10px;
+    border-top: 2px solid #2c5666;
+    overflow: auto;
+    position: relative; /* ensure positioning context */
+}
+
+#table-bars-header {
+    background: #4c91af;
+    color: #fff;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    cursor: ns-resize; /* The header acts as the resize handle */
+    user-select: none; /* Prevent text selection while resizing */
+}
+
+#status-table-button {
+    margin-right: 10px;
+    font-size: 8px;
+    background: #255897;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+#loading-message {
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+    color: #fff;
+    padding: 10px;
+    display: none;
+}
+
+/* Table styling */
+#status-table {
+    font-family: Arial, sans-serif;
+    font-size: 11px;
+    border-collapse: collapse;
+    width: 99%;
+}
+
+#status-table thead th {
+    background-color: #003f55;
+    color: white;
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: center;
+    font-size: 11px;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 4px;
+    white-space: nowrap;
+}
+
+#button-container {
+    position: fixed;
+    bottom: 100px;
+    right: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    z-index: 1000;
+}
+
+#button-container button {
+    padding: 5px;
+    background-color: #255897;
+    border-radius: 5px;
+    color: white;
+    font-family: "Century Gothic", sans-serif;
+    border: solid 1px #4c91af;
+    cursor: pointer;
+}
+
+#toggle-table-btn {
+
+}
+
+#toggle-table-btn:hover {
+    background-color: #4c91af;
+}
+
+#zoom-to-button {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    padding: 3px;
+    z-index: 1000;
+    background-color: #255897;
+    border-radius: 5px;
+    color: white;
+    font-family: "Century Gothic", sans-serif;
+    border: solid 1px #4c91af;
+    cursor: pointer;
+}
+
+.hidden {
+  display: none;
+}
+
+/* Media query for small screens */
+@media (max-width: 1000px) {
+    html, body {
+        font-size: 0.8em;
+    }
+    #controls-container {
+        top: 10px; /* Move slightly */
+        left: 5px; /* Less horizontal offset */
+        gap: 5px;  /* Smaller gap between elements */
+    }
+    #legend-container, #layer-controls {
+        max-width: 100px; /* Narrower controls on small screens */
+        font-size: 10px;  /* Slightly smaller text */
+    }
+
+    #status-table-container {
+        font-size: 9px; /* Smaller table font for small screens */
+        max-height: 40vh; /* Limit the table height more aggressively on small screens */
+    }
+    #button-container {
+        bottom: 5px;
+        right: 20px;
+    }
+}
+
+/* Media query for very small screens */
+@media (max-width: 600px) {
+    #title-box {
+        font-size: 14px; /* Further adjust font size for very small screens */
+        padding: 6px; /* Further adjust padding for very small screens */
+    }
+    #legend-container.collapsed,
+    #layer-controls.collapsed {
+        max-height: 5px; /* Even smaller collapsed height on very small screens */
+    }
+}
+
+@media (max-height: 900px) {
+    #title-box {
+        font-size: 12px; /* Further adjust font size for very small screens */
+        padding: 4px; /* Further adjust padding for very small screens */
+    }
+}
+
+
+.map-overlay {
+  position: sticky;
+  bottom: 0;
+  right: 0;
+  background: #ffef8e;
+  margin-right: 20px;
+  font-family: "Century Gothic", sans-serif;
+  overflow: auto;
+  border-radius: 3px;
+}
+
+#features {
+  top: 0;
+  height: 100px;
+  margin-top: 20px;
+  width: 250px;
+}
+
+/* Legend and Containers */
+/* Make controls float above the map on the left side */
+#controls-container {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+
+    /* Positioning on the left side, slightly down from top */
+    top: 30px;
+    left: 10px;
+
+    /* Provide a subtle background or make it transparent so it "floats" */
+    background: transparent;
+    pointer-events: auto; /* ensure controls are clickable */
+    z-index: 1000; /* Ensure it appears above the map */
+}
+
+/* Both the legend and the layer controls can have their own background and max-height */
+#legend-container,
+#layer-controls {
+    background: rgba(247, 247, 247, 0.9); /* Light semi-transparent background */
+    padding: 10px;
+    border-radius: 5px;
+    font-family: "Century Gothic", sans-serif;
+    font-size: 11px;
+    font-weight: bold;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+
+    /* Ensure they don't grow indefinitely */
+    max-width: 200px;
+    max-height: 300px; /* Adjust as needed */
+    overflow: hidden; /* Will animate collapse/expand with max-height transition */
+    transition: max-height 0.3s ease-out;
+}
+
+.legend-header {
+    display: flex;
+    align-items: center;     /* Vertically center text and button */
+    justify-content: space-between; /* Space them out so they appear at opposite ends */
+    gap: 10px;
+    padding: 2px;
+    border-bottom: 1px solid #ccc;
+}
+
+.legend-header b {
+    font-size: 12px;
+}
+
+.legend-header-button {
+    font-size: 10px;
+    padding: 2px 2px;
+    background: #eee;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.legend-key {
+    display: inline-block;
+    width: 30px;
+    height: 20px;
+    margin-left: 10px;
+    margin-right: 10px;
+    vertical-align: middle;
+    border-radius: 5px;
+}
+
+.legend-group {
+    font-family: "Century Gothic", sans-serif;
+    font-weight: bold;
+    font-size: 11px;
+    padding: 5px;
+    /*border-left: #cccccc 5px solid;*/
+    text-align: left;
+    /*text-decoration: #0d6efd;*/
+    background: rgb(214, 230, 224);
+}
+
+.legend-key-circle {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 20px;
+    margin-left: 10px;
+    vertical-align: middle;
+    border-radius: 60%;
+}
+
+/* Layer Controls Formats */
+#layer-controls {
+    overflow-y: auto; /* Allow scroll if content exceeds max-height */
+}
+
+.layer-controls-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 1px;
+}
+
+.layer-controls-header b {
+    font-size: 12px;
+}
+
+.layer-controls-header button {
+    font-size: 10px;
+    padding: 2px 2px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+#layer-controls-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#layer-controls-table td {
+    padding: 5px;
+    vertical-align: bottom;
+}
+
+#layer-controls-table label {
+    font-weight: bold;
+    font-size: 11px;
+    font-family: 'Century Gothic', sans-serif;
+}
+
+#layer-controls-table input[type="checkbox"] {
+    margin-right: 10px;
+}
+
+#layer-controls-table tr:hover {
+    background-color: #30edd4;
+}
+
+#layer-controls #toggle-controls-btn,
+#legend-container #toggle-legend-btn {
+    font-size: 8px;
+    padding: 1px;
+    background: #eee;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    cursor: pointer;
+    float: right;
+}
+
+/* Collapsing states */
+#legend-container.collapsed {
+    max-height: 8px;
+    overflow-y: hidden;
+}
+
+#layer-controls.collapsed {
+    max-height: 8px;
+
+    overflow-y: hidden;
+}
+
+/*Popup stuff*/
+.popup-table-title {
+    font-weight: bold;
+    padding-bottom: 2px;
+    font-family: "Century Gothic", sans-serif;
+    font-size: 12px;
+}
+
+.popup-container > .mapboxgl-popup-content{
+    position: sticky;
+    top: 10px; /* Adjust to position it in the top-left corner */
+    right: 10px;
+    background: white;
+    border: 1px solid #ccc;
+    padding: 5px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    z-index: 1000; /* Ensure it appears above the map */
+    width: fit-content;
+    /* height: auto; */
+    max-height: 200px;
+    overflow-y: auto;
+    font-family: 'Century Gothic', sans-serif; /* Set font to Helvetica */
+    font-size: 10px; /* Change font size */
+}
+
+.mapboxgl-popup-content {
+    right: 10px;
+    background: white;
+    border-radius: 5px;
+    border: 2px solid #ccc;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    z-index: 1000; /* Ensure it appears above the map */
+    width: fit-content; /* Adjust as needed */
+    max-height: 310px; /* Ensure the popup does not exceed 75px in height */
+    overflow-y: scroll; /* Add scroll if content exceeds max-height */
+    font-family: 'Arial Narrow', sans-serif; /* Set font to Helvetica */
+    font-kerning: auto; /* Enable font kerning */
+    font-size: 11px; /* Change font size  */
+}
+
+.top-left-popup {
+    position: sticky;
+    top: 10px; /* Adjust to position it in the top-left corner */
+    width: 450px; /* Adjust as needed */
+    /* height: auto; */
+    max-height: 75px;
+    overflow-y: auto;
+    font-family: 'Century Gothic', sans-serif; /* Set font to Helvetica */
+    font-size: 10px; /* Change font size */
+}
+
+.close-btn {
+    display: inline-block;
+    position: relative;
+    /*top: 3px;*/
+    /*right: 3px;*/
+    background: rgba(9, 9, 9, 0);
+    border: none;
+    z-index: 10000;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 0 4em;
+    margin: 0 -4em;
+}
+
+.top-left-popup ul {
+    list-style-type: none; /* Remove bullet points */
+    padding-left: 0; /* Remove default padding */
+}
+
+.top-left-popup li {
+    margin-bottom: 1px; /* Optional: Add some spacing between list items */
+}
+
+.popup-table {
+    border-collapse: collapse;
+}
+
+.popup-table th, .popup-table td {
+    border: 1px solid #ddd;
+    padding: 3px;
+}
+
+.popup-table th {
+    background-color: #f2f2f2;
+    text-align: left;
+}
+
+
+/* CSS styles (adjust as needed) */
+#popup-welcome {
+  position: sticky;
+    top: 35%;
+    left: 35%;
+  width: 35%;
+  height: 15%;
+    z-index: 1000;
+    /*border: 1px solid #289fff;*/
+    /*border-radius: 5px;*/
+  display: grid;
+  justify-content: center;
+  align-items: center;
+}
+
+.popup-content {
+  background-color: rgba(0, 74, 94, 0.9);
+  padding: 20px;
+  border-radius: 5px;
+    color: #cccccc;
+    font-family: 'Century Gothic', sans-serif;
+}
+
+
+
